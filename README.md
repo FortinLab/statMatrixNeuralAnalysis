@@ -1,6 +1,6 @@
 # statMatrixNeuralAnalysis
 **************************************************************
-Overview of the statMatrix
+# Overview of the statMatrix
 **************************************************************
 The statMatrix data structure is a standard data matrix structure developed in the Fortin Lab. It was designed to contain the neural and behavioral data from an experimental session. Each file contains two workspace variables. The statMatrix data structure, an NxM double matrix consisting of N rows corresponding to each LFP time sample and M columnns corresponding to different information sources. The second variable is the statMatrixColIDs which is a 1xM cell vector containing strings indicating the identity of each column. The columns of the statMatrix is generally organized as follows:
 
@@ -12,7 +12,7 @@ Column Order
 4) Behavior Data: Mostly logical vectors indicating when behavioral events occurred during the session. ****Specifics for different experimental conditions should be added below****
 
 ***********************************************************
-Creating the statMatrix
+# Creating the statMatrix
 ***********************************************************
 The statMatrix is made in Matlab using custom made m-files. Unique .m conversion files are used for constructing the statMatrix depending on the configuration used to acquire the behavioral and neurophysiological data. Though the neural data organization for .plx (Plexon) or .spikes/.continuous (OpenEphys) are standardized by file type, the behavioral timestamps associated with them (events channels for .plx and ADC .continuous channels) are not always so standardized. Therefore, to properly extract behavioral timestamps you need to be sure you are using the correct behavioral analysis code for the data based on the rig it was collected on. I will probably make an index of these associates at some point but for now there's too much to flesh out here.
 
@@ -20,19 +20,19 @@ As mentioned above the statMatrix is organized with rows indexed to the LFP samp
 
 
 ***************************************************************
-Working with the statMatrix
+# Working with the statMatrix
 ***************************************************************
 Storage of data in statMatrix is advantageous... increased flexability... plug and play use... enables development of analysis/visualization tools that can be applied to any data set stored in that format...
 
 Current status of statMatrix code... creation of per-tetrode data structure... creation of per-session data files
 
 ****************************************************************
-List of statMatrix Functions
+# List of statMatrix Functions
 ****************************************************************
 NOTE Any modifications made to tailor code to processing a different file structure or data set should be saved as a new file and apppropriately named and commented to reflect that.
 
 ____________________________________________
-statMatrix Creation Functions
+# statMatrix Creation Functions
 ____________________________________________
 The following functions create statMatrix data files for each tetrode recorded from during the training session. Note that not all tetrodes will have units but they will all have LFP data recorded from them. Currently these functions create the traditional per-tetrode statMatrix files (i.e. timestamp, LFP, Unit, Behavior sections) but they also output a separate file with the behavioral section of the statMatrix saved separately. This behavMatrix file is identical to the Behavior section of the statMatrix and is saved with a corresponding behavMatrixColIDs variable for column based indexing.
 
@@ -46,7 +46,7 @@ Variation of the original statMatrix creation function CreateStatMatrixFromPLX2.
 Variation of the original statMatrix creation function designed to extract data from .plx files produced following MountainSort pre-processing. NOTE: This code is currently tailored for use with the Boston data (i.e. it's currently coded to work with SummarizePLXabbr_BOS). To convert it to working with UCI files it should be as simple as swapping out the Behavioral analysis function that needs to be tested before being done and will necessitate creation of a new file and validation before inclusion into the code set.
 
 ____________________________________________
-statMatrix Organization Functions
+# statMatrix Organization Functions
 ____________________________________________
 The following functions are written to work off the per-tetrode statMatrix data structures and organize them in different ways that may be useful for different analyses. 
 
@@ -54,7 +54,7 @@ The following functions are written to work off the per-tetrode statMatrix data 
 Code to extract all the unit data from all the individual per-tetrode statMatrix files and concatenate them together to create a single matrix. The data retains its original statMatrix organization in the variable called 'ensembleMatrix' and is paired with a column ID vector containing the corresponding unit names 'ensembleMatrixColIDs' for logical indexing to select or remove units.
 
 ************************************************************************
-List of Required Functions/Toolboxes
+# List of Required Functions/Toolboxes
 ************************************************************************
 ---Plexon Offline Files SDK---
 Toolbox created by Plexon to analyze .plx files in Matlab.
