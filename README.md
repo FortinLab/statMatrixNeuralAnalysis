@@ -32,7 +32,7 @@ Current status of statMatrix code... creation of per-tetrode data structure... c
 NOTE Any modifications made to tailor code to processing a different file structure or data set should be saved as a new file and apppropriately named and commented to reflect that.
 
 ____________________________________________
-# statMatrix Creation Functions
+## statMatrix Creation Functions
 ____________________________________________
 The following functions create statMatrix data files for each tetrode recorded from during the training session. Note that not all tetrodes will have units but they will all have LFP data recorded from them. Currently these functions create the traditional per-tetrode statMatrix files (i.e. timestamp, LFP, Unit, Behavior sections) but they also output a separate file with the behavioral section of the statMatrix saved separately. This behavMatrix file is identical to the Behavior section of the statMatrix and is saved with a corresponding behavMatrixColIDs variable for column based indexing.
 
@@ -46,7 +46,7 @@ Variation of the original statMatrix creation function CreateStatMatrixFromPLX2.
 Variation of the original statMatrix creation function designed to extract data from .plx files produced following MountainSort pre-processing. NOTE: This code is currently tailored for use with the Boston data (i.e. it's currently coded to work with SummarizePLXabbr_BOS). To convert it to working with UCI files it should be as simple as swapping out the Behavioral analysis function that needs to be tested before being done and will necessitate creation of a new file and validation before inclusion into the code set.
 
 ____________________________________________
-# statMatrix Organization Functions
+## statMatrix Organization Functions
 ____________________________________________
 The following functions are written to work off the per-tetrode statMatrix data structures and organize them in different ways that may be useful for different analyses. 
 
@@ -57,13 +57,13 @@ Code to extract all the unit data from all the individual per-tetrode statMatrix
 # List of Required Functions/Toolboxes
 ************************************************************************
 ---Plexon Offline Files SDK---
-Toolbox created by Plexon to analyze .plx files in Matlab.
+Toolbox created by Plexon to analyze .plx files in Matlab. Link [here] (https://plexon.com/wp-content/uploads/2017/08/OmniPlex-and-MAP-Offline-SDK-Bundle_0.zip)
 
 ---SummarizePLXabbr_BOS.m---
-Used when extracting behavioral data from original .plx session files, specifically tailored for use with the .plx files recorded by NJF in Boston. It will not work with files recorded at UCI as the event names used to identify trial boundaries are different.
+Used when extracting behavioral data from original .plx session files, specifically tailored for use with the .plx files recorded by NJF in Boston. It will not work with files recorded at UCI as the event names used to identify trial boundaries are different. Included.
 
 ---SummarizePLXabbr.m---
-Used to extract behavioral data from original .plx session files, specifically tailored for use with .plx files recorded at UCI. It will not work on files recorded at Boston as the event names used to identify trial boundaries are different.
+Used to extract behavioral data from original .plx session files, specifically tailored for use with .plx files recorded at UCI. It will not work on files recorded at Boston as the event names used to identify trial boundaries are different. Included.
 
 ---PhaseFreqDetectAbbr.m---
-Used for bandpass filtering and hilbert transformation of the LFP data.
+Used for bandpass filtering and hilbert transformation of the LFP data. Included.
