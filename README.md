@@ -57,7 +57,7 @@ Code to extract all the unit data from all the individual per-tetrode statMatrix
 # List of Required Functions/Toolboxes
 ************************************************************************
 ---Plexon Offline Files SDK---
-Toolbox created by Plexon to analyze .plx files in Matlab. Link [here] (https://plexon.com/wp-content/uploads/2017/08/OmniPlex-and-MAP-Offline-SDK-Bundle_0.zip)
+Toolbox created by Plexon to analyze .plx files in Matlab. Link [here](https://plexon.com/wp-content/uploads/2017/08/OmniPlex-and-MAP-Offline-SDK-Bundle_0.zip)
 
 ---SummarizePLXabbr_BOS.m---
 Used when extracting behavioral data from original .plx session files, specifically tailored for use with the .plx files recorded by NJF in Boston. It will not work with files recorded at UCI as the event names used to identify trial boundaries are different. Included.
