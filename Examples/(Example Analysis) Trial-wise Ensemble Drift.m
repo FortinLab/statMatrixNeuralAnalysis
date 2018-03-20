@@ -28,15 +28,14 @@ load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'EnsembleMatrix'))});
 
 %% Runtime Variables
 trialWindow = [0 1]; % Use to examine trial period
-% trialWindow = [-0.6 -0.1]; % Use to examine pre-trial period
+% trialWindow = [-0.5 0]; % Use to examine pre-trial period
 
 
-colors = [[0 0 1];... %red
-    [1 0 0];...   %blue
-    [0 0.5 0];... %green
-    [0.4 0 0.6];... %purple
-    [1 0.5 0];... %orange
-    [0 0.5 0.6]]; %yellow
+colors = [[110/255 190/255 245/255];... %A
+    [180/255 170/255 160/255];...   %B
+    [69/255 194/255 135/255];... %C
+    [164/255 120/255 189/255];... %D
+    [254/255 149/255 95/255]]; %E
 %% Organize Data by Trials & Extract Relevant Data
 % Create Behavior structure
 behavMatrixTrialStruct = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, trialWindow, 'PokeIn');
@@ -54,31 +53,38 @@ trialPosition = [behavMatrixTrialStruct.Position];
 perfLog = [behavMatrixTrialStruct.Performance]==1;
 % Extract Sequence Number
 sequenceNum = [behavMatrixTrialStruct.SequenceNum];
+% Identify InSeq Trials
+inSeqLog = trialOdor==trialPosition;
 
 %% Examine Overall Lag
-allTrialSim = 1-corr(cell2mat(trialPopVects(perfLog)));
+trlLog = perfLog & inSeqLog;
+% trlLog = perfLog;
+allTrialSim = 1-corr(cell2mat(trialPopVects(trlLog)));
 trialNums = [behavMatrixTrialStruct.TrialNum];
-trialNums = trialNums(perfLog);
+trialNums = trialNums(trlLog);
 trlDiff = nan(length(trialNums));
 for trlNumA = 1:length(trialNums)
     for trlNumB = 1:length(trialNums)
         trlDiff(trlNumA, trlNumB) = trialNums(trlNumB)-trialNums(trlNumA);
     end
 end
-meanSimByLagALL = nan(1,40);
-stdSimByLagAll = nan(1,40);
-for lag = 1:40
+meanSimByLagALL = nan(1,30);
+stdSimByLagALL = nan(1,30);
+lagPos = 0;
+for lag = 1:seqLength:(30*seqLength)
+    lagPos = lagPos+1;
     lagLog = trlDiff==lag;
-    meanSimByLagALL(lag) = mean(allTrialSim(lagLog));
-    stdSimByLagALL(lag) = std(allTrialSim(lagLog))/sqrt(sum(lagLog(:))-1);
+    meanSimByLagALL(lagPos) = mean(allTrialSim(lagLog));
+    stdSimByLagALL(lagPos) = std(allTrialSim(lagLog))/sqrt(sum(lagLog(:))-1);
 end
 meanSimByLagALL = smooth(meanSimByLagALL./meanSimByLagALL(1))';
+% meanSimByLagALL = smooth(zscore(meanSimByLagALL))'; % Znorm
 figure;
-PlotLineAndFilledError(1:length(meanSimByLagALL), smooth(meanSimByLagALL)', stdSimByLagALL, [0 0.5 0.6]);
+PlotLineAndFilledError(1:length(meanSimByLagALL), meanSimByLagALL, stdSimByLagALL, [0 0 0]);
 hold on;
 %% Examine Sequence Lag
-meanSimByLagODOR = nan(seqLength,40);
-stdSimByLagODOR = nan(seqLength,40);
+meanSimByLagODOR = nan(seqLength,30);
+stdSimByLagODOR = nan(seqLength,30);
 
 for itm = 1:seqLength
     odorLog = trialOdor==itm;
@@ -95,10 +101,10 @@ for itm = 1:seqLength
         end
     end
     
-    curOdorMeanSimByLag = nan(1,40);
-    curOdorStdSimByLag = nan(1,40);
-    curOdorSEMSimByLag = nan(1,40);
-    for lag = 1:40
+    curOdorMeanSimByLag = nan(1,30);
+    curOdorStdSimByLag = nan(1,30);
+    curOdorSEMSimByLag = nan(1,30);
+    for lag = 1:30
         lagLog = tempSeqDiff==lag;
         curOdorMeanSimByLag(lag) = mean(curOdorSimMtx(lagLog));
         curOdorStdSimByLag(lag) = std(curOdorSimMtx(lagLog));
@@ -106,18 +112,18 @@ for itm = 1:seqLength
     end
     meanSimByLagODOR(itm,:) = curOdorMeanSimByLag;
     stdSimByLagODOR(itm,:) = curOdorStdSimByLag;
-    PlotLineAndFilledError(1:40, smooth(curOdorMeanSimByLag./curOdorMeanSimByLag(1))', smooth(curOdorSEMSimByLag)', colors(itm,:));
+    PlotLineAndFilledError(1:30, smooth(curOdorMeanSimByLag./curOdorMeanSimByLag(1))', smooth(curOdorSEMSimByLag)', colors(itm,:));
+%     PlotLineAndFilledError(1:30, smooth(zscore(curOdorMeanSimByLag))', smooth(curOdorSEMSimByLag)', colors(itm,:)); % Znorm
 end
 
 grandMeanSimByLagODOR = smooth(mean(meanSimByLagODOR./meanSimByLagODOR(:,1)));
-PlotLineAndFilledError(1:40, grandMeanSimByLagODOR', smooth(std(meanSimByLagODOR./meanSimByLagODOR(:,1))/sqrt(size(meanSimByLagODOR,1)))', [0 0 0]);
+% grandMeanSimByLagODOR = smooth(zscore(mean(meanSimByLagODOR)))'; % Znorm
+plot(1:30, grandMeanSimByLagODOR', 'color', 'black', 'linewidth', 2, 'linestyle', '--');
 
-% legend('Mean Sim By Trial #', 'OdorA', 'OdorB', 'OdorC', 'OdorD', 'OdorE', 'Odor Mean');
-% legend('Mean Sim By Trial #', 'OdorA', 'OdorB', 'OdorC', 'OdorD', 'Odor Mean');
 xlabel Lag
 ylabel('Ensemble Distance (Normalized to Lag=1')
-set(gca, 'ylim', [0.75 3]);
-line(1:40, ones(1,40), 'linestyle', ':', 'linewidth', 2);
+set(gca, 'ylim', [0.75 3]); % Comment out on Znorm
+line(1:30, ones(1,30), 'linestyle', ':', 'linewidth', 2);
 
 %% Examine Lag Effects Around OutSeq Trials
 inSeqLog = trialOdor == trialPosition;
