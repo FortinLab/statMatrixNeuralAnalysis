@@ -78,7 +78,6 @@ for lag = 1:seqLength:(30*seqLength)
     stdSimByLagALL(lagPos) = std(allTrialSim(lagLog))/sqrt(sum(lagLog(:))-1);
 end
 meanSimByLagALL = smooth(meanSimByLagALL./meanSimByLagALL(1))';
-% meanSimByLagALL = smooth(zscore(meanSimByLagALL))'; % Znorm
 figure;
 PlotLineAndFilledError(1:length(meanSimByLagALL), meanSimByLagALL, stdSimByLagALL, [0 0 0]);
 hold on;
@@ -113,16 +112,14 @@ for itm = 1:seqLength
     meanSimByLagODOR(itm,:) = curOdorMeanSimByLag;
     stdSimByLagODOR(itm,:) = curOdorStdSimByLag;
     PlotLineAndFilledError(1:30, smooth(curOdorMeanSimByLag./curOdorMeanSimByLag(1))', smooth(curOdorSEMSimByLag)', colors(itm,:));
-%     PlotLineAndFilledError(1:30, smooth(zscore(curOdorMeanSimByLag))', smooth(curOdorSEMSimByLag)', colors(itm,:)); % Znorm
 end
 
 grandMeanSimByLagODOR = smooth(mean(meanSimByLagODOR./meanSimByLagODOR(:,1)));
-% grandMeanSimByLagODOR = smooth(zscore(mean(meanSimByLagODOR)))'; % Znorm
 plot(1:30, grandMeanSimByLagODOR', 'color', 'black', 'linewidth', 2, 'linestyle', '--');
 
 xlabel Lag
 ylabel('Ensemble Distance (Normalized to Lag=1')
-set(gca, 'ylim', [0.75 3]); % Comment out on Znorm
+set(gca, 'ylim', [0.75 3]);
 line(1:30, ones(1,30), 'linestyle', ':', 'linewidth', 2);
 
 %% Examine Lag Effects Around OutSeq Trials
