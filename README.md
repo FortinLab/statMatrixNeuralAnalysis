@@ -16,7 +16,7 @@ Column Order
 ***********************************************************
 The statMatrix is made in Matlab using custom made m-files. Unique .m conversion files are used for constructing the statMatrix depending on the configuration used to acquire the behavioral and neurophysiological data. Though the neural data organization for .plx (Plexon) or .spikes/.continuous (OpenEphys) are standardized by file type, the behavioral timestamps associated with them (events channels for .plx and ADC .continuous channels) are not always so standardized. Therefore, to properly extract behavioral timestamps you need to be sure you are using the correct behavioral analysis code for the data based on the rig it was collected on. I will probably make an index of these associates at some point but for now there's too much to flesh out here.
 
-As mentioned above the statMatrix is organized with rows indexed to the LFP sampleRate. This makes it easy to associate spiking activity and behavioral events to LFP signals with minimal loss of precision. As the LFP data is either collected directly at 1kHz/s or downsampled to that frequency, the loss of precision, i.e. associating a spike/event to one ms or another, is trivial, especially since most analysis is done on time aggregated measures (spk/s, spk per 
+As mentioned above the statMatrix is organized with rows indexed to the LFP sampleRate. This makes it easy to associate spiking activity and behavioral events to LFP signals with minimal loss of precision. As the LFP data is either collected directly at 1kHz/s or downsampled to that frequency, the loss of precision, i.e. associating a spike/event to one ms or another, is trivial, especially since most analysis is done on time aggregated measures (spk/s).
 
 ***************************************************************
 # Working with the statMatrix
@@ -58,10 +58,18 @@ Variation of the original statMatrix creation function designed to extract data 
 ____________________________________________
 ### statMatrix Organization Functions
 ____________________________________________
-The following functions are written to work off the per-tetrode statMatrix data structures and organize them in different ways that may be useful for different analyses. 
 
 ---EnsembleCompilation_SM---
 Code to extract all the unit data from all the individual per-tetrode statMatrix files and concatenate them together to create a single matrix. The data retains its original statMatrix organization in the variable called 'ensembleMatrix' and is paired with a column ID vector containing the corresponding unit names 'ensembleMatrixColIDs' for logical indexing to select or remove units.
+
+---OrganizeTrialData_SM---
+Code to organize the behavior data into a 1xN structure variable where each index corresponds to a session trial. Compiles information about each trial as subfields at each index and creates a logical vector for that trial period that can be used to extract neural data that occurred during that trial. **~Needs to be commented~**.
+
+---ExtractTrialData_SM---
+Code to use the trial period logical vector created in OrganizeTrialData_SM.m to extract neural data stored in matrices.
+
+---OrganizeStatMatrixByTrial---
+Obsolete! Feel free to review for example code. Will be removed... eventually.
 
 ************************************************************************
 # List of Required Functions/Toolboxes
