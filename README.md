@@ -32,7 +32,7 @@ Current status of statMatrix code... creation of per-tetrode data structure... c
 NOTE Any modifications made to tailor code to processing a different file structure or data set should be saved as a new file and apppropriately named and commented to reflect that.
 
 ____________________________________________
-## statMatrix Creation Functions
+### statMatrix Creation Functions
 ____________________________________________
 The following functions create statMatrix data files for each tetrode recorded from during the training session. Note that not all tetrodes will have units but they will all have LFP data recorded from them. Currently these functions create the traditional per-tetrode statMatrix files (i.e. timestamp, LFP, Unit, Behavior sections) but they also output a separate file with the behavioral section of the statMatrix saved separately. This behavMatrix file is identical to the Behavior section of the statMatrix and is saved with a corresponding behavMatrixColIDs variable for column based indexing.
 
@@ -46,12 +46,26 @@ Variation of the original statMatrix creation function CreateStatMatrixFromPLX2.
 Variation of the original statMatrix creation function designed to extract data from .plx files produced following MountainSort pre-processing. NOTE: This code is currently tailored for use with the Boston data (i.e. it's currently coded to work with SummarizePLXabbr_BOS). To convert it to working with UCI files it should be as simple as swapping out the Behavioral analysis function that needs to be tested before being done and will necessitate creation of a new file and validation before inclusion into the code set.
 
 ____________________________________________
-## statMatrix Organization Functions
+### statMatrix Organization Functions
 ____________________________________________
 The following functions are written to work off the per-tetrode statMatrix data structures and organize them in different ways that may be useful for different analyses. 
 
 ---EnsembleCompilation_SM---
 Code to extract all the unit data from all the individual per-tetrode statMatrix files and concatenate them together to create a single matrix. The data retains its original statMatrix organization in the variable called 'ensembleMatrix' and is paired with a column ID vector containing the corresponding unit names 'ensembleMatrixColIDs' for logical indexing to select or remove units.
+
+____________________________________________
+### statMatrix Behavior Columns Organization
+____________________________________________
+**Sequence Task**
+* 'Odor\[1-X]': Columns with logical 1 indicating when odor was delivered (no flag or indicator when odor presentation was terminated, assume it was at port withdrawal or trial feedback, whichever came first)
+* 'Position\[1-X]': Columns with logical 1 indicating what sequence position the trial occured during. Indexed with odor delivery.
+* 'InSeqLog' : Column with values of \[1,0,-1]; 1 = InSeq trial, 0 = Nothing/Filler, -1 = OutSeq trial. Use inSeq==1 and outSeq==-1 to create logical trial vectors; use 'trials==(abs(InSeqLogColumn#)==1)' or something like it can be used to pull out trial start indices. Indexed with odor delivery.
+* 'PerformanceLog' : Column with values \[1,0,-1]; 1 = Correct trial, 0 = Nothing/Filler, -1 = Incorrect trial. Can be used like 'InSeqLog' to pull out correct/incorrect trials and/or trial start indices. Indexed with odor delivery.
+* 'PokeEvents' : Column with values \[1,0,-1]; 1 = Port Entry, 0 = Nothing/Filler, -1 = Port Withdrawal. To identify port entry relative to trial start identify the last port entry (PokeEvents==1) prior to odor delivery; likewise to identify port withdrawal identify the first port withdrawal (PokeEvents==-1) following odor delivery.
+* 'FrontReward' : Column with logical 1 indicating when reward was given at the front of the maze.
+* 'BackReward' : Column with logical 1 indiciating when reward was given at the back of the maze.
+* 'XvalRatMazePosition' : Column indexing the rat's position within the maze along the long axis of the maze.
+* 'YvalRatMazePosition' : Column indexing the rat's position within the maze along the short axis of the maze. **NOTE** The motion capture system sample rate is lower than the time bins used to organize the statMatrix (~30Hz vs 1kHz), all non-zero positions are actual position values, position \[0,0] is out of the maze and the rat never went there.
 
 ************************************************************************
 # List of Required Functions/Toolboxes
