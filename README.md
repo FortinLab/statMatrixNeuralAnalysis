@@ -26,15 +26,15 @@ ____________________________________________
 ### statMatrix Behavior Columns Organization
 ____________________________________________
 **Sequence Task**
-* 'Odor\[1-X]': Columns with logical 1 indicating when odor was delivered (no flag or indicator when odor presentation was terminated, assume it was at port withdrawal or trial feedback, whichever came first)
-* 'Position\[1-X]': Columns with logical 1 indicating what sequence position the trial occured during. Indexed with odor delivery.
-* 'InSeqLog' : Column with values of \[1,0,-1]; 1 = InSeq trial, 0 = Nothing/Filler, -1 = OutSeq trial. Use inSeq==1 and outSeq==-1 to create logical trial vectors; use 'trials==(abs(InSeqLogColumn#)==1)' or something like it can be used to pull out trial start indices. Indexed with odor delivery.
-* 'PerformanceLog' : Column with values \[1,0,-1]; 1 = Correct trial, 0 = Nothing/Filler, -1 = Incorrect trial. Can be used like 'InSeqLog' to pull out correct/incorrect trials and/or trial start indices. Indexed with odor delivery.
-* 'PokeEvents' : Column with values \[1,0,-1]; 1 = Port Entry, 0 = Nothing/Filler, -1 = Port Withdrawal. To identify port entry relative to trial start identify the last port entry (PokeEvents==1) prior to odor delivery; likewise to identify port withdrawal identify the first port withdrawal (PokeEvents==-1) following odor delivery.
-* 'FrontReward' : Column with logical 1 indicating when reward was given at the front of the maze.
-* 'BackReward' : Column with logical 1 indiciating when reward was given at the back of the maze.
-* 'XvalRatMazePosition' : Column indexing the rat's position within the maze along the long axis of the maze.
-* 'YvalRatMazePosition' : Column indexing the rat's position within the maze along the short axis of the maze. **NOTE** The motion capture system sample rate is lower than the time bins used to organize the statMatrix (~30Hz vs 1kHz), all non-zero positions are actual position values, position \[0,0] is out of the maze and the rat never went there.
+* **'Odor\[1-X]'**: Columns with logical 1 indicating when odor was delivered (no flag or indicator when odor presentation was terminated, assume it was at port withdrawal or trial feedback, whichever came first)
+* **'Position\[1-X]'**: Columns with logical 1 indicating what sequence position the trial occured during. Indexed with odor delivery.
+* **'InSeqLog'**: Column with values of \[1,0,-1]; 1 = InSeq trial, 0 = Nothing/Filler, -1 = OutSeq trial. Use inSeq==1 and outSeq==-1 to create logical trial vectors; use 'trials==(abs(InSeqLogColumn#)==1)' or something like it can be used to pull out trial start indices. Indexed with odor delivery.
+* **'PerformanceLog'**: Column with values \[1,0,-1]; 1 = Correct trial, 0 = Nothing/Filler, -1 = Incorrect trial. Can be used like 'InSeqLog' to pull out correct/incorrect trials and/or trial start indices. Indexed with odor delivery.
+* **'PokeEvents'**: Column with values \[1,0,-1]; 1 = Port Entry, 0 = Nothing/Filler, -1 = Port Withdrawal. To identify port entry relative to trial start identify the last port entry (PokeEvents==1) prior to odor delivery; likewise to identify port withdrawal identify the first port withdrawal (PokeEvents==-1) following odor delivery.
+* **'FrontReward'**: Column with logical 1 indicating when reward was given at the front of the maze.
+* **'BackReward'**: Column with logical 1 indiciating when reward was given at the back of the maze.
+* **'XvalRatMazePosition'**: Column indexing the rat's position within the maze along the long axis of the maze.
+* **'YvalRatMazePosition'**: Column indexing the rat's position within the maze along the short axis of the maze. **NOTE** The motion capture system sample rate is lower than the time bins used to organize the statMatrix (~30Hz vs 1kHz), all non-zero positions are actual position values, position \[0,0] is out of the maze and the rat never went there.
 
 ****************************************************************
 # List of statMatrix Functions
