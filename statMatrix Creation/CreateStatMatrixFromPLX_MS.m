@@ -19,15 +19,21 @@ spkFiles = {spikeFileDirFiles.name};
 spkFiles = spkFiles(logical(cellfun(@(a)~isempty(a), strfind(spkFiles, '.plx'))));
 
 %% Behavioral Data
-[behaviorData] = SummarizePLXabbr_BOS(origPlxFile);
+% [behaviorData] = SummarizePLXabbr_BOS(origPlxFile);
+[behaviorData] = SummarizePLXabbr(origPlxFile);
 [samp, ~, tetTS, fn, ~] = plx_ad_v(origPlxFile, 2);
 tsVect = ((0:(fn(1)-1))/samp)+tetTS(1);
 for fragNum = 2:length(tetTS)
     tsVect = [tsVect, ((0:(fn(fragNum)-1))/samp)+tetTS(fragNum)]; %#ok<AGROW>
 end
 seqLength = behaviorData.Summary.SequenceLength;
-behVals = nan(length(tsVect), seqLength*2 + 5);
-behDataHeaders = cell(1,seqLength*2 + 7);
+if isfield(behaviorData.Raw, 'ErrorSignalTime')
+    behDataHeaders = cell(1,seqLength*2 + 8);
+    behVals = nan(length(tsVect), seqLength*2 + 8);
+else
+    behDataHeaders = cell(1,seqLength*2 + 7);
+    behVals = nan(length(tsVect), seqLength*2 + 7);
+end
 ssnData = behaviorData.Raw;
 for seq = 1:seqLength
     itemPresTimes = [ssnData([ssnData.SequenceItem]==seq).ItemPresentationTime];
@@ -39,31 +45,34 @@ for seq = 1:seqLength
     behDataHeaders{seq} = ['Odor' num2str(seq)];
     behDataHeaders{seq+seqLength} = ['Position' num2str(seq)];
     if seq == 1
-        behVals(:,seqLength+seqLength+1) = histcounts(inSeqPresTimes, [0 tsVect])' - histcounts(outSeqPresTimes,[0 tsVect])';
+        behVals(:,seqLength*2+1) = histcounts(inSeqPresTimes, [0 tsVect])' - histcounts(outSeqPresTimes,[0 tsVect])';
     else
-        behVals(:,seqLength+seqLength+1) = behVals(:,seqLength+seqLength+1) + histcounts(inSeqPresTimes, [0 tsVect])' - histcounts(outSeqPresTimes,[0 tsVect])';
+        behVals(:,seqLength*2+1) = behVals(:,seqLength*2+1) + histcounts(inSeqPresTimes, [0 tsVect])' - histcounts(outSeqPresTimes,[0 tsVect])';
     end
 end
-behDataHeaders{seq+seqLength+1} = 'InSeqLog';
+behDataHeaders{seqLength*2+1} = 'InSeqLog';
 itmPresTimes = [ssnData.ItemPresentationTime];
 trialPerformance = [ssnData.Performance];
 corrTrials = itmPresTimes(logical(trialPerformance));
 corTrlHistCounts = histcounts(corrTrials, [0 tsVect])';
 inCorrTrials = itmPresTimes(~logical(trialPerformance));
 inCorTrlHistCounts = histcounts(inCorrTrials, [0 tsVect])';
-behVals(:,seqLength+seqLength+2) = corTrlHistCounts + (inCorTrlHistCounts*-1);
-behDataHeaders{seq+seqLength+2} = 'PerformanceLog';
+behVals(:,seqLength*2+2) = corTrlHistCounts + (inCorTrlHistCounts*-1);
+behDataHeaders{seqLength*2+2} = 'PerformanceLog';
 
-behVals(:,seqLength+seqLength+3) = histcounts([ssnData.OdorTrigPokeTime], [0 tsVect])';
-behVals(:,seqLength+seqLength+3) = behVals(:,seqLength+seqLength+3) - histcounts([ssnData.OdorPokeWithdrawTime], [0 tsVect])';
-behDataHeaders{seq+seqLength+3} = 'PokeEvents';
+behVals(:,seqLength*2+3) = histcounts([ssnData.OdorTrigPokeTime], [0 tsVect])' - histcounts([ssnData.OdorPokeWithdrawTime], [0 tsVect])';
+behDataHeaders{seqLength*2+3} = 'PokeEvents';
 
-behVals(:,seqLength+seqLength+4) = histcounts([ssnData.FrontRewardTime], [0 tsVect])';
-behDataHeaders{seq+seqLength+4} = 'FrontReward';
+behVals(:,seqLength*2+4) = histcounts([ssnData.FrontRewardTime], [0 tsVect])';
+behDataHeaders{seqLength*2+4} = 'FrontReward';
 
-behVals(:,seqLength+seqLength+5) = histcounts([ssnData.BackRewardTime], [0 tsVect])';
-behDataHeaders{seq+seqLength+5} = 'BackReward';
+behVals(:,seqLength*2+5) = histcounts([ssnData.BackRewardTime], [0 tsVect])';
+behDataHeaders{seqLength*2+5} = 'BackReward';
 
+if isfield(behaviorData.Raw, 'ErrorSignalTime')
+    behVals(:,seqLength*2+6) = histcounts([ssnData.ErrorSignalTime], [0 tsVect])';
+    behDataHeaders{seqLength*2+6} = 'ErrorSignal';
+end
 
 [numChans, chanNames] = plx_event_names(origPlxFile);
 findingStrobed = 1;
@@ -77,14 +86,24 @@ while findingStrobed
             [~, strobedTS, strobedSV] = plx_event_ts(origPlxFile, curChan);
             [~, ~, ~, aniPosition] = plx_vt_interpret(strobedTS, strobedSV);
             aniPosHistBins = find(histcounts(aniPosition(:,1), [0 tsVect]));
-            behVals(aniPosHistBins,seqLength+seqLength+6) = aniPosition(:,2);
-            behVals(aniPosHistBins,seqLength+seqLength+7) = aniPosition(:,3);
+            if isfield(behaviorData.Raw, 'ErrorSignalTime')
+                behVals(aniPosHistBins,seqLength*2+7) = aniPosition(:,2);
+                behVals(aniPosHistBins,seqLength*2+8) = aniPosition(:,3);
+            else
+                behVals(aniPosHistBins,seqLength*2+6) = aniPosition(:,2);
+                behVals(aniPosHistBins,seqLength*2+7) = aniPosition(:,3);
+            end
             findingStrobed = 0;
         end
     end
 end
-behDataHeaders{seq+seqLength+6} = 'XvalRatMazePosition';
-behDataHeaders{seq+seqLength+7} = 'YvalRatMazePosition';
+if isfield(behaviorData.Raw, 'ErrorSignalTime')
+    behDataHeaders{seqLength*2+7} = 'XvalRatMazePosition';
+    behDataHeaders{seqLength*2+8} = 'YvalRatMazePosition';
+else
+    behDataHeaders{seqLength*2+6} = 'XvalRatMazePosition';
+    behDataHeaders{seqLength*2+7} = 'YvalRatMazePosition';
+end
 behavMatrix = [tsVect', behVals]; %#ok<NASGU>
 behavMatrixColIDs = [{'TimeBin'}, behDataHeaders]; %#ok<NASGU>
 save([filePath outputFileName{1} '_BehaviorMatrix.mat'], 'behavMatrix', 'behavMatrixColIDs');
