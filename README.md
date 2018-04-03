@@ -76,3 +76,5 @@ Obsolete! Feel free to review for example code. Will be removed... eventually.
 ************************************************************************
 * *Plexon Offline Files SDK*: 
 Toolbox created by Plexon to analyze .plx files in Matlab. Link [here](https://plexon.com/wp-content/uploads/2017/08/OmniPlex-and-MAP-Offline-SDK-Bundle_0.zip)
+* *Circular Statistict Toolbox*:
+Toolbox from the matlab file exchange to perform circular (directional) statistics. Link [here](https://www.mathworks.com/matlabcentral/fileexchange/10676-circular-statistics-toolbox--directional-statistics-)
