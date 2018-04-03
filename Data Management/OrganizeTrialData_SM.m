@@ -30,6 +30,15 @@ numTrials = sum(trialVect);
 pokeVect = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'PokeEvents')));
 pokeInNdxs = find(pokeVect==1);
 pokeOutNdxs = find(pokeVect==-1);
+% Pull out Front Reward Indices
+frontRwrdVect = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'FrontReward')));
+frontRwrdNdxs = find(frontRwrdVect);
+% Pull out Rear Reward Indices
+rearRwrdVect = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'BackReward')));
+rearRwrdNdxs = find(rearRwrdVect);
+% Pull out Error Indices
+errorSigVect = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'ErrorSignal')));
+errorSigNdxs = find(errorSigVect);
 % Pull out Sequence Length
 seqLength = size(positionTrlMtx,2);
 % Identify trial performance 
@@ -74,9 +83,29 @@ for trl = 1:numTrials
             curIndex = pokeInNdxs(find(pokeInNdxs<trialIndices(trl)==1,1, 'last'));
         case 'PokeOut'
             curIndex = pokeOutNdxs(find(pokeOutNdxs>trialIndices(trl)==1,1, 'first'));
+        case 'FrontReward'
+            curIndex = frontRwrdNdxs(find(frontRwrdNdxs>trialIndices(trl)==1,1, 'first'));
+            if trl==numTrials || curIndex<trialIndices(trl+1)
+            else
+                curIndex = nan;
+            end
+        case 'RearReward'
+            curIndex = rearRwrdNdxs(find(rearRwrdNdxs>trialIndices(trl)==1,1,'first'));
+            if  trl==numTrials || curIndex<trialIndices(trl+1)
+            else
+                curIndex = nan;
+            end
+        case 'ErrorSignal'
+            curIndex = errorSigNdxs(find(errorSigNdxs>trialIndices(trl)==1,1,'first'));
+            if trl==numTrials || curIndex<trialIndices(trl+1)
+            else
+                curIndex = nan;
+            end
     end
-    curWindow = curIndex + trlWindow;
-    tempLogVect(curWindow(1):curWindow(2)) = true;
+    if ~isnan(curIndex)
+        curWindow = curIndex + trlWindow;
+        tempLogVect(curWindow(1):curWindow(2)) = true;
+    end
     trialLogVect{trl} = tempLogVect;
 end
 
