@@ -19,8 +19,8 @@ spkFiles = {spikeFileDirFiles.name};
 spkFiles = spkFiles(logical(cellfun(@(a)~isempty(a), strfind(spkFiles, '.plx'))));
 
 %% Behavioral Data
-% [behaviorData] = SummarizePLXabbr_BOS(origPlxFile);
-[behaviorData] = SummarizePLXabbr(origPlxFile);
+[behaviorData] = SummarizePLXabbr_BOS(origPlxFile);
+% [behaviorData] = SummarizePLXabbr(origPlxFile);
 [samp, ~, tetTS, fn, ~] = plx_ad_v(origPlxFile, 2);
 tsVect = ((0:(fn(1)-1))/samp)+tetTS(1);
 for fragNum = 2:length(tetTS)
