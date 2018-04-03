@@ -24,8 +24,10 @@ load(tetFiles{1}, 'statMatrixColIDs');
 %% Compile everything!
 ensembleMatrix = cell(1,length(tetFiles));
 ensembleMatrixColIDs = cell(1,length(tetFiles));
+ensembleUnitSummaries = cell(1,length(tetFiles));
 for tet = 1:length(tetFiles)
     load(tetFiles{tet});
+    ensembleUnitSummaries{tet} = unitSummary;
     if tet == 1
         tsVect = statMatrix(:,1); %#ok<NODEF>
     end
@@ -38,7 +40,8 @@ end
 %%
 ensembleMatrix = [tsVect, cell2mat(ensembleMatrix)]; %#ok<NASGU>
 ensembleMatrixColIDs = [{'TimeBin'}, ensembleMatrixColIDs{:}]; %#ok<NASGU>
+ensembleUnitSummaries = cell2mat(ensembleUnitSummaries); %#ok<NASGU>
 
-save('EnsembleMatrix.mat', 'ensembleMatrix', 'ensembleMatrixColIDs', '-v7.3');
+save('EnsembleMatrix.mat', 'ensembleMatrix', 'ensembleMatrixColIDs', 'ensembleUnitSummaries', '-v7.3');
 
     
