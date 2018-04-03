@@ -187,8 +187,8 @@ for tet = 1:length(tetNames)
         largestTemplate = meanTemplates{uni}{largestTemplateNum};
         % Find the valley
         valleyNdx = find(largestTemplate==min(largestTemplate),1,'first');
-        % Bag the peak
-        peakNdx = find(largestTemplate==max(largestTemplate),1,'first');
+        % Bag the peak... following the valley
+        peakNdx = find(largestTemplate(valleyNdx:end)==max(largestTemplate(valleyNdx:end)),1,'first') + (valleyNdx-1);
         % Determine the width
         spkWdth{uni} = (peakNdx-valleyNdx)/samp;
         
