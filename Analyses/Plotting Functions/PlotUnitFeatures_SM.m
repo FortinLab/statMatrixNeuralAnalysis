@@ -66,7 +66,7 @@ end
 autoCorr = sum(autoCorrBySpk,1);
 
 subplot(2,4,5:6)
-bar(linspace(-0.2,0.2,160), autoCorr, 'black');
+bar(linspace(-1,1,160), autoCorr, 'black');
 title({'Autocorrellogram', sprintf('Mean Spike Rate = %.02g spk/s', curUnitSummary.Mean_SpikeRate)});
 axis tight
 xlabel Time
