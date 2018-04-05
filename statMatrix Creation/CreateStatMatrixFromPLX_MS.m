@@ -10,13 +10,14 @@ if origPlxFile == 0
     disp('No file selected');
     return
 end
-outputFileName = inputdlg('Name Output File', 'origPlxFile', 1, {origPlxFile});
 cd(filePath);
 
 spikeFileDir = uigetdir(cd, 'Where are the cut MountainSort .PLX files?');
 spikeFileDirFiles = dir([spikeFileDir '\']);
 spkFiles = {spikeFileDirFiles.name};
 spkFiles = spkFiles(logical(cellfun(@(a)~isempty(a), strfind(spkFiles, '.plx'))));
+
+outputFileName = inputdlg('Name Output File', 'origPlxFile', 1, [origPlxFile(1:end-4) '_MS']);
 
 %% Behavioral Data
 % [behaviorData] = SummarizePLXabbr_BOS(origPlxFile);
@@ -163,14 +164,15 @@ for tet = 1:length(tetNames)
     tetUnitTSs = cell(1,curNumUnis);
     tetUnitIDs = cell(1,curNumUnis);
     meanTemplates = repmat({cell(1,4)}, [1,curNumUnis]);
+    meanTemplateValues = repmat({nan(3,2)}, [1, curNumUnis]);
     stdTemplates = repmat({cell(1,4)}, [1,curNumUnis]);
     meanSpkRt = cell(1,curNumUnis);
     spkWdth = cell(1,curNumUnis);
     phaseVals = struct('Mean', nan, 'Median', nan, 'R_Length', nan,...
         'AngDev', nan, 'CircStDev', nan, 'R_Test', [nan, nan]);
-    phaseInfo = repmat(struct('Theta', phaseVals, 'LowBeta', phaseVals,...
+    phaseInfo = repmat({struct('Theta', phaseVals, 'LowBeta', phaseVals,...
         'Beta', phaseVals, 'LowGamma', phaseVals, 'HighGamma', phaseVals,...
-        'Ripple', phaseVals), [1,curNumUnis]);
+        'Ripple', phaseVals)}, [1,curNumUnis]);
     for uni = 1:curNumUnis
         [~, tempTSs] = plx_ts(curSpkFile, 1, uni);
         tetUnitTSs{uni} = histcounts(tempTSs, [0 tsVect])';
@@ -185,10 +187,13 @@ for tet = 1:length(tetNames)
         templateHeights = cellfun(@(a)diff([min(a) max(a)]), meanTemplates{uni});
         largestTemplateNum = find(max(templateHeights)==templateHeights,1,'first');
         largestTemplate = meanTemplates{uni}{largestTemplateNum};
+        meanTemplateValues{uni}(1,1) = largestTemplateNum;
         % Find the valley
         valleyNdx = find(largestTemplate==min(largestTemplate),1,'first');
+        meanTemplateValues{uni}(2,:) = [valleyNdx, largestTemplate(valleyNdx)];
         % Bag the peak... following the valley
         peakNdx = find(largestTemplate(valleyNdx:end)==max(largestTemplate(valleyNdx:end)),1,'first') + (valleyNdx-1);
+        meanTemplateValues{uni}(3,:) = [peakNdx, largestTemplate(peakNdx)];
         % Determine the width
         spkWdth{uni} = (peakNdx-valleyNdx)/samp;
         
@@ -198,48 +203,48 @@ for tet = 1:length(tetNames)
         % Now pull out summary phase values
         % Theta
         thetaUniPhase = tetThetaHilb(tetUnitTSs{uni}==1);
-        phaseInfo(uni).Theta.Mean = circ_mean(thetaUniPhase);
-        phaseInfo(uni).Theta.Median = circ_median(thetaUniPhase);
-        phaseInfo(uni).Theta.R_Length = circ_r(thetaUniPhase);
-        [phaseInfo(uni).Theta.AngDev, phaseInfo(uni).Theta.CircStDev] = circ_std(thetaUniPhase);
-        [phaseInfo(uni).Theta.R_Test(1), phaseInfo(uni).Theta.R_Test(2)] = circ_rtest(thetaUniPhase);
+        phaseInfo{uni}.Theta.Mean = circ_mean(thetaUniPhase);
+        phaseInfo{uni}.Theta.Median = circ_median(thetaUniPhase);
+        phaseInfo{uni}.Theta.R_Length = circ_r(thetaUniPhase);
+        [phaseInfo{uni}.Theta.AngDev, phaseInfo{uni}.Theta.CircStDev] = circ_std(thetaUniPhase);
+        [phaseInfo{uni}.Theta.R_Test(1), phaseInfo{uni}.Theta.R_Test(2)] = circ_rtest(thetaUniPhase);
         % Low Beta
         lowBetaUniPhase = tetLowBetaHilb(tetUnitTSs{uni}==1);
-        phaseInfo(uni).LowBeta.Mean = circ_mean(lowBetaUniPhase);
-        phaseInfo(uni).LowBeta.Median = circ_median(lowBetaUniPhase);
-        phaseInfo(uni).LowBeta.R_Length = circ_r(lowBetaUniPhase);
-        [phaseInfo(uni).LowBeta.AngDev, phaseInfo(uni).LowBeta.CircStDev] = circ_std(lowBetaUniPhase);
-        [phaseInfo(uni).LowBeta.R_Test(1), phaseInfo(uni).LowBeta.R_Test(2)] = circ_rtest(lowBetaUniPhase);
+        phaseInfo{uni}.LowBeta.Mean = circ_mean(lowBetaUniPhase);
+        phaseInfo{uni}.LowBeta.Median = circ_median(lowBetaUniPhase);
+        phaseInfo{uni}.LowBeta.R_Length = circ_r(lowBetaUniPhase);
+        [phaseInfo{uni}.LowBeta.AngDev, phaseInfo{uni}.LowBeta.CircStDev] = circ_std(lowBetaUniPhase);
+        [phaseInfo{uni}.LowBeta.R_Test(1), phaseInfo{uni}.LowBeta.R_Test(2)] = circ_rtest(lowBetaUniPhase);
         % Beta
         betaUniPhase = tetBetaHilb(tetUnitTSs{uni}==1);
-        phaseInfo(uni).Beta.Mean = circ_mean(betaUniPhase);
-        phaseInfo(uni).Beta.Median = circ_median(betaUniPhase);
-        phaseInfo(uni).Beta.R_Length = circ_r(betaUniPhase);
-        [phaseInfo(uni).Beta.AngDev, phaseInfo(uni).Beta.CircStDev] = circ_std(betaUniPhase);
-        [phaseInfo(uni).Beta.R_Test(1), phaseInfo(uni).Beta.R_Test(2)] = circ_rtest(betaUniPhase);
+        phaseInfo{uni}.Beta.Mean = circ_mean(betaUniPhase);
+        phaseInfo{uni}.Beta.Median = circ_median(betaUniPhase);
+        phaseInfo{uni}.Beta.R_Length = circ_r(betaUniPhase);
+        [phaseInfo{uni}.Beta.AngDev, phaseInfo{uni}.Beta.CircStDev] = circ_std(betaUniPhase);
+        [phaseInfo{uni}.Beta.R_Test(1), phaseInfo{uni}.Beta.R_Test(2)] = circ_rtest(betaUniPhase);
         % Low Gamma
         lowGammaUniPhase = tetLowGammaHilb(tetUnitTSs{uni}==1);
-        phaseInfo(uni).LowGamma.Mean = circ_mean(lowGammaUniPhase);
-        phaseInfo(uni).LowGamma.Median = circ_median(lowGammaUniPhase);
-        phaseInfo(uni).LowGamma.R_Length = circ_r(lowGammaUniPhase);
-        [phaseInfo(uni).LowGamma.AngDev, phaseInfo(uni).LowGamma.CircStDev] = circ_std(lowGammaUniPhase);
-        [phaseInfo(uni).LowGamma.R_Test(1), phaseInfo(uni).LowGamma.R_Test(2)] = circ_rtest(lowGammaUniPhase);
+        phaseInfo{uni}.LowGamma.Mean = circ_mean(lowGammaUniPhase);
+        phaseInfo{uni}.LowGamma.Median = circ_median(lowGammaUniPhase);
+        phaseInfo{uni}.LowGamma.R_Length = circ_r(lowGammaUniPhase);
+        [phaseInfo{uni}.LowGamma.AngDev, phaseInfo{uni}.LowGamma.CircStDev] = circ_std(lowGammaUniPhase);
+        [phaseInfo{uni}.LowGamma.R_Test(1), phaseInfo{uni}.LowGamma.R_Test(2)] = circ_rtest(lowGammaUniPhase);
         % High Gamma
         highGammaUniPhase = tetHighGammaHilb(tetUnitTSs{uni}==1);
-        phaseInfo(uni).HighGamma.Mean = circ_mean(highGammaUniPhase);
-        phaseInfo(uni).HighGamma.Median = circ_median(highGammaUniPhase);
-        phaseInfo(uni).HighGamma.R_Length = circ_r(highGammaUniPhase);
-        [phaseInfo(uni).HighGamma.AngDev, phaseInfo(uni).HighGamma.CircStDev] = circ_std(highGammaUniPhase);
-        [phaseInfo(uni).HighGamma.R_Test(1), phaseInfo(uni).HighGamma.R_Test(2)] = circ_rtest(highGammaUniPhase);
+        phaseInfo{uni}.HighGamma.Mean = circ_mean(highGammaUniPhase);
+        phaseInfo{uni}.HighGamma.Median = circ_median(highGammaUniPhase);
+        phaseInfo{uni}.HighGamma.R_Length = circ_r(highGammaUniPhase);
+        [phaseInfo{uni}.HighGamma.AngDev, phaseInfo{uni}.HighGamma.CircStDev] = circ_std(highGammaUniPhase);
+        [phaseInfo{uni}.HighGamma.R_Test(1), phaseInfo{uni}.HighGamma.R_Test(2)] = circ_rtest(highGammaUniPhase);
         % Ripple
         rippleUniPhase = tetRipHilb(tetUnitTSs{uni}==1);
-        phaseInfo(uni).Ripple.Mean = circ_mean(rippleUniPhase);
-        phaseInfo(uni).Ripple.Median = circ_median(rippleUniPhase);
-        phaseInfo(uni).Ripple.R_Length = circ_r(rippleUniPhase);
-        [phaseInfo(uni).Ripple.AngDev, phaseInfo(uni).Ripple.CircStDev] = circ_std(rippleUniPhase);
-        [phaseInfo(uni).Ripple.R_Test(1), phaseInfo(uni).Ripple.R_Test(2)] = circ_rtest(rippleUniPhase);
+        phaseInfo{uni}.Ripple.Mean = circ_mean(rippleUniPhase);
+        phaseInfo{uni}.Ripple.Median = circ_median(rippleUniPhase);
+        phaseInfo{uni}.Ripple.R_Length = circ_r(rippleUniPhase);
+        [phaseInfo{uni}.Ripple.AngDev, phaseInfo{uni}.Ripple.CircStDev] = circ_std(rippleUniPhase);
+        [phaseInfo{uni}.Ripple.R_Test(1), phaseInfo{uni}.Ripple.R_Test(2)] = circ_rtest(rippleUniPhase);
     end
-    unitSummary = struct('UnitName', tetUnitIDs,...
+    unitSummary = struct('UnitName', tetUnitIDs, 'Spike_Features', meanTemplateValues,...
         'TemplateMean', meanTemplates, 'TemplateStDev', stdTemplates,...
         'Mean_SpikeRate', meanSpkRt, 'Spike_Width', spkWdth,...
         'Spike_Phase_Relations', phaseInfo); %#ok<NASGU>
