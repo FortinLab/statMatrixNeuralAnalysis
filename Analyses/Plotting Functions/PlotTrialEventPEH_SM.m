@@ -1,6 +1,15 @@
-function PlotTrialEventPEH_SM(pokeInAlignedBehavMatrix, pokeOutAlignedBehavMatrix, rewardAlignedBehavMatrix, errorAlignedBehavMatrix, eventLog1, event1ID, eventLog2, event2ID, curUniSpikeLog, origBinWindows, pehBinSize, figID)
+function PlotTrialEventPEH_SM(unitID, pokeInAlignedBehavMatrix, pokeOutAlignedBehavMatrix, rewardAlignedBehavMatrix, errorAlignedBehavMatrix, eventLog1, event1ID, eventLog2, event2ID, curUniSpikeLog, origBinWindows, pehBinSize, figID)
 %% PlotTrialEventPEH_SM
-%
+% Future versions should have:
+%   1) Clear description up here instead of a to-do list
+%   2) Code should be condensed down to a single for loop.
+%       - To do this the inputs will need to be changed to be separated
+%           into: 
+%               : BehaviorMatrices
+%               : TrialSelectionVectors (currently referred to as "eventLog1/2")
+%               : Spike Vector 
+%               : Original Event Windows
+%               : Figure ID
 %
 %% 
 if nargin == 11
@@ -8,6 +17,7 @@ if nargin == 11
 else
     figure(figID);
 end
+annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s (%s vs %s)', unitID, event1ID, event2ID), 'linestyle', 'none');
 %% Poke In Aligned Plots
 pokeInAllTrlsPlot = subplot(3,4,1);
 pokeInAllTrls = ExtractTrialData_SM(pokeInAlignedBehavMatrix, curUniSpikeLog);
@@ -129,3 +139,8 @@ linkaxes([pokeInAllTrlsPlot, pokeInLog1TrlsPlot, pokeInLog2TrlsPlot,...
     pokeOutAllTrlsPlot, pokeOutLog1TrlsPlot, pokeOutLog2TrlsPlot,...
     rewardAllTrlsPlot, rewardLog1TrlsPlot, rewardLog2TrlsPlot,...
     errorAllTrlsPlot, errorLog1TrlsPlot, errorLog2TrlsPlot], 'xy');
+
+ylims = get(pokeInAllTrlsPlot, 'ylim');
+if ylims(1)<0
+    set(pokeInAllTrlsPlot, 'ylim', [0 0.25]);
+end
