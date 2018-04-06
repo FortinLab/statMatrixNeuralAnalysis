@@ -14,6 +14,8 @@ elseif iscell(trialTypeLog)
 elseif islogical(trialTypeLog)
     trialTypes = trialTypeLog;
 end
+[ttIDstart, ttIDend] = regexp(trialTypeIDs{1}, '([A-Za-z]*)');
+ttID = trialTypeIDs{1}(ttIDstart:ttIDend);
 
 if isstruct(groupingLogs)
     groupingLogs = cell2mat(struct2cell(groupingLogs));
@@ -46,7 +48,7 @@ for eve = 1:size(behavMatrices,1)
             curEventData(noSpkLog) = [];
             if ~isempty(curEventData)
                 [curEventPEH, newBins] = RebinPEH_SM(curEventData, origBinWindows, pehBinSize);
-                bar(newBins(1:end-1)+0.05, curEventPEH);
+                bar(newBins(1:end-1)+0.05, curEventPEH, 1, 'k');
                 axis tight
             else
                 set(subplotIDs(curTTsubplots(grp)), 'xlim', [0 0.00001], 'ylim', [0 0.000001]);
@@ -58,6 +60,8 @@ for eve = 1:size(behavMatrices,1)
     ylims = get(subplotIDs(end), 'ylim');
     if ylims(1)<0
         set(subplotIDs(end), 'ylim', [0 0.25]);
-    end
+    end    
+    set(gcf, 'PaperOrientation', 'landscape');
+    print('-fillpage', gcf, '-dpdf', sprintf('%s %s by %s (%s vs %s)', unitID, curEventID, ttID, groupingLogIDs{end-1}, groupingLogIDs{end}));
 end
 
