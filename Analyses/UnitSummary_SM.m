@@ -180,6 +180,8 @@ for t = 1:length(tetsWithUnits)
         
         % Figure 15: Something magical?.... there will probably be a 15
         % fig15 = figure;
+        %%
+        close all
     end
 end
 %%
