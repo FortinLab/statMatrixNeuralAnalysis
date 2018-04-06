@@ -1,4 +1,4 @@
-function PlotTrialEventPEH_SM(unitID, pokeInAlignedBehavMatrix, pokeOutAlignedBehavMatrix, rewardAlignedBehavMatrix, errorAlignedBehavMatrix, eventLog1, event1ID, eventLog2, event2ID, curUniSpikeLog, origBinWindows, pehBinSize, figID)
+function PlotTrialEventPEH_SM(unitID, pokeInAlignedBehavMatrix, pokeOutAlignedBehavMatrix, rewardAlignedBehavMatrix, errorAlignedBehavMatrix, eventLog1, event1ID, eventLog2, event2ID, curUniSpikeLog, origBinWindows, pehBinSize, figID, saveYN)
 %% PlotTrialEventPEH_SM
 % Future versions should have:
 %   1) Clear description up here instead of a to-do list
@@ -145,6 +145,7 @@ if ylims(1)<0
     set(pokeInAllTrlsPlot, 'ylim', [0 0.25]);
 end
 
-
-set(figID, 'PaperOrientation', 'landscape');
-print('-fillpage', figID, '-dpdf', sprintf('%s (%s vs %s).pdf', unitID, event1ID, event2ID));
+if saveYN==1
+    set(figID, 'PaperOrientation', 'landscape');
+    print('-fillpage', figID, '-dpdf', sprintf('%s (%s vs %s).pdf', unitID, event1ID, event2ID));
+end

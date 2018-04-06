@@ -1,4 +1,4 @@
-function PlotUnitFeatures_SM(curUnitSummary, curUniSpikeTimes, figID)
+function PlotUnitFeatures_SM(curUnitSummary, curUniSpikeTimes, figID, saveYN)
 %% PlotUnitFeatures
 %   Create a figure that shows the features of the unit
 %
@@ -138,5 +138,7 @@ text(20,0.8, ['\fontsize{8}' sprintf('(p=%.02f)', curUnitSummary.Spike_Phase_Rel
 
 title({'Session Wide','Spike Phase Relationship'})
 
-set(figID, 'PaperOrientation', 'landscape');
-print('-fillpage', figID, '-dpdf', [curUnitSummary.UnitName '_Unit_Feature_Summary.pdf']);
+if saveYN==1
+    set(figID, 'PaperOrientation', 'landscape');
+    print('-fillpage', figID, '-dpdf', [curUnitSummary.UnitName '_Unit_Feature_Summary.pdf']);
+end
