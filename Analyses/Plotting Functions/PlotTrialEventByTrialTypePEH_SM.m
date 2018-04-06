@@ -1,4 +1,4 @@
-function PlotTrialEventByTrialTypePEH_SM(unitID, behavMatrices, behavMatrixIDs, trialTypeLog, trialTypeIDs, groupingLogs, groupingLogIDs, curUniSpikeLog, origBinWindows, pehBinSize)
+function PlotTrialEventByTrialTypePEH_SM(unitID, behavMatrices, behavMatrixIDs, trialTypeLog, trialTypeIDs, groupingLogs, groupingLogIDs, curUniSpikeLog, origBinWindows, pehBinSize, saveYN)
 %% PlotTrialEventByTrialTypePEH_SM
 %   Creates new figures for each trial type
 %   Should be updated to be more flexible and have subplots dynamically
@@ -61,7 +61,9 @@ for eve = 1:size(behavMatrices,1)
     if ylims(1)<0
         set(subplotIDs(end), 'ylim', [0 0.25]);
     end    
-    set(gcf, 'PaperOrientation', 'landscape');
-    print('-fillpage', gcf, '-dpdf', sprintf('%s %s by %s (%s vs %s)', unitID, curEventID, ttID, groupingLogIDs{end-1}, groupingLogIDs{end}));
+    if saveYN==1
+        set(gcf, 'PaperOrientation', 'landscape');
+        print('-fillpage', gcf, '-dpdf', sprintf('%s %s by %s (%s vs %s)', unitID, curEventID, ttID, groupingLogIDs{end-1}, groupingLogIDs{end}));
+    end
 end
 
