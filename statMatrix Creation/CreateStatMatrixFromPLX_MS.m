@@ -17,7 +17,7 @@ spikeFileDirFiles = dir([spikeFileDir '\']);
 spkFiles = {spikeFileDirFiles.name};
 spkFiles = spkFiles(logical(cellfun(@(a)~isempty(a), strfind(spkFiles, '.plx'))));
 
-outputFileName = inputdlg('Name Output File', 'origPlxFile', 1, [origPlxFile(1:end-4) '_MS']);
+outputFileName = inputdlg('Name Output File', 'origPlxFile', 1, {[origPlxFile(1:end-4) '_MS']});
 
 %% Behavioral Data
 [behaviorData] = SummarizePLXabbr_BOS(origPlxFile);
