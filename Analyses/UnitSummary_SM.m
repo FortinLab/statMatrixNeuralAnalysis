@@ -9,7 +9,7 @@ clear all
 
 %% Determine Runtime Variables
 pehBinSize = 0.05;
-eventWindow = [-1 1];
+eventWindow = [-0.5 0.5];
 spectFreqWindow = [1 120];
 %%
 origDir = cd;
@@ -60,15 +60,26 @@ allTrlLog = true(1,length(pokeInAlignedBehavMatrix));
 % Performance vectors
 corrTrlLog = [pokeInAlignedBehavMatrix.Performance]==1;
 inCorrTrlLog = [pokeInAlignedBehavMatrix.Performance]==0;
-perfLogs = [allTrlLog;corrTrlLog;inCorrTrlLog];
-perfLogIDs = [{'All Trials'},{'Correct Trials'},{'Incorrect Trials'}];
 
 % Temporal Context vectors
 inSeqLog = [pokeInAlignedBehavMatrix.TranspositionDistance]==0;
-outSeqLog = [pokeInAlignedBehavMatrix.TranspositionDistance]==1;
+outSeqLog = ~inSeqLog;
+% 
+% %%%%%%% Comment in to revise perfLog Vectors %% GE Experiment
+% pokeDur = [pokeOutAlignedBehavMatrix.PokeDuration];
+% targDurLog = pokeDur>0.85;
+% corrTrlLog = (inSeqLog & targDurLog) | (outSeqLog & ~targDurLog);
+% inCorrTrlLog = (inSeqLog & ~targDurLog) | (outSeqLog & targDurLog);
+% %%%%%%
+
+perfLogs = [allTrlLog;corrTrlLog;inCorrTrlLog];
+perfLogIDs = [{'All Trials'},{'Correct Trials'},{'Incorrect Trials'}];
 tcLogs = [allTrlLog; inSeqLog; outSeqLog];
 tcLogIDs = [{'All Trials'}, {'InSeq Trials'}, {'OutSeq Trials'}];
-
+tcCorrLogs = [allTrlLog&corrTrlLog; inSeqLog&corrTrlLog; outSeqLog&corrTrlLog];
+tcCorrLogIDs = [{'All Correct'}, {'InSeq Correct'}, {'OutSeq Correct'}];
+tcInCorrLogs = [allTrlLog&inCorrTrlLog; inSeqLog&inCorrTrlLog; outSeqLog&inCorrTrlLog];
+tcInCorrLogIDs = [{'All Trials'}, {'InSeq Incorrect'}, {'OutSeq Incorrect'}];
 % Odor vectors
 for op = 1:seqLength
     odorVects.(sprintf('Odor%i', op)) = [pokeInAlignedBehavMatrix.Odor]==op;
@@ -95,7 +106,17 @@ for t = 1:length(tetsWithUnits)
     
     % Temporal Context
     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-        [allTrlLog;inSeqLog;outSeqLog], [{'All Trials'},{'InSeq Trials'},{'OutSeq Trials'}],...
+        tcLogs, tcLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,0);
+    
+    % Temporal Context - Correct
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        tcCorrLogs, tcCorrLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,0);
+    
+    % Temporal Context - Incorrect
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        tcInCorrLogs, tcInCorrLogIDs,...
         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,0);
     
     %% Now do Per Unit Analysis
@@ -120,7 +141,7 @@ for t = 1:length(tetsWithUnits)
         PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
             odorVects, fieldnames(odorVects),...
             perfLogs, perfLogIDs,...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            curUniSpikeLog, eventWindow, pehBinSize,1);
         
         % Performance by Position
         PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...

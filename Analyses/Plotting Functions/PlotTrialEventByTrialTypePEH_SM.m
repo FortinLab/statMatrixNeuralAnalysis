@@ -27,13 +27,14 @@ end
 
 numSubplots = length(trialTypeIDs) * length(groupingLogIDs);
 subplotKey = reshape(1:numSubplots, [length(groupingLogIDs) length(trialTypeIDs)]);
+figIDs = nan(1,size(behavMatrices,1));
 
+subplotIDs = nan(size(behavMatrices,1),numSubplots);
 for eve = 1:size(behavMatrices,1)
     curEvent = behavMatrices(eve,:);
     curEventID = behavMatrixIDs{eve};
-    figure('Name', sprintf('%s %s (%s vs %s)', unitID, curEventID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'NumberTitle', 'off');
+    figIDs(eve) = figure('Name', sprintf('%s %s (%s vs %s)', unitID, curEventID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'NumberTitle', 'off');
     annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s %s (%s vs %s)', unitID, curEventID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'linestyle', 'none');
-    subplotIDs = nan(1,numSubplots);
     for tt = 1:length(trialTypeIDs)
         curTTLog = trialTypes(tt,:);
         curTTid = trialTypeIDs{tt};
@@ -41,29 +42,40 @@ for eve = 1:size(behavMatrices,1)
         for grp = 1:size(groupingLogs,1)
             curGroupLog = groupingLogs(grp,:);
             curGroupID = groupingLogIDs{grp};
-            subplotIDs(curTTsubplots(grp)) = subplot(length(trialTypeIDs),length(groupingLogIDs), curTTsubplots(grp));
+            subplotIDs(eve,curTTsubplots(grp)) = subplot(length(trialTypeIDs),length(groupingLogIDs), curTTsubplots(grp));
                         
             curEventData = ExtractTrialData_SM(curEvent(curTTLog & curGroupLog), curUniSpikeLog);
             noSpkLog = cellfun(@(a)isempty(a), curEventData);
             curEventData(noSpkLog) = [];
+            curEventPEH = cell(length(curEventData),1);
             if ~isempty(curEventData)
-                [curEventPEH, newBins] = RebinPEH_SM(curEventData, origBinWindows, pehBinSize);
-                bar(newBins(1:end-1)+0.05, curEventPEH, 1, 'k');
+                for trl = 1:length(curEventPEH)
+                    [curEventPEH{trl,1}, newBins] = RebinPEH_SM(curEventData{trl}, origBinWindows, pehBinSize);
+                end
+                meanEventPEH = mean(cell2mat(curEventPEH));
+                semEventPEH = std(cell2mat(curEventPEH))./sqrt(length(curEventPEH)-1);
+                BarPlotErrorbars(meanEventPEH, semEventPEH, 'Color', 'Black', 'XTick', newBins(1:end-1)+0.05);
                 axis tight
             else
-                set(subplotIDs(curTTsubplots(grp)), 'xlim', [0 0.00001], 'ylim', [0 0.000001]);
+                set(subplotIDs(eve,curTTsubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
             end
             title(sprintf('%s %s: %s', curTTid, curEventID, curGroupID));
         end
     end
-    linkaxes(subplotIDs, 'xy');
-    ylims = get(subplotIDs(end), 'ylim');
+    linkaxes(subplotIDs(eve,:), 'xy');
+    ylims = get(subplotIDs(eve,end), 'ylim');
     if ylims(1)<0
-        set(subplotIDs(end), 'ylim', [0 0.25]);
+        set(subplotIDs(eve,end), 'ylim', [0 ylims(2)]);
     end    
-    if saveYN==1
-        set(gcf, 'PaperOrientation', 'landscape');
-        print('-fillpage', gcf, '-dpdf', sprintf('%s %s by %s (%s vs %s)', unitID, curEventID, ttID, groupingLogIDs{end-1}, groupingLogIDs{end}));
+end
+linkaxes(subplotIDs, 'xy');
+
+if saveYN==1
+    for fig = 1:length(figIDs)
+        set(figIDs(fig), 'PaperOrientation', 'landscape');
+        print('-fillpage', figIDs(fig), '-dpdf', sprintf('%s %s %s: (%s vs %s).pdf', unitID, behavMatrixIDs{fig}, ttID, groupingLogIDs{end-1}, groupingLogIDs{end}));
     end
 end
+
+
 
