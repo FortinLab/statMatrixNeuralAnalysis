@@ -73,7 +73,7 @@ linkaxes(subplotIDs, 'xy');
 if saveYN==1
     for fig = 1:length(figIDs)
         set(figIDs(fig), 'PaperOrientation', 'landscape');
-        print('-fillpage', figIDs(fig), '-dpdf', sprintf('%s %s %s: (%s vs %s).pdf', unitID, behavMatrixIDs{fig}, ttID, groupingLogIDs{end-1}, groupingLogIDs{end}));
+        print('-fillpage', figIDs(fig), '-dpdf', sprintf('%s %s by %s (%s vs %s)', unitID, behavMatrixIDs{fig}, ttID, groupingLogIDs{end-1}, groupingLogIDs{end}));
     end
 end
 
