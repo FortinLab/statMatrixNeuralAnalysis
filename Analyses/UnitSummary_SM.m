@@ -8,9 +8,10 @@ close all
 clear all
 
 %% Determine Runtime Variables
-pehBinSize = 0.05;
-eventWindow = [-1 1];
+pehBinSize = 0.125;
+eventWindow = [-0.5 0.5];
 spectFreqWindow = [1 120];
+printYN = 1;
 %%
 origDir = cd;
 [fileDir] = uigetdir(origDir);
@@ -43,12 +44,15 @@ tetsWithUnits = unique(cellfun(@(a,b,c)a(b:c), unitNames, tetStart, tetEnd, 'uni
 
 %% Create Behavior Matrices
 pokeInAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeIn');
-
 pokeOutAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeOut');
-
 rewardAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'FrontReward');
-
 errorAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'ErrorSignal');
+
+behEventData = [pokeInAlignedBehavMatrix;...
+    pokeOutAlignedBehavMatrix;...
+    rewardAlignedBehavMatrix;...
+    errorAlignedBehavMatrix];
+behEventDataIDs = [{'Poke In'}, {'Poke Out'}, {'Reward'}, {'Error'}];
 
 %% Create Trial Based Logical Vectors
 seqLength = pokeInAlignedBehavMatrix(1).SeqLength;
@@ -60,8 +64,23 @@ inCorrTrlLog = [pokeInAlignedBehavMatrix.Performance]==0;
 
 % Temporal Context vectors
 inSeqLog = [pokeInAlignedBehavMatrix.TranspositionDistance]==0;
-outSeqLog = [pokeInAlignedBehavMatrix.TranspositionDistance]==1;
+outSeqLog = ~inSeqLog;
+% 
+% %%%%%%% Comment in to revise perfLog Vectors %% GE Experiment
+% pokeDur = [pokeOutAlignedBehavMatrix.PokeDuration];
+% targDurLog = pokeDur>0.85;
+% corrTrlLog = (inSeqLog & targDurLog) | (outSeqLog & ~targDurLog);
+% inCorrTrlLog = (inSeqLog & ~targDurLog) | (outSeqLog & targDurLog);
+% %%%%%%
 
+perfLogs = [allTrlLog;corrTrlLog;inCorrTrlLog];
+perfLogIDs = [{'All Trials'},{'Correct'},{'Incorrect'}];
+tcLogs = [allTrlLog; inSeqLog; outSeqLog];
+tcLogIDs = [{'All Trials'}, {'InSeq'}, {'OutSeq'}];
+tcCorrLogs = [allTrlLog&corrTrlLog; inSeqLog&corrTrlLog; outSeqLog&corrTrlLog];
+tcCorrLogIDs = [{'All Trials'}, {'InSeq Correct'}, {'OutSeq Correct'}];
+tcInCorrLogs = [allTrlLog&inCorrTrlLog; inSeqLog&inCorrTrlLog; outSeqLog&inCorrTrlLog];
+tcInCorrLogIDs = [{'All Trials'}, {'InSeq Incorrect'}, {'OutSeq Incorrect'}];
 % Odor vectors
 for op = 1:seqLength
     odorVects.(sprintf('Odor%i', op)) = [pokeInAlignedBehavMatrix.Odor]==op;
@@ -82,70 +101,72 @@ for t = 1:length(tetsWithUnits)
     
     %% Plot Per-Tetrode Spectrograms
     % Performance
-    PlotTrialEventSpect_SM(curTet, [pokeInAlignedBehavMatrix; pokeOutAlignedBehavMatrix; rewardAlignedBehavMatrix; errorAlignedBehavMatrix],...
-        [{'Poke In'}, {'Poke Out'}, {'Reward'}, {'Error'}],...
-        [allTrlLog; corrTrlLog; inCorrTrlLog], [{'All Trials'}, {'Correct Trials'}, {'Incorrect Trials'}],...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,0); %#ok<NODEF>
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        perfLogs, perfLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,printYN); %#ok<NODEF>
     
     % Temporal Context
-    PlotTrialEventSpect_SM(curTet, [pokeInAlignedBehavMatrix; pokeOutAlignedBehavMatrix; rewardAlignedBehavMatrix; errorAlignedBehavMatrix],...
-        [{'Poke In'}, {'Poke Out'}, {'Reward'}, {'Error'}],...
-        [allTrlLog;inSeqLog;outSeqLog], [{'All Trials'},{'InSeq Trials'},{'OutSeq Trials'}],...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,0);
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        tcLogs, tcLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+    
+    % Temporal Context - Correct
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        tcCorrLogs, tcCorrLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+    
+    % Temporal Context - Incorrect
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        tcInCorrLogs, tcInCorrLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
     
     %% Now do Per Unit Analysis
     for uni = 1:length(curUnis)
         curUnit = curUnis{uni};
         curUnitSummary = unitSummary(strcmp(curUnit, unitSummaryUnis));
         curUniSpikeLog = statMatrix(:,strcmp(curUnit,statMatrixColIDs))>0;
-        curUniSpikeTimes = statMatrix(curUniSpikeLog ,1);
+        curUniSpikeTimes = statMatrix(curUniSpikeLog,1);
         
         %% Overall Summary Figures
         % Figure 1: Overall Unit Summary
         fig1 = figure('Name', [curUnit ' Summary'], 'NumberTitle', 'off');
-        PlotUnitFeatures_SM(curUnitSummary, curUniSpikeTimes, fig1,0)
+        PlotUnitFeatures_SM(curUnitSummary, curUniSpikeTimes, fig1, printYN);
         
         %% Performance PEHs
         % Overall
-        pehOvrlPerf = figure('Name', [curUnit ' Trial Event by Performance'], 'NumberTitle', 'off');
-        PlotTrialEventPEH_SM(curUnit, pokeInAlignedBehavMatrix, pokeOutAlignedBehavMatrix, rewardAlignedBehavMatrix, errorAlignedBehavMatrix,...
-            corrTrlLog, 'Correct Trials', inCorrTrlLog, 'Incorrect Trials',...
-            curUniSpikeLog, eventWindow, pehBinSize, pehOvrlPerf,0);
+        PlotTrialEventPEH_SM(curUnit, behEventData, behEventDataIDs,...
+            perfLogs, perfLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % Performance by Odor
-        PlotTrialEventByTrialTypePEH_SM(curUnit, [pokeInAlignedBehavMatrix; pokeOutAlignedBehavMatrix; rewardAlignedBehavMatrix; errorAlignedBehavMatrix],...
-            [{'Poke In'}, {'Poke Out'}, {'Reward'}, {'Error'}],...
+        PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
             odorVects, fieldnames(odorVects),...
-            [allTrlLog;corrTrlLog;inCorrTrlLog], [{'All Trials'},{'Correct Trials'},{'Incorrect Trials'}],...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            perfLogs, perfLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % Performance by Position
-        PlotTrialEventByTrialTypePEH_SM(curUnit, [pokeInAlignedBehavMatrix; pokeOutAlignedBehavMatrix; rewardAlignedBehavMatrix; errorAlignedBehavMatrix],...
-            [{'Poke In'}, {'Poke Out'}, {'Reward'}, {'Error'}],...
+        PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
             positionVects, fieldnames(positionVects),...
-            [true(1,size(inSeqLog,2));corrTrlLog;inCorrTrlLog], [{'All Trials'},{'Correct Trials'},{'Incorrect Trials'}],...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            perfLogs, perfLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
                 
         %% Temporal Context PEH
         % Overall
-        pehOvrlTC = figure('Name', [curUnit ' Trial Event by Temporal Context'], 'NumberTitle', 'off');
-        PlotTrialEventPEH_SM(curUnit, pokeInAlignedBehavMatrix, pokeOutAlignedBehavMatrix, rewardAlignedBehavMatrix, errorAlignedBehavMatrix,...
-            inSeqLog, 'InSeq Trials', outSeqLog, 'OutSeq Trials',...
-            curUniSpikeLog, eventWindow, pehBinSize, pehOvrlTC,0);
+        PlotTrialEventPEH_SM(curUnit,  behEventData, behEventDataIDs,...
+            tcLogs, tcLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % Temporal Context by Odor
-        PlotTrialEventByTrialTypePEH_SM(curUnit, [pokeInAlignedBehavMatrix; pokeOutAlignedBehavMatrix; rewardAlignedBehavMatrix; errorAlignedBehavMatrix],...
-            [{'Poke In'}, {'Poke Out'}, {'Reward'}, {'Error'}],...
+        PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
             odorVects, fieldnames(odorVects),...
-            [allTrlLog;inSeqLog;outSeqLog], [{'All Trials'},{'InSeq Trials'},{'OutSeq Trials'}],...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            tcLogs, tcLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % Temporal Context by Position
-        PlotTrialEventByTrialTypePEH_SM(curUnit, [pokeInAlignedBehavMatrix; pokeOutAlignedBehavMatrix; rewardAlignedBehavMatrix; errorAlignedBehavMatrix],...
-            [{'Poke In'}, {'Poke Out'}, {'Reward'}, {'Error'}],...
+        PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
             positionVects, fieldnames(positionVects),...
-            [allTrlLog;inSeqLog;outSeqLog], [{'All Trials'},{'InSeq Trials'},{'OutSeq Trials'}],...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            tcLogs, tcLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         %% Spike-Phase Relations
         % To be fleshed out between GE and JDL
@@ -159,7 +180,7 @@ for t = 1:length(tetsWithUnits)
         %%
         
         %%
-        close all
+%         close all
     end
 end
 %%

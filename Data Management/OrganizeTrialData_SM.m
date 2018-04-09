@@ -53,6 +53,7 @@ trialTransDist = cell(1,numTrials);
 trialItmItmDist = cell(1,numTrials);
 trialLogVect = cell(1,numTrials);
 trialNum = cell(1,numTrials);
+pokeDuration = cell(1,numTrials);
 seq = 0;
 %% Go through each trial and pull out trial information and create a logical vector for that trial's time periods specified by the input trialLims
 for trl = 1:numTrials
@@ -76,16 +77,19 @@ for trl = 1:numTrials
     
     % Create trial logical vector
     tempLogVect = false(size(behavMatrix,1),1);
+    curPokeIn = pokeInNdxs(find(pokeInNdxs<trialIndices(trl)==1,1, 'last'));
+    curPokeOut = pokeOutNdxs(find(pokeOutNdxs>trialIndices(trl)==1,1, 'first'));
+    pokeDuration{trl} = (curPokeOut-curPokeIn)/sampleRate;
     switch trialStart
         case 'Odor'
             curIndex = trialIndices(trl);
         case 'PokeIn'
-            curIndex = pokeInNdxs(find(pokeInNdxs<trialIndices(trl)==1,1, 'last'));
+            curIndex = curPokeIn;
         case 'PokeOut'
-            curIndex = pokeOutNdxs(find(pokeOutNdxs>trialIndices(trl)==1,1, 'first'));
+            curIndex = curPokeOut;
         case 'FrontReward'
             curIndex = frontRwrdNdxs(find(frontRwrdNdxs>trialIndices(trl)==1,1, 'first'));
-            if trl==numTrials || curIndex<trialIndices(trl+1)
+            if trl==numTrials || isempty(curIndex) || curIndex<trialIndices(trl+1)
             else
                 curIndex = nan;
             end
@@ -111,7 +115,7 @@ end
 
 %% Create behavMatrixTrialStruct
 behavMatrixTrialStruct = struct( 'TrialNum', trialNum, 'SequenceNum', seqNum,...
-    'Odor', trialOdor, 'Position', trialPosition, 'Performance', trialPerf,...
+    'Odor', trialOdor, 'Position', trialPosition, 'PokeDuration', pokeDuration, 'Performance', trialPerf,...
     'TranspositionDistance', trialTransDist, 'ItemItemDistance', trialItmItmDist,...
     'TrialLogVect', trialLogVect);
 behavMatrixTrialStruct(1).SeqLength = seqLength;
