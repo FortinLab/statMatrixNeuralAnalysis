@@ -47,9 +47,9 @@ for eve = 1:length(behavMatrixIDs)
             for trl = 1:length(curEventPEH)
                 [curEventPEH{trl,1}, newBins] = RebinPEH_SM(curEventData{trl}, origBinWindows, pehBinSize);
             end
-            meanEventPEH = mean(cell2mat(curEventPEH));   
-            semEventPEH = std(cell2mat(curEventPEH))./sqrt(length(curEventPEH)-1);
-            BarPlotErrorbars(meanEventPEH,semEventPEH, 'Color', 'Black', 'XTick', newBins(1:end-1)+0.05);
+            meanEventPEH = mean(cell2mat(curEventPEH),1);   
+            semEventPEH = std(cell2mat(curEventPEH),0,1)./sqrt(length(curEventPEH)-1);
+            BarPlotErrorbars(meanEventPEH,semEventPEH, 'Color', 'Black', 'XTick', newBins(1:end-1)+(mode(diff(newBins))/2));
             axis tight
         else
             set(subplotIDs(curEveSubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
@@ -62,6 +62,6 @@ end
 linkaxes(subplotIDs, 'xy');
 
 if saveYN==1
-    set(figID, 'PaperOrientation', 'landscape');
-    print('-fillpage', figID, '-dpdf', sprintf('%s (%s vs %s).pdf', unitID, event1ID, event2ID));
+    set(gcf, 'PaperOrientation', 'landscape');
+    print('-fillpage', gcf, '-dpdf', sprintf('%s (%s vs %s).pdf', unitID, groupingLogIDs{end-1}, groupingLogIDs{end}));
 end

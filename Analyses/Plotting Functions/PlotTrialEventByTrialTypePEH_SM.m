@@ -52,9 +52,9 @@ for eve = 1:size(behavMatrices,1)
                 for trl = 1:length(curEventPEH)
                     [curEventPEH{trl,1}, newBins] = RebinPEH_SM(curEventData{trl}, origBinWindows, pehBinSize);
                 end
-                meanEventPEH = mean(cell2mat(curEventPEH));
-                semEventPEH = std(cell2mat(curEventPEH))./sqrt(length(curEventPEH)-1);
-                BarPlotErrorbars(meanEventPEH, semEventPEH, 'Color', 'Black', 'XTick', newBins(1:end-1)+0.05);
+                meanEventPEH = mean(cell2mat(curEventPEH),1);
+                semEventPEH = std(cell2mat(curEventPEH),0,1)./sqrt(length(curEventPEH)-1);
+                BarPlotErrorbars(meanEventPEH, semEventPEH, 'Color', 'Black', 'XTick', newBins(1:end-1)+(mode(diff(newBins))/2));
                 axis tight
             else
                 set(subplotIDs(eve,curTTsubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
