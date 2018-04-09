@@ -1,4 +1,4 @@
-function PlotTrialEventByTrialTypePEH_SM(unitID, behavMatrices, behavMatrixIDs, trialTypeLog, trialTypeIDs, groupingLogs, groupingLogIDs, curUniSpikeLog, origBinWindows, pehBinSize, saveYN)
+function [subplotData] = PlotTrialEventByTrialTypePEH_SM(unitID, behavMatrices, behavMatrixIDs, trialTypeLog, trialTypeIDs, groupingLogs, groupingLogIDs, curUniSpikeLog, origBinWindows, pehBinSize, saveYN)
 %% PlotTrialEventByTrialTypePEH_SM
 %   Creates new figures for each trial type
 %   Should be updated to be more flexible and have subplots dynamically
@@ -30,6 +30,7 @@ subplotKey = reshape(1:numSubplots, [length(groupingLogIDs) length(trialTypeIDs)
 figIDs = nan(1,size(behavMatrices,1));
 
 subplotIDs = nan(size(behavMatrices,1),numSubplots);
+subplotData = [];
 for eve = 1:size(behavMatrices,1)
     curEvent = behavMatrices(eve,:);
     curEventID = behavMatrixIDs{eve};
@@ -60,6 +61,7 @@ for eve = 1:size(behavMatrices,1)
                 set(subplotIDs(eve,curTTsubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
             end
             title(sprintf('%s %s: %s', curTTid, curEventID, curGroupID));
+            subplotData.(curTTid).(curEventID).(curGroupID) = curEventData;
         end
     end
     linkaxes(subplotIDs(eve,:), 'xy');

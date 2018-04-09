@@ -1,4 +1,4 @@
-function PlotTrialEventPEH_SM(unitID, behavMatrices, behavMatrixIDs, groupingLogs, groupingLogIDs, curUniSpikeLog, origBinWindows, pehBinSize, saveYN)
+function [subplotData] = PlotTrialEventPEH_SM(unitID, behavMatrices, behavMatrixIDs, groupingLogs, groupingLogIDs, curUniSpikeLog, origBinWindows, pehBinSize, saveYN)
 %% PlotTrialEventPEH_SM
 % Future versions should have:
 %   1) Clear description up here instead of a to-do list
@@ -30,6 +30,7 @@ subplotKey = reshape(1:numSubplots, [length(behavMatrixIDs) length(groupingLogID
 
 %% Poke In Aligned Plots
 subplotIDs = nan(1,numSubplots);
+subplotData = [];
 for eve = 1:length(behavMatrixIDs)
     curEvent = behavMatrices(eve,:);
     curEventID = behavMatrixIDs{eve};
@@ -54,6 +55,7 @@ for eve = 1:length(behavMatrixIDs)
         else
             set(subplotIDs(curEveSubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
         end
+        subplotData.(curEventID).(curGroupID) = [{newBins(1:end-1)+(mode(diff(newBins))/2)}; curEventPEH];
         title(sprintf('%s: %s', curEventID, curGroupID));
         drawnow
     end
