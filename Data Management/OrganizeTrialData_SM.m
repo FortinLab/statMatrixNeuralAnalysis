@@ -89,7 +89,7 @@ for trl = 1:numTrials
             curIndex = curPokeOut;
         case 'FrontReward'
             curIndex = frontRwrdNdxs(find(frontRwrdNdxs>trialIndices(trl)==1,1, 'first'));
-            if trl==numTrials || curIndex<trialIndices(trl+1)
+            if trl==numTrials || isempty(curIndex) || curIndex<trialIndices(trl+1)
             else
                 curIndex = nan;
             end
