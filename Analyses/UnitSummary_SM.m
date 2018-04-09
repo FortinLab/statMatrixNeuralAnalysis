@@ -8,9 +8,10 @@ close all
 clear all
 
 %% Determine Runtime Variables
-pehBinSize = 0.05;
+pehBinSize = 0.125;
 eventWindow = [-0.5 0.5];
 spectFreqWindow = [1 120];
+printYN = 1;
 %%
 origDir = cd;
 [fileDir] = uigetdir(origDir);
@@ -73,11 +74,11 @@ outSeqLog = ~inSeqLog;
 % %%%%%%
 
 perfLogs = [allTrlLog;corrTrlLog;inCorrTrlLog];
-perfLogIDs = [{'All Trials'},{'Correct Trials'},{'Incorrect Trials'}];
+perfLogIDs = [{'All Trials'},{'Correct'},{'Incorrect'}];
 tcLogs = [allTrlLog; inSeqLog; outSeqLog];
-tcLogIDs = [{'All Trials'}, {'InSeq Trials'}, {'OutSeq Trials'}];
+tcLogIDs = [{'All Trials'}, {'InSeq'}, {'OutSeq'}];
 tcCorrLogs = [allTrlLog&corrTrlLog; inSeqLog&corrTrlLog; outSeqLog&corrTrlLog];
-tcCorrLogIDs = [{'All Correct'}, {'InSeq Correct'}, {'OutSeq Correct'}];
+tcCorrLogIDs = [{'All Trials'}, {'InSeq Correct'}, {'OutSeq Correct'}];
 tcInCorrLogs = [allTrlLog&inCorrTrlLog; inSeqLog&inCorrTrlLog; outSeqLog&inCorrTrlLog];
 tcInCorrLogIDs = [{'All Trials'}, {'InSeq Incorrect'}, {'OutSeq Incorrect'}];
 % Odor vectors
@@ -102,70 +103,70 @@ for t = 1:length(tetsWithUnits)
     % Performance
     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
         perfLogs, perfLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,0); %#ok<NODEF>
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,printYN); %#ok<NODEF>
     
     % Temporal Context
     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
         tcLogs, tcLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,0);
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
     
     % Temporal Context - Correct
     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
         tcCorrLogs, tcCorrLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,0);
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
     
     % Temporal Context - Incorrect
     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
         tcInCorrLogs, tcInCorrLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,0);
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
     
     %% Now do Per Unit Analysis
     for uni = 1:length(curUnis)
         curUnit = curUnis{uni};
         curUnitSummary = unitSummary(strcmp(curUnit, unitSummaryUnis));
         curUniSpikeLog = statMatrix(:,strcmp(curUnit,statMatrixColIDs))>0;
-        curUniSpikeTimes = statMatrix(curUniSpikeLog ,1);
+        curUniSpikeTimes = statMatrix(curUniSpikeLog,1);
         
         %% Overall Summary Figures
         % Figure 1: Overall Unit Summary
         fig1 = figure('Name', [curUnit ' Summary'], 'NumberTitle', 'off');
-        PlotUnitFeatures_SM(curUnitSummary, curUniSpikeTimes, fig1,0)
+        PlotUnitFeatures_SM(curUnitSummary, curUniSpikeTimes, fig1, printYN);
         
         %% Performance PEHs
         % Overall
         PlotTrialEventPEH_SM(curUnit, behEventData, behEventDataIDs,...
             perfLogs, perfLogIDs,...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % Performance by Odor
         PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
             odorVects, fieldnames(odorVects),...
             perfLogs, perfLogIDs,...
-            curUniSpikeLog, eventWindow, pehBinSize,1);
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % Performance by Position
         PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
             positionVects, fieldnames(positionVects),...
             perfLogs, perfLogIDs,...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
                 
         %% Temporal Context PEH
         % Overall
         PlotTrialEventPEH_SM(curUnit,  behEventData, behEventDataIDs,...
             tcLogs, tcLogIDs,...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % Temporal Context by Odor
         PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
             odorVects, fieldnames(odorVects),...
             tcLogs, tcLogIDs,...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % Temporal Context by Position
         PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
             positionVects, fieldnames(positionVects),...
             tcLogs, tcLogIDs,...
-            curUniSpikeLog, eventWindow, pehBinSize,0);
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         %% Spike-Phase Relations
         % To be fleshed out between GE and JDL
@@ -179,7 +180,7 @@ for t = 1:length(tetsWithUnits)
         %%
         
         %%
-        close all
+%         close all
     end
 end
 %%
