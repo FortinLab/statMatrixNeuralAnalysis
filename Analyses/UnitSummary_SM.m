@@ -74,13 +74,13 @@ outSeqLog = ~inSeqLog;
 % %%%%%%
 
 perfLogs = [allTrlLog;corrTrlLog;inCorrTrlLog];
-perfLogIDs = [{'All_Trials'},{'Correct'},{'Incorrect'}];
+perfLogIDs = [{'All'},{'Correct'},{'Incorrect'}];
 tcLogs = [allTrlLog; inSeqLog; outSeqLog];
-tcLogIDs = [{'All_Trials'}, {'InSeq'}, {'OutSeq'}];
+tcLogIDs = [{'All'}, {'InSeq'}, {'OutSeq'}];
 tcCorrLogs = [allTrlLog&corrTrlLog; inSeqLog&corrTrlLog; outSeqLog&corrTrlLog];
-tcCorrLogIDs = [{'All_Trials'}, {'InSeq_Correct'}, {'OutSeq_Correct'}];
+tcCorrLogIDs = [{'All'}, {'InSeq_Correct'}, {'OutSeq_Correct'}];
 tcInCorrLogs = [allTrlLog&inCorrTrlLog; inSeqLog&inCorrTrlLog; outSeqLog&inCorrTrlLog];
-tcInCorrLogIDs = [{'All_Trials'}, {'InSeq_Incorrect'}, {'OutSeq_Incorrect'}];
+tcInCorrLogIDs = [{'All'}, {'InSeq_Incorrect'}, {'OutSeq_Incorrect'}];
 % Odor vectors
 for op = 1:seqLength
     odorVects.(sprintf('Odor%i', op)) = [pokeInAlignedBehavMatrix.Odor]==op;

@@ -56,7 +56,7 @@ for eve = 1:length(behavMatrixIDs)
             set(subplotIDs(curEveSubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
         end
         subplotData.(curEventID).(curGroupID) = [{newBins(1:end-1)+(mode(diff(newBins))/2)}; curEventPEH];
-        title(sprintf('%s: %s', curEventID, curGroupID));
+        title(sprintf('%s: %s Trials', curEventID, curGroupID));
         drawnow
     end
 end
