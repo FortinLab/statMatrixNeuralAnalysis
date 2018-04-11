@@ -9,7 +9,7 @@ clear all
 
 %% Determine Runtime Variables
 pehBinSize = 0.125;
-eventWindow = [-0.5 0.5];
+eventWindow = [-1 1];
 spectFreqWindow = [1 120];
 printYN = 1;
 %%
@@ -46,13 +46,18 @@ tetsWithUnits = unique(cellfun(@(a,b,c)a(b:c), unitNames, tetStart, tetEnd, 'uni
 pokeInAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeIn');
 pokeOutAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeOut');
 rewardAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'FrontReward');
-errorAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'ErrorSignal');
+% errorAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'ErrorSignal');
+
+% behEventData = [pokeInAlignedBehavMatrix;...
+%     pokeOutAlignedBehavMatrix;...
+%     rewardAlignedBehavMatrix;...
+%     errorAlignedBehavMatrix];
+% behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}, {'Error'}];
 
 behEventData = [pokeInAlignedBehavMatrix;...
     pokeOutAlignedBehavMatrix;...
-    rewardAlignedBehavMatrix;...
-    errorAlignedBehavMatrix];
-behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}, {'Error'}];
+    rewardAlignedBehavMatrix];
+behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}];
 
 %% Create Trial Based Logical Vectors
 seqLength = pokeInAlignedBehavMatrix(1).SeqLength;
@@ -87,6 +92,9 @@ for op = 1:seqLength
     positionVects.(sprintf('Position%i', op)) = [pokeInAlignedBehavMatrix.Position]==op;
 end
 
+%% Create Output Variables
+statDiffPerTetPERF = cell(length(tetsWithUnits),1);
+statDiffPerTetTC = cell(length(tetsWithUnits),1);
 %% Unit Summary Overall
 % Plot stuff here
 for t = 1:length(tetsWithUnits)
@@ -98,6 +106,7 @@ for t = 1:length(tetsWithUnits)
     
     curUnis = statMatrixColIDs(cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '-U([0-9]*)')));
     unitSummaryUnis = {unitSummary.UnitName};
+    clear curTetStatDiffPERF curTetStatDiffTC 
     
     %% Plot Per-Tetrode Spectrograms
     % Performance
@@ -151,7 +160,7 @@ for t = 1:length(tetsWithUnits)
             curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % F-Ratio Analysis Odor vs Position
-        FratioAnalysis_SM(curUnit, perfByOdor, perfByPosition);
+        curTetStatDiffPERF(uni) = FratioAnalysis_SM(curUnit, perfByOdor, perfByPosition); %#ok<AGROW>
                 
         %% Temporal Context PEH
         % Overall
@@ -171,6 +180,8 @@ for t = 1:length(tetsWithUnits)
             tcLogs, tcLogIDs,...
             curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
+        % F-Ratio Analysis Odor vs Position
+        curTetStatDiffTC(uni) = FratioAnalysis_SM(curUnit, tcByOdor, tcByPosition); %#ok<AGROW>
         %% Spike-Phase Relations
         % To be fleshed out between GE and JDL
         
@@ -183,7 +194,9 @@ for t = 1:length(tetsWithUnits)
         %%
         
         %%
-%         close all
+        close all
     end
+    statDiffPerTetPERF{t} = curTetStatDiffPERF;
+    statDiffPerTetTC{t} = curTetStatDiffTC;
 end
 %%
