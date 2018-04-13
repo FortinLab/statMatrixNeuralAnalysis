@@ -6,8 +6,8 @@ function TransInAnalysis_SM
 close all
 clear all
 %%
-pehBinSize = 0.25;
-eventWindow = [-1 1];
+pehBinSize = 0.125;
+eventWindow = [-0.8 0.5];
 %%
 origDir = cd;
 [fileDir] = uigetdir(origDir);
@@ -51,11 +51,14 @@ firstPosLog = [pokeInAlignedBehavMatrix.Position]==1;
 
 
 goodTrials = find(trialPerfLog&~firstPosLog);
+% goodTrials = find(trialPerfLog);
 odorIDs = [pokeInAlignedBehavMatrix(goodTrials).Odor];
 posIDs = [pokeInAlignedBehavMatrix(goodTrials).Position];
 
 %%
 fRatDiff = cell(length(ensembleMatrixColIDs)-1,1); %#ok<USENS>
+fPosVal = cell(length(ensembleMatrixColIDs)-1,1);
+fOdrVal = cell(length(ensembleMatrixColIDs)-1,1);
 for u = 2:length(ensembleMatrixColIDs) 
     curUni = ensembleMatrixColIDs{u};
     curUniSpkData = ensembleMatrix(:,u); %#ok<NODEF>
@@ -92,13 +95,37 @@ for u = 2:length(ensembleMatrixColIDs)
         end
     end
     fRatDiff{u-1} = positionF-odorF;
+    fPosVal{u-1} = positionF;
+    fOdrVal{u-1} = odorF;
 end
 
 fRatDiffMtx = cell2mat(fRatDiff);
+fPosValMtx = cell2mat(fPosVal);fOdrValMtx = cell2mat(fOdrVal);
+
 transInMean = nanmean(fRatDiffMtx);
+transInPosMean = nanmean(fPosValMtx);
+transInOdrMean = nanmean(fOdrValMtx);
+
 transInSEM = nanstd(fRatDiffMtx,0,1)./(sum(~isnan(fRatDiffMtx))-1);
+transInPosSEM = nanstd(fPosValMtx,0,1)./(sum(~isnan(fPosValMtx))-1);
+transInOdrSEM = nanstd(fOdrValMtx,0,1)./(sum(~isnan(fOdrValMtx))-1);
+
+
 xTicks = (eventWindow(1):pehBinSize:(eventWindow(2)-pehBinSize))+(pehBinSize/2);
 
 figure
 PlotLineAndFilledError(xTicks, transInMean, transInSEM, 'blue');
+
+figure
+pos = PlotLineAndFilledError(xTicks, transInPosMean, transInPosSEM, 'red');
+hold on;
+odr = PlotLineAndFilledError(xTicks, transInOdrMean, transInOdrSEM, 'blue');
+line([0 0], get(gca, 'ylim'), 'color', 'black', 'linestyle',':', 'linewidth', 1.5);
+legend([pos odr], 'Position', 'Odor');
+axis tight
+title('Poke In Aligned F-Ratios');
+xlabel('Time Relative to Poke Initiation');
+ylabel('F-Ratio');
+
+
 
