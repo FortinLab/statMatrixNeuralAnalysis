@@ -101,7 +101,7 @@ for trl = 1:numTrials
             end
         case 'ErrorSignal'
             curIndex = errorSigNdxs(find(errorSigNdxs>trialIndices(trl)==1,1,'first'));
-            if trl==numTrials || curIndex<trialIndices(trl+1)
+            if isempty(curIndex) || trl==numTrials || curIndex<trialIndices(trl+1)
             else
                 curIndex = nan;
             end
