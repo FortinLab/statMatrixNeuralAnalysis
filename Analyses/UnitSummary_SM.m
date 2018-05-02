@@ -46,18 +46,18 @@ tetsWithUnits = unique(cellfun(@(a,b,c)a(b:c), unitNames, tetStart, tetEnd, 'uni
 pokeInAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeIn');
 pokeOutAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeOut');
 rewardAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'FrontReward');
-% errorAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'ErrorSignal');
-
-% behEventData = [pokeInAlignedBehavMatrix;...
-%     pokeOutAlignedBehavMatrix;...
-%     rewardAlignedBehavMatrix;...
-%     errorAlignedBehavMatrix];
-% behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}, {'Error'}];
+errorAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'ErrorSignal');
 
 behEventData = [pokeInAlignedBehavMatrix;...
     pokeOutAlignedBehavMatrix;...
-    rewardAlignedBehavMatrix];
-behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}];
+    rewardAlignedBehavMatrix;...
+    errorAlignedBehavMatrix];
+behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}, {'Error'}];
+
+% behEventData = [pokeInAlignedBehavMatrix;...
+%     pokeOutAlignedBehavMatrix;...
+%     rewardAlignedBehavMatrix];
+% behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}];
 
 %% Create Trial Based Logical Vectors
 seqLength = pokeInAlignedBehavMatrix(1).SeqLength;
