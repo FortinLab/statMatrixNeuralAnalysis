@@ -27,13 +27,13 @@ load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))});
 load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'EnsembleMatrix'))});
 
 %% Select Units
-spr = [ensembleUnitSummaries.Spike_Phase_Relations];
-rip = [spr.Ripple];
-ripR = [rip.R_Length];
-uniLog = ripR>0.25;
+% spr = [ensembleUnitSummaries.Spike_Phase_Relations];
+% rip = [spr.Ripple];
+% ripR = [rip.R_Length];
+% uniLog = ripR>0.25;
 
 curUniMtx = ensembleMatrix(:,2:end);
-curUniMtx = curUniMtx(:,uniLog);
+% curUniMtx = curUniMtx(:,uniLog);
 %% Calculate Event F-Ratios
 figure;
 % Poke In
