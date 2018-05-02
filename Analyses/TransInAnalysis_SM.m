@@ -47,15 +47,15 @@ odorIDs = outSeqCorrOdor;
 posIDs = transInTrlsPos;
 
 %%
-pokeInAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeIn');
+pokeInAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'Odor');
 % pokeInAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeOut');
 
-trialPerfLog = [pokeInAlignedBehavMatrix.Performance]==1;
+trialPerfLog = [pokeInAlignedBehavMatrix.Performance]==0;
 firstPosLog = [pokeInAlignedBehavMatrix.Position]==1;
 
 
 goodTrials = find(trialPerfLog&~firstPosLog);
-odorIDs = [pokeInAlignedBehavMatrix(goodTrials).Odor];
+odorIDs = [pokeInAlignedBehavMatrix(goodTrials-1).Odor];
 posIDs = [pokeInAlignedBehavMatrix(goodTrials).Position];
 
 %%
@@ -63,11 +63,15 @@ fRatDiff = cell(length(ensembleMatrixColIDs)-1,1); %#ok<USENS>
 fPosVal = cell(length(ensembleMatrixColIDs)-1,1);
 fOdrVal = cell(length(ensembleMatrixColIDs)-1,1);
 for u = 2:length(ensembleMatrixColIDs) 
+    tempOdrIDs = odorIDs;
+    tempPosIDs = posIDs;
     curUni = ensembleMatrixColIDs{u};
     curUniSpkData = ensembleMatrix(:,u); %#ok<NODEF>
     curUniData = ExtractTrialData_SM(pokeInAlignedBehavMatrix(goodTrials), curUniSpkData);
     noSpkLog = cellfun(@(a)isempty(a), curUniData);
     curUniData(noSpkLog) = [];
+    tempOdrIDs(noSpkLog) = [];
+    tempPosIDs(noSpkLog) = [];
     curUniPEH = cell(length(curUniData),1);
     if ~isempty(curUniData)
         for trl = 1:length(curUniPEH)
@@ -77,7 +81,7 @@ for u = 2:length(ensembleMatrixColIDs)
         odorF = nan(1,size(curUniUnpacked,2));
         positionF = nan(1,size(curUniUnpacked,2));
         for ndx = 1:size(curUniUnpacked,2)
-            [~,odrTable,~] = anova1(curUniUnpacked(:,ndx), odorIDs', 'off');
+            [~,odrTable,~] = anova1(curUniUnpacked(:,ndx), tempOdrIDs', 'off');
             curOdorF = odrTable{2,5}; 
             if ~isempty(curOdorF) && curOdorF>0 && curOdorF<5
                 odorF(ndx) = curOdorF;
@@ -86,7 +90,7 @@ for u = 2:length(ensembleMatrixColIDs)
             else
                 odorF(ndx) = nan;
             end
-            [~,posTable,~] = anova1(curUniUnpacked(:,ndx), posIDs', 'off');
+            [~,posTable,~] = anova1(curUniUnpacked(:,ndx), tempPosIDs', 'off');
             curPosF = posTable{2,5};
             if ~isempty(curPosF) && curPosF>0 && curPosF<5
                 positionF(ndx) = curPosF;
@@ -97,9 +101,16 @@ for u = 2:length(ensembleMatrixColIDs)
             end
         end
     end
-    fRatDiff{u-1} = positionF-odorF;
-    fPosVal{u-1} = positionF;
-    fOdrVal{u-1} = odorF;
+    posNanLog = isnan(positionF);
+    odorNanLog = isnan(odorF);
+    smoothPosF = smooth(positionF,3)';
+    smoothOdorF = smooth(odorF,3)';
+    nanLog = posNanLog & odorNanLog;
+    smoothPosF(nanLog) = nan;
+    smoothOdorF(nanLog) = nan;
+    fOdrVal{u-1} = smoothOdorF;
+    fPosVal{u-1} = smoothPosF;
+    fRatDiff{u-1} = smoothPosF - smoothOdorF;
 end
 
 fRatDiffMtx = cell2mat(fRatDiff);
@@ -142,7 +153,7 @@ hold on;
 odr = PlotLineAndFilledError(xTicks, transInOdrMean, transInOdrSEM, 'blue');
 line([0 0], get(gca, 'ylim'), 'color', 'black', 'linestyle', ':', 'linewidth', 1.5);
 line(get(gca, 'xlim'), [1 1], 'color', 'black', 'linestyle', ':', 'linewidth', 1.5);
-legend([pos odr], 'Position', 'Odor');
+legend([pos odr], 'Upcoming Position', 'Previous Odor');
 axis tight
 title('Poke In Aligned F-Ratios');
 xlabel('Time Relative to Poke Initiation');
