@@ -46,8 +46,11 @@ for eve = 1:length(behavMatrixIDs)
                 curEventSpect{1,1,trl} = MorletAG(curEventLFP{trl}, sampleRate, freqWindow(1), freqWindow(2));
             end
 %             meanEventSpect = mean(cell2mat(curEventSpect),3);            
-            meanEventSpect = median(cell2mat(curEventSpect),3);            
+            meanEventSpect = median(cell2mat(curEventSpect),3);  
+%             meanEventSpect = meanEventSpect+(abs(min(meanEventSpect(:))));
+%             meanEventSpect = meanEventSpect./repmat(max(meanEventSpect,[],2), [1 size(meanEventSpect,2)]);
             contourf(eventWindow(1):1/sampleRate:eventWindow(2), freqWindow(1):freqWindow(2), meanEventSpect, 20, 'linestyle', 'none');
+            set(gca, 'clim', [0 1]);
             subplotClims{curEveSubplots(grp)} = get(subplotIDs(curEveSubplots(grp)), 'clim');
         else
             set(subplotIDs(curEveSubplots(grp)), 'xlim', eventWindow, 'ylim', freqWindow);
