@@ -3,10 +3,6 @@ function UnitSummary_SM
 %
 %   Omnibus code to summarize individual unit data
 
-%%
-close all
-clear all
-
 %% Determine Runtime Variables
 pehBinSize = 0.125;
 eventWindow = [-0.5 0.5];
