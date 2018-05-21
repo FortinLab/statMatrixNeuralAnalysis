@@ -36,8 +36,13 @@ for filenum = 1:numfiles
     end
     
     % Detects location of peaks in the digital signal aka event activation
-    [~, onEvents] = findpeaks([0; diff(contData)],1:length(contData), 'MinPeakProminence', 0.25);
-    [~, offEvents] = findpeaks([0; diff(contData)*-1], 1:length(contData), 'MinPeakProminence', 0.25);
+%     [~, onEvents] = findpeaks([0; diff(contData)],1:length(contData), 'MinPeakProminence', 0.25);
+%     [~, offEvents] = findpeaks([0; diff(contData)*-1], 1:length(contData), 'MinPeakProminence', 0.25);
+    % IF the data is recorded in the 206 behavior rig, that system is rigged
+    % with items activating on low voltage, not high so use the following
+    % lines instead of the ones above.
+    [~, offEvents] = findpeaks([0; diff(contData)],1:length(contData), 'MinPeakProminence', 0.25);
+    [~, onEvents] = findpeaks([0; diff(contData)*-1], 1:length(contData), 'MinPeakProminence', 0.25);
     
     % Interpolates square pulse peak location to pinpoint timestamps
     On_field = strcat('OnPeakTS_',num2str(filenum));

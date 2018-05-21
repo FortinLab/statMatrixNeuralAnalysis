@@ -112,6 +112,7 @@ end
 handles.ratName_INPUT.String = fileDir(ratNameStart:ratNameEnd);
 [sessionIDstart, sessionIDend] = regexp(fileDir, 'Session([0-9]*[a-z]*)');
 handles.sessionID_INPUT.String = fileDir(sessionIDstart:sessionIDend);
+%%% Save the directory pathing so that it can be used later %%%
 guidata(hObject, handles);
 
 function removeChan_BTN_Callback(hObject, eventdata, handles)
@@ -171,7 +172,7 @@ else
     %% First create all the stuff that's common for all matrices
     %%% Timestamp Vector %%%
     %%% Behavior Matrix %%%
-    % Make sure to save the behavior matrix separately as well.S
+    % Make sure to save the behavior matrix separately as well.
     %% Now create the statMatrix file for each region
     % Now create the statMatrix for all the probe regions
     for r = 1:length(regions)
