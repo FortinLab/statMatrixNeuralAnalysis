@@ -7,7 +7,7 @@ function UnitSummary_SM
 pehBinSize = 0.125;
 eventWindow = [-0.5 0.5];
 spectFreqWindow = [1 120];
-printYN = 1;
+printYN = 0;
 %%
 origDir = cd;
 [fileDir] = uigetdir(origDir);
@@ -95,26 +95,26 @@ for t = 1:length(tetsWithUnits)
     curUnis = statMatrixColIDs(cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '-U([0-9]*)')));
     unitSummaryUnis = {unitSummary.UnitName};
     
-    %% Plot Per-Tetrode Spectrograms
-    % Performance
-    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-        perfLogs, perfLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,printYN); %#ok<NODEF>
-    
-    % Temporal Context
-    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-        tcLogs, tcLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
-    
-    % Temporal Context - Correct
-    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-        tcCorrLogs, tcCorrLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
-    
-    % Temporal Context - Incorrect
-    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-        tcInCorrLogs, tcInCorrLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+%     %% Plot Per-Tetrode Spectrograms
+%     % Performance
+%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+%         perfLogs, perfLogIDs,...
+%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,printYN); %#ok<NODEF>
+%     
+%     % Temporal Context
+%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+%         tcLogs, tcLogIDs,...
+%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+%     
+%     % Temporal Context - Correct
+%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+%         tcCorrLogs, tcCorrLogIDs,...
+%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+%     
+%     % Temporal Context - Incorrect
+%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+%         tcInCorrLogs, tcInCorrLogIDs,...
+%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
     
     %% Now do Per Unit Analysis
     for uni = 1:length(curUnis)

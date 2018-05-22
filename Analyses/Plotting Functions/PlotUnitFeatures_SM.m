@@ -51,10 +51,10 @@ linkaxes([wire1, wire2, wire3, wire4], 'xy');
 
 maxTemplate = eval(sprintf('wire%i', curUnitSummary.Spike_Features(1,1)));
 
-text(maxTemplate, curUnitSummary.Spike_Features(2,1), curUnitSummary.Spike_Features(2,2),...
-    {'\uparrow', '\bf \fontsize{12} Valley'}, 'horizontalalignment', 'center', 'verticalalignment', 'top');
-text(maxTemplate, curUnitSummary.Spike_Features(3,1), curUnitSummary.Spike_Features(3,2),...
-    {'\bf \fontsize{12} Peak', '\downarrow'}, 'horizontalalignment', 'center', 'verticalalignment', 'bottom');
+text(curUnitSummary.Spike_Features(2,1), curUnitSummary.Spike_Features(2,2),...
+    {'\uparrow', '\bf \fontsize{12} Valley'}, 'horizontalalignment', 'center', 'verticalalignment', 'top', 'parent',maxTemplate);
+text(curUnitSummary.Spike_Features(3,1), curUnitSummary.Spike_Features(3,2),...
+    {'\bf \fontsize{12} Peak', '\downarrow'}, 'horizontalalignment', 'center', 'verticalalignment', 'bottom', 'parent', maxTemplate);
 
 %% Plot Autocorrelation
 autoCorrBySpk = nan(length(curUniSpikeTimes), 160);
