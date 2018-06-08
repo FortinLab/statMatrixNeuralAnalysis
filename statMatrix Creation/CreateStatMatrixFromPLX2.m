@@ -81,6 +81,9 @@ while findingStrobed
         if strobedChanLog
             [~, strobedTS, strobedSV] = plx_event_ts(plxFile, curChan);
             [~, ~, ~, aniPosition] = plx_vt_interpret(strobedTS, strobedSV);
+            % Remove extra position points that aren't present in LFP
+            % signal... not sure why this happens... but it does sometimes.
+            aniPosition(aniPosition(:,1)>tsVect(end),:) = [];
             aniPosHistBins = find(histcounts(aniPosition(:,1), [0 tsVect]));
             behVals(aniPosHistBins,seqLength+seqLength+6) = aniPosition(:,2);
             behVals(aniPosHistBins,seqLength+seqLength+7) = aniPosition(:,3);
