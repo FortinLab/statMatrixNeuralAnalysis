@@ -93,8 +93,8 @@ while findingStrobed
 end
 behDataHeaders{seq+seqLength+6} = 'XvalRatMazePosition';
 behDataHeaders{seq+seqLength+7} = 'YvalRatMazePosition';
-behavMatrix = behVals; %#ok<NASGU>
-behavMatrixColIDs = behDataHeaders; %#ok<NASGU>
+behavMatrix = [tsVect', behVals]; %#ok<NASGU>
+behavMatrixColIDs = [{'TimeBin'}, behDataHeaders]; %#ok<NASGU>
 save([filePath outputFileName{1} '_BehaviorMatrix.mat'], 'behavMatrix', 'behavMatrixColIDs');
 disp('Behavior data saved.');
 
