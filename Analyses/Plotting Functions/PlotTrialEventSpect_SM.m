@@ -50,7 +50,7 @@ for eve = 1:length(behavMatrixIDs)
 %             meanEventSpect = meanEventSpect+(abs(min(meanEventSpect(:))));
 %             meanEventSpect = meanEventSpect./repmat(max(meanEventSpect,[],2), [1 size(meanEventSpect,2)]);
             contourf(eventWindow(1):1/sampleRate:eventWindow(2), freqWindow(1):freqWindow(2), meanEventSpect, 20, 'linestyle', 'none');
-            set(gca, 'clim', [0 1]);
+%             set(gca, 'clim', [0 1]);
             subplotClims{curEveSubplots(grp)} = get(subplotIDs(curEveSubplots(grp)), 'clim');
         else
             set(subplotIDs(curEveSubplots(grp)), 'xlim', eventWindow, 'ylim', freqWindow);
