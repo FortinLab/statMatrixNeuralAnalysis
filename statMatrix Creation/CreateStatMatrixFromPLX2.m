@@ -19,8 +19,15 @@ end
 outputFileName = inputdlg('Name Output File', 'Filename', 1, {fileName});
 
 %% Behavioral Data
-[behaviorData] = SummarizePLXabbr_BOS(plxFile);
-[samp, ~, tetTS, fn, ~] = plx_ad_v(plxFile, 2);
+% [behaviorData] = SummarizePLXabbr_BOS(plxFile);
+[behaviorData] = SummarizePLXevents_SD(plxFile);
+chan = 1;
+[samp, ~, tetTS, fn, ~] = plx_ad_v(plxFile, chan);
+while tetTS == -1
+    chan = chan + 1;
+    [samp, ~, tetTS, fn, ~] = plx_ad_v(plxFile, chan);
+end
+
 % Create timestamp vector
 tsVect = ((0:(fn(1)-1))/samp)+tetTS(1);
 % Sometimes the file is composed of multiple fragments, in which case these
@@ -28,28 +35,28 @@ tsVect = ((0:(fn(1)-1))/samp)+tetTS(1);
 for fragNum = 2:length(tetTS)
     tsVect = [tsVect, ((0:(fn(fragNum)-1))/samp)+tetTS(fragNum)]; %#ok<AGROW>
 end
-seqLength = behaviorData.Summary.SequenceLength;
-behVals = nan(length(tsVect), seqLength*2 + 5);
-behDataHeaders = cell(1,seqLength*2 + 7);
 ssnData = behaviorData.Raw;
+seqLength = behaviorData.Summary.SequenceLength;
+maxSeqLength = max([ssnData.OrdinalPosition]);
+behVals = nan(length(tsVect), seqLength + maxSeqLength + 5);
+behDataHeaders = cell(1,seqLength + maxSeqLength + 7);
 % Step through each sequence item/position and identify when odors were
 % presented
 for seq = 1:seqLength
-    itemPresTimes = [ssnData([ssnData.SequenceItem]==seq).ItemPresentationTime];
-    posPresTimes = [ssnData([ssnData.OrdinalPosition]==seq).ItemPresentationTime];
-    inSeqPresTimes = intersect(itemPresTimes, posPresTimes);
-    outSeqPresTimes = setdiff(itemPresTimes,posPresTimes);
-    behVals(:,seq) = histcounts(itemPresTimes, [0 tsVect])';
-    behVals(:,seq+seqLength) = histcounts(posPresTimes, [0 tsVect])';
-    behDataHeaders{seq} = ['Odor' num2str(seq)];
-    behDataHeaders{seq+seqLength} = ['Position' num2str(seq)];
-    if seq == 1
-        behVals(:,seqLength+seqLength+1) = histcounts(inSeqPresTimes, [0 tsVect])' - histcounts(outSeqPresTimes,[0 tsVect])';
-    else
-        behVals(:,seqLength+seqLength+1) = behVals(:,seqLength+seqLength+1) + histcounts(inSeqPresTimes, [0 tsVect])' - histcounts(outSeqPresTimes,[0 tsVect])';
+    for pos = 1:maxSeqLength
+        itemPresTimes = [ssnData([ssnData.SequenceItem]==seq).ItemPresentationTime];
+        posPresTimes = [ssnData([ssnData.OrdinalPosition]==pos).ItemPresentationTime];
+        behVals(:,seq) = histcounts(itemPresTimes, [0 tsVect])';
+        behVals(:,pos+seqLength) = histcounts(posPresTimes, [0 tsVect])';
+        behDataHeaders{seq} = ['Odor' num2str(seq)];
+        behDataHeaders{pos+seqLength} = ['Position' num2str(pos)];
     end
 end
+inSeqOdorPres = [ssnData([ssnData.TranspositionDistance]==0).ItemPresentationTime];
+outSeqOdorPres = [ssnData(~([ssnData.TranspositionDistance]==0)).ItemPresentationTime];
+behVals(:,seqLength+maxSeqLength+1) = histcounts(inSeqOdorPres, [0 tsVect])' - histcounts(outSeqOdorPres,[0 tsVect])';
 behDataHeaders{seq+seqLength+1} = 'InSeqLog';
+
 itmPresTimes = [ssnData.ItemPresentationTime];
 trialPerformance = [ssnData.Performance];
 corrTrials = itmPresTimes(logical(trialPerformance));

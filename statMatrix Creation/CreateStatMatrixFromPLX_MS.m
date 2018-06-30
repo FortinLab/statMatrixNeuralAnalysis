@@ -21,58 +21,63 @@ outputFileName = inputdlg('Name Output File', 'origPlxFile', 1, {[origPlxFile(1:
 
 %% Behavioral Data
 % [behaviorData] = SummarizePLXabbr_BOS(origPlxFile);
-[behaviorData] = SummarizePLXabbr(origPlxFile);
-[samp, ~, tetTS, fn, ~] = plx_ad_v(origPlxFile, 2);
+[behaviorData] = SummarizePLXevents_SD(origPlxFile);
+chan = 1;
+[samp, ~, tetTS, fn, ~] = plx_ad_v(origPlxFile, chan);
+while tetTS == -1
+    chan = chan + 1;
+    [samp, ~, tetTS, fn, ~] = plx_ad_v(origPlxFile, chan);
+end
+
+% Create timestamp vector
 tsVect = ((0:(fn(1)-1))/samp)+tetTS(1);
+% Sometimes the file is composed of multiple fragments, in which case these
+% should be combined into a single file
 for fragNum = 2:length(tetTS)
     tsVect = [tsVect, ((0:(fn(fragNum)-1))/samp)+tetTS(fragNum)]; %#ok<AGROW>
 end
-seqLength = behaviorData.Summary.SequenceLength;
-if isfield(behaviorData.Raw, 'ErrorSignalTime')
-    behDataHeaders = cell(1,seqLength*2 + 8);
-    behVals = nan(length(tsVect), seqLength*2 + 8);
-else
-    behDataHeaders = cell(1,seqLength*2 + 7);
-    behVals = nan(length(tsVect), seqLength*2 + 7);
-end
 ssnData = behaviorData.Raw;
+seqLength = behaviorData.Summary.SequenceLength;
+maxSeqLength = max([ssnData.OrdinalPosition]);
+behVals = nan(length(tsVect), seqLength + maxSeqLength + 5);
+behDataHeaders = cell(1,seqLength + maxSeqLength + 7);
+% Step through each sequence item/position and identify when odors were
+% presented
 for seq = 1:seqLength
-    itemPresTimes = [ssnData([ssnData.SequenceItem]==seq).ItemPresentationTime];
-    posPresTimes = [ssnData([ssnData.OrdinalPosition]==seq).ItemPresentationTime];
-    inSeqPresTimes = intersect(itemPresTimes, posPresTimes);
-    outSeqPresTimes = setdiff(itemPresTimes,posPresTimes);
-    behVals(:,seq) = histcounts(itemPresTimes, [0 tsVect])';
-    behVals(:,seq+seqLength) = histcounts(posPresTimes, [0 tsVect])';
-    behDataHeaders{seq} = ['Odor' num2str(seq)];
-    behDataHeaders{seq+seqLength} = ['Position' num2str(seq)];
-    if seq == 1
-        behVals(:,seqLength*2+1) = histcounts(inSeqPresTimes, [0 tsVect])' - histcounts(outSeqPresTimes,[0 tsVect])';
-    else
-        behVals(:,seqLength*2+1) = behVals(:,seqLength*2+1) + histcounts(inSeqPresTimes, [0 tsVect])' - histcounts(outSeqPresTimes,[0 tsVect])';
+    for pos = 1:maxSeqLength
+        itemPresTimes = [ssnData([ssnData.SequenceItem]==seq).ItemPresentationTime];
+        posPresTimes = [ssnData([ssnData.OrdinalPosition]==pos).ItemPresentationTime];
+        behVals(:,seq) = histcounts(itemPresTimes, [0 tsVect])';
+        behVals(:,pos+seqLength) = histcounts(posPresTimes, [0 tsVect])';
+        behDataHeaders{seq} = ['Odor' num2str(seq)];
+        behDataHeaders{pos+seqLength} = ['Position' num2str(pos)];
     end
 end
-behDataHeaders{seqLength*2+1} = 'InSeqLog';
+inSeqOdorPres = [ssnData([ssnData.TranspositionDistance]==0).ItemPresentationTime];
+outSeqOdorPres = [ssnData(~([ssnData.TranspositionDistance]==0)).ItemPresentationTime];
+behVals(:,seqLength+maxSeqLength+1) = histcounts(inSeqOdorPres, [0 tsVect])' - histcounts(outSeqOdorPres,[0 tsVect])';
+behDataHeaders{maxSeqLength+seqLength+1} = 'InSeqLog';
 itmPresTimes = [ssnData.ItemPresentationTime];
 trialPerformance = [ssnData.Performance];
 corrTrials = itmPresTimes(logical(trialPerformance));
 corTrlHistCounts = histcounts(corrTrials, [0 tsVect])';
 inCorrTrials = itmPresTimes(~logical(trialPerformance));
 inCorTrlHistCounts = histcounts(inCorrTrials, [0 tsVect])';
-behVals(:,seqLength*2+2) = corTrlHistCounts + (inCorTrlHistCounts*-1);
-behDataHeaders{seqLength*2+2} = 'PerformanceLog';
+behVals(:,seqLength + maxSeqLength+2) = corTrlHistCounts + (inCorTrlHistCounts*-1);
+behDataHeaders{seqLength + maxSeqLength+2} = 'PerformanceLog';
 
-behVals(:,seqLength*2+3) = histcounts([ssnData.OdorTrigPokeTime], [0 tsVect])' - histcounts([ssnData.OdorPokeWithdrawTime], [0 tsVect])';
-behDataHeaders{seqLength*2+3} = 'PokeEvents';
+behVals(:,seqLength + maxSeqLength+3) = histcounts([ssnData.OdorTrigPokeTime], [0 tsVect])' - histcounts([ssnData.OdorPokeWithdrawTime], [0 tsVect])';
+behDataHeaders{seqLength + maxSeqLength+3} = 'PokeEvents';
 
-behVals(:,seqLength*2+4) = histcounts([ssnData.FrontRewardTime], [0 tsVect])';
-behDataHeaders{seqLength*2+4} = 'FrontReward';
+behVals(:,seqLength + maxSeqLength+4) = histcounts([ssnData.FrontRewardTime], [0 tsVect])';
+behDataHeaders{seqLength + maxSeqLength+4} = 'FrontReward';
 
-behVals(:,seqLength*2+5) = histcounts([ssnData.BackRewardTime], [0 tsVect])';
-behDataHeaders{seqLength*2+5} = 'BackReward';
+behVals(:,seqLength + maxSeqLength+5) = histcounts([ssnData.BackRewardTime], [0 tsVect])';
+behDataHeaders{seqLength + maxSeqLength+5} = 'BackReward';
 
 if isfield(behaviorData.Raw, 'ErrorSignalTime')
-    behVals(:,seqLength*2+6) = histcounts([ssnData.ErrorSignalTime], [0 tsVect])';
-    behDataHeaders{seqLength*2+6} = 'ErrorSignal';
+    behVals(:,seqLength + maxSeqLength+6) = histcounts([ssnData.ErrorSignalTime], [0 tsVect])';
+    behDataHeaders{seqLength + maxSeqLength+6} = 'ErrorSignal';
 end
 
 [numChans, chanNames] = plx_event_names(origPlxFile);
@@ -88,22 +93,22 @@ while findingStrobed
             [~, ~, ~, aniPosition] = plx_vt_interpret(strobedTS, strobedSV);
             aniPosHistBins = find(histcounts(aniPosition(:,1), [0 tsVect]));
             if isfield(behaviorData.Raw, 'ErrorSignalTime')
-                behVals(aniPosHistBins,seqLength*2+7) = aniPosition(:,2);
-                behVals(aniPosHistBins,seqLength*2+8) = aniPosition(:,3);
+                behVals(aniPosHistBins,seqLength + maxSeqLength+7) = aniPosition(:,2);
+                behVals(aniPosHistBins,seqLength + maxSeqLength+8) = aniPosition(:,3);
             else
-                behVals(aniPosHistBins,seqLength*2+6) = aniPosition(:,2);
-                behVals(aniPosHistBins,seqLength*2+7) = aniPosition(:,3);
+                behVals(aniPosHistBins,seqLength + maxSeqLength+6) = aniPosition(:,2);
+                behVals(aniPosHistBins,seqLength + maxSeqLength+7) = aniPosition(:,3);
             end
             findingStrobed = 0;
         end
     end
 end
 if isfield(behaviorData.Raw, 'ErrorSignalTime')
-    behDataHeaders{seqLength*2+7} = 'XvalRatMazePosition';
-    behDataHeaders{seqLength*2+8} = 'YvalRatMazePosition';
+    behDataHeaders{seqLength + maxSeqLength+7} = 'XvalRatMazePosition';
+    behDataHeaders{seqLength + maxSeqLength+8} = 'YvalRatMazePosition';
 else
-    behDataHeaders{seqLength*2+6} = 'XvalRatMazePosition';
-    behDataHeaders{seqLength*2+7} = 'YvalRatMazePosition';
+    behDataHeaders{seqLength + maxSeqLength+6} = 'XvalRatMazePosition';
+    behDataHeaders{seqLength + maxSeqLength+7} = 'YvalRatMazePosition';
 end
 behavMatrix = [tsVect', behVals]; %#ok<NASGU>
 behavMatrixColIDs = [{'TimeBin'}, behDataHeaders]; %#ok<NASGU>
@@ -204,42 +209,42 @@ for tet = 1:length(tetNames)
         % Theta
         thetaUniPhase = tetThetaHilb(tetUnitTSs{uni}==1);
         phaseInfo{uni}.Theta.Mean = circ_mean(thetaUniPhase);
-        phaseInfo{uni}.Theta.Median = circ_median(thetaUniPhase);
+%         phaseInfo{uni}.Theta.Median = circ_median(thetaUniPhase);
         phaseInfo{uni}.Theta.R_Length = circ_r(thetaUniPhase);
         [phaseInfo{uni}.Theta.AngDev, phaseInfo{uni}.Theta.CircStDev] = circ_std(thetaUniPhase);
         [phaseInfo{uni}.Theta.R_Test(1), phaseInfo{uni}.Theta.R_Test(2)] = circ_rtest(thetaUniPhase);
         % Low Beta
         lowBetaUniPhase = tetLowBetaHilb(tetUnitTSs{uni}==1);
         phaseInfo{uni}.LowBeta.Mean = circ_mean(lowBetaUniPhase);
-        phaseInfo{uni}.LowBeta.Median = circ_median(lowBetaUniPhase);
+%         phaseInfo{uni}.LowBeta.Median = circ_median(lowBetaUniPhase);
         phaseInfo{uni}.LowBeta.R_Length = circ_r(lowBetaUniPhase);
         [phaseInfo{uni}.LowBeta.AngDev, phaseInfo{uni}.LowBeta.CircStDev] = circ_std(lowBetaUniPhase);
         [phaseInfo{uni}.LowBeta.R_Test(1), phaseInfo{uni}.LowBeta.R_Test(2)] = circ_rtest(lowBetaUniPhase);
         % Beta
         betaUniPhase = tetBetaHilb(tetUnitTSs{uni}==1);
         phaseInfo{uni}.Beta.Mean = circ_mean(betaUniPhase);
-        phaseInfo{uni}.Beta.Median = circ_median(betaUniPhase);
+%         phaseInfo{uni}.Beta.Median = circ_median(betaUniPhase);
         phaseInfo{uni}.Beta.R_Length = circ_r(betaUniPhase);
         [phaseInfo{uni}.Beta.AngDev, phaseInfo{uni}.Beta.CircStDev] = circ_std(betaUniPhase);
         [phaseInfo{uni}.Beta.R_Test(1), phaseInfo{uni}.Beta.R_Test(2)] = circ_rtest(betaUniPhase);
         % Low Gamma
         lowGammaUniPhase = tetLowGammaHilb(tetUnitTSs{uni}==1);
         phaseInfo{uni}.LowGamma.Mean = circ_mean(lowGammaUniPhase);
-        phaseInfo{uni}.LowGamma.Median = circ_median(lowGammaUniPhase);
+%         phaseInfo{uni}.LowGamma.Median = circ_median(lowGammaUniPhase);
         phaseInfo{uni}.LowGamma.R_Length = circ_r(lowGammaUniPhase);
         [phaseInfo{uni}.LowGamma.AngDev, phaseInfo{uni}.LowGamma.CircStDev] = circ_std(lowGammaUniPhase);
         [phaseInfo{uni}.LowGamma.R_Test(1), phaseInfo{uni}.LowGamma.R_Test(2)] = circ_rtest(lowGammaUniPhase);
         % High Gamma
         highGammaUniPhase = tetHighGammaHilb(tetUnitTSs{uni}==1);
         phaseInfo{uni}.HighGamma.Mean = circ_mean(highGammaUniPhase);
-        phaseInfo{uni}.HighGamma.Median = circ_median(highGammaUniPhase);
+%         phaseInfo{uni}.HighGamma.Median = circ_median(highGammaUniPhase);
         phaseInfo{uni}.HighGamma.R_Length = circ_r(highGammaUniPhase);
         [phaseInfo{uni}.HighGamma.AngDev, phaseInfo{uni}.HighGamma.CircStDev] = circ_std(highGammaUniPhase);
         [phaseInfo{uni}.HighGamma.R_Test(1), phaseInfo{uni}.HighGamma.R_Test(2)] = circ_rtest(highGammaUniPhase);
         % Ripple
         rippleUniPhase = tetRipHilb(tetUnitTSs{uni}==1);
         phaseInfo{uni}.Ripple.Mean = circ_mean(rippleUniPhase);
-        phaseInfo{uni}.Ripple.Median = circ_median(rippleUniPhase);
+%         phaseInfo{uni}.Ripple.Median = circ_median(rippleUniPhase);
         phaseInfo{uni}.Ripple.R_Length = circ_r(rippleUniPhase);
         [phaseInfo{uni}.Ripple.AngDev, phaseInfo{uni}.Ripple.CircStDev] = circ_std(rippleUniPhase);
         [phaseInfo{uni}.Ripple.R_Test(1), phaseInfo{uni}.Ripple.R_Test(2)] = circ_rtest(rippleUniPhase);
