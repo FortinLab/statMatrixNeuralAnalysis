@@ -16,11 +16,11 @@ if ~(nargin == 2)
         end
         plxFile = [path fileName];
     end
-    [path, filename] = fileparts(plxFile);
+    [path, fileName] = fileparts(plxFile);
     path = [path '\'];
     flContents = dir(path);
     fileNames = {flContents.name};
-    matFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, [filename '_([0-9]*)-([A-Z | a-z]*)-([0-9]*).mat']));
+    matFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, [fileName '_([0-9]*)-([A-Z | a-z]*)-([0-9]*).mat']));
     if sum(matFileLog)==0
         [matFileName, matFilePath] = uigetfile('.mat', 'No .MAT file found in the folder with the .PLX file, select the ssnData file');
         if matFileName == 0
@@ -30,9 +30,11 @@ if ~(nargin == 2)
         matFile = [matFilePath matFileName];
     else
         matFile = [path fileNames{matFileLog}];
+        [~, matFileName] = fileparts(matFile);
     end
 end
-
+plxSummary.MATfile = matFileName;
+plxSummary.PLXfile = fileName;
 %% Load Data
 % Load the ssnData file first
 load(matFile);
@@ -128,7 +130,8 @@ end
 % error signal presentation), plus the number of double buzzer activations 
 % (reflecting sequence start), minus the number of error trials that
 % occurred, should equal the total number of trials that occurred
-if ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData))
+if ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)) &&...
+    ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)-1)     
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
     error('Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy');
