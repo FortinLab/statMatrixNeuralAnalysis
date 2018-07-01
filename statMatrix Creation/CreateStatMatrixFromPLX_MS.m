@@ -3,6 +3,9 @@ function CreateStatMatrixFromPLX_MS
 % Description goes here.
 % For use with Boston files, will need to create an Irvine version
 
+%% Dialogue checks
+questdlg({'Verify the cut, MS processed, .plx files have been named to match their channel names in the original plexon recordings.' '' 'If they don''t match, change them now'},...
+    'File Name Verification', 'Ok', 'Ok');
 %%
 origCD = cd;
 [origPlxFile, filePath] = uigetfile('.plx','Identify Original .PLX File');
@@ -36,10 +39,11 @@ tsVect = ((0:(fn(1)-1))/samp)+tetTS(1);
 for fragNum = 2:length(tetTS)
     tsVect = [tsVect, ((0:(fn(fragNum)-1))/samp)+tetTS(fragNum)]; %#ok<AGROW>
 end
+tsVect(end+1) = tsVect(end)+(1/samp);
 ssnData = behaviorData.Raw;
 seqLength = behaviorData.Summary.SequenceLength;
 maxSeqLength = max([ssnData.OrdinalPosition]);
-behVals = nan(length(tsVect), seqLength + maxSeqLength + 5);
+behVals = nan(length(tsVect)-1, seqLength + maxSeqLength + 5);
 behDataHeaders = cell(1,seqLength + maxSeqLength + 7);
 % Step through each sequence item/position and identify when odors were
 % presented
@@ -47,36 +51,36 @@ for seq = 1:seqLength
     for pos = 1:maxSeqLength
         itemPresTimes = [ssnData([ssnData.SequenceItem]==seq).ItemPresentationTime];
         posPresTimes = [ssnData([ssnData.OrdinalPosition]==pos).ItemPresentationTime];
-        behVals(:,seq) = histcounts(itemPresTimes, [0 tsVect])';
-        behVals(:,pos+seqLength) = histcounts(posPresTimes, [0 tsVect])';
+        behVals(:,seq) = histcounts(itemPresTimes, tsVect)';
+        behVals(:,pos+seqLength) = histcounts(posPresTimes, tsVect)';
         behDataHeaders{seq} = ['Odor' num2str(seq)];
         behDataHeaders{pos+seqLength} = ['Position' num2str(pos)];
     end
 end
 inSeqOdorPres = [ssnData([ssnData.TranspositionDistance]==0).ItemPresentationTime];
 outSeqOdorPres = [ssnData(~([ssnData.TranspositionDistance]==0)).ItemPresentationTime];
-behVals(:,seqLength+maxSeqLength+1) = histcounts(inSeqOdorPres, [0 tsVect])' - histcounts(outSeqOdorPres,[0 tsVect])';
+behVals(:,seqLength+maxSeqLength+1) = histcounts(inSeqOdorPres, tsVect)' - histcounts(outSeqOdorPres,tsVect)';
 behDataHeaders{maxSeqLength+seqLength+1} = 'InSeqLog';
 itmPresTimes = [ssnData.ItemPresentationTime];
 trialPerformance = [ssnData.Performance];
 corrTrials = itmPresTimes(logical(trialPerformance));
-corTrlHistCounts = histcounts(corrTrials, [0 tsVect])';
+corTrlHistCounts = histcounts(corrTrials, tsVect)';
 inCorrTrials = itmPresTimes(~logical(trialPerformance));
-inCorTrlHistCounts = histcounts(inCorrTrials, [0 tsVect])';
+inCorTrlHistCounts = histcounts(inCorrTrials, tsVect)';
 behVals(:,seqLength + maxSeqLength+2) = corTrlHistCounts + (inCorTrlHistCounts*-1);
 behDataHeaders{seqLength + maxSeqLength+2} = 'PerformanceLog';
 
-behVals(:,seqLength + maxSeqLength+3) = histcounts([ssnData.OdorTrigPokeTime], [0 tsVect])' - histcounts([ssnData.OdorPokeWithdrawTime], [0 tsVect])';
+behVals(:,seqLength + maxSeqLength+3) = histcounts([ssnData.OdorTrigPokeTime], tsVect)' - histcounts([ssnData.OdorPokeWithdrawTime], tsVect)';
 behDataHeaders{seqLength + maxSeqLength+3} = 'PokeEvents';
 
-behVals(:,seqLength + maxSeqLength+4) = histcounts([ssnData.FrontRewardTime], [0 tsVect])';
+behVals(:,seqLength + maxSeqLength+4) = histcounts([ssnData.FrontRewardTime], tsVect)';
 behDataHeaders{seqLength + maxSeqLength+4} = 'FrontReward';
 
-behVals(:,seqLength + maxSeqLength+5) = histcounts([ssnData.BackRewardTime], [0 tsVect])';
+behVals(:,seqLength + maxSeqLength+5) = histcounts([ssnData.BackRewardTime], tsVect)';
 behDataHeaders{seqLength + maxSeqLength+5} = 'BackReward';
 
 if isfield(behaviorData.Raw, 'ErrorSignalTime')
-    behVals(:,seqLength + maxSeqLength+6) = histcounts([ssnData.ErrorSignalTime], [0 tsVect])';
+    behVals(:,seqLength + maxSeqLength+6) = histcounts([ssnData.ErrorSignalTime], tsVect)';
     behDataHeaders{seqLength + maxSeqLength+6} = 'ErrorSignal';
 end
 
@@ -91,13 +95,37 @@ while findingStrobed
         if strobedChanLog
             [~, strobedTS, strobedSV] = plx_event_ts(origPlxFile, curChan);
             [~, ~, ~, aniPosition] = plx_vt_interpret(strobedTS, strobedSV);
-            aniPosHistBins = find(histcounts(aniPosition(:,1), [0 tsVect]));
+            aniPosition(aniPosition(:,1)<tsVect(1),:) = [];
+            aniX = aniPosition(:,2);
+            aniY = aniPosition(:,3);
+            if size(aniPosition,2)>=5
+                for t = 1:size(aniPosition,1)
+                    if (aniPosition(t,2)==0 && aniPosition(t,3)==0) &&...
+                            (aniPosition(t,4)>0 && aniPosition(t,5)>0)
+                        aniX(t) = aniPosition(t,4);
+                        aniY(t) = aniPosition(t,5);
+                    elseif (aniPosition(t,4)==0 && aniPosition(t,5)==0) &&...
+                            (aniPosition(t,2)>0 && aniPosition(t,3)>0)
+                        aniX(t) = aniPosition(t,2);
+                        aniY(t) = aniPosition(t,3);
+                    elseif (aniPosition(t,2)>0 && aniPosition(t,3)>0) &&...
+                            (aniPosition(t,3)>0 && aniPosition(t,5)>0)
+                        aniX(t) = mean([aniPosition(t,2) aniPosition(t,4)]);
+                        aniY(t) = mean([aniPosition(t,3) aniPosition(t,5)]);
+                    elseif (aniPosition(t,2)==0 && aniPosition(t,3)==0) &&...
+                            (aniPosition(t,3)==0 && aniPosition(t,5)==0)
+                        aniX(t) = 0;
+                        aniY(t) = 0;
+                    end
+                end
+            end
+            aniPosHistBins = find(histcounts(aniPosition(:,1), tsVect));
             if isfield(behaviorData.Raw, 'ErrorSignalTime')
-                behVals(aniPosHistBins,seqLength + maxSeqLength+7) = aniPosition(:,2);
-                behVals(aniPosHistBins,seqLength + maxSeqLength+8) = aniPosition(:,3);
+                behVals(aniPosHistBins,seqLength + maxSeqLength+7) = aniX';
+                behVals(aniPosHistBins,seqLength + maxSeqLength+8) = aniY';
             else
-                behVals(aniPosHistBins,seqLength + maxSeqLength+6) = aniPosition(:,2);
-                behVals(aniPosHistBins,seqLength + maxSeqLength+7) = aniPosition(:,3);
+                behVals(aniPosHistBins,seqLength + maxSeqLength+6) = aniX;
+                behVals(aniPosHistBins,seqLength + maxSeqLength+7) = aniY;
             end
             findingStrobed = 0;
         end
@@ -110,11 +138,10 @@ else
     behDataHeaders{seqLength + maxSeqLength+6} = 'XvalRatMazePosition';
     behDataHeaders{seqLength + maxSeqLength+7} = 'YvalRatMazePosition';
 end
-behavMatrix = [tsVect', behVals]; %#ok<NASGU>
+behavMatrix = [tsVect(1:end-1)', behVals]; %#ok<NASGU>
 behavMatrixColIDs = [{'TimeBin'}, behDataHeaders]; %#ok<NASGU>
 save([filePath outputFileName{1} '_BehaviorMatrix.mat'], 'behavMatrix', 'behavMatrixColIDs');
 disp('Behavior data saved.');
-
 %% Neural Data
 [~, ~, ~, contCountFl] = plx_info(origPlxFile, 1);
 [~, plxADchanNames] = plx_adchan_names(origPlxFile);
