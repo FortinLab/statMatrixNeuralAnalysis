@@ -1,4 +1,4 @@
-function [statMatrixColIDs, statMatrix] = CreateStatMatrixFromOE_new(recStart,processorNum,channelNum,fileDir,ssnDir,varargin)
+function [statMatrixColIDs, statMatrix] = CreateStatMatrixFromOE(recStart,processorNum,channelNum,fileDir,ssnDir,varargin)
 %% Updated 7/10/2018: Added 'PokeInEvents' Column
 %
 % This is a script for creating a statMatrix for a single .continuous file
