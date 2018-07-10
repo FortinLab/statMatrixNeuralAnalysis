@@ -1,8 +1,9 @@
-function [Events_TS,OnTS,OffTS,TS_Raw] = BehavTS(fileDir,processorNum,recStart,varargin)
+function [Events_TS,OnTS,OffTS,TS_Raw] = EventsTS(fileDir,processorNum,recStart,rigRoom,varargin)
+%% Updated 7/9/2018: Added conditional for rig used (either 212 or 206)
 % This function extracts event presentation information from the ADC input
 % files found in the OpenEphys data session folders 
 % Example code for FPGA node (aka processor = 100):
-% [Events_TS,OnTS,OffTS,TS_Raw] = BehavTS(fileDir,100,recStart,'downsample')
+% [Events_TS,OnTS,OffTS,TS_Raw] = EventsTS(fileDir,100,recStart,206,'downsample')
 
 % Detect and determine # of ADC input files in set folder directory
 origDir = cd; % saves current file directory
@@ -36,13 +37,15 @@ for filenum = 1:numfiles
     end
     
     % Detects location of peaks in the digital signal aka event activation
-%     [~, onEvents] = findpeaks([0; diff(contData)],1:length(contData), 'MinPeakProminence', 0.25);
-%     [~, offEvents] = findpeaks([0; diff(contData)*-1], 1:length(contData), 'MinPeakProminence', 0.25);
-    % IF the data is recorded in the 206 behavior rig, that system is rigged
-    % with items activating on low voltage, not high so use the following
-    % lines instead of the ones above.
-    [~, offEvents] = findpeaks([0; diff(contData)],1:length(contData), 'MinPeakProminence', 0.25);
-    [~, onEvents] = findpeaks([0; diff(contData)*-1], 1:length(contData), 'MinPeakProminence', 0.25);
+    % If the data is recorded in the 206 behavior rig the system works by items activating on low voltage, not high.
+    if rigRoom == 206
+        [~, offEvents] = findpeaks([0; diff(contData)],1:length(contData), 'MinPeakProminence', 0.25);
+        [~, onEvents] = findpeaks([0; diff(contData)*-1], 1:length(contData), 'MinPeakProminence', 0.25);
+    end
+    if rigRoom == 212
+        [~, onEvents] = findpeaks([0; diff(contData)],1:length(contData), 'MinPeakProminence', 0.25);
+        [~, offEvents] = findpeaks([0; diff(contData)*-1], 1:length(contData), 'MinPeakProminence', 0.25);
+    end
     
     % Interpolates square pulse peak location to pinpoint timestamps
     On_field = strcat('OnPeakTS_',num2str(filenum));
