@@ -1,5 +1,5 @@
 function [statMatrixColIDs, statMatrix] = CreateStatMatrixFromOE(recStart,processorNum,channelNum,fileDir,ssnDir,varargin)
-%% Updated 7/10/2018: Added 'PokeInEvents' Column
+%% Updated 7/10/2018: Added 'PokeInEvents' Column and information for additionional frequency bands. Updated for new EventsTS script(formerly BehavTS)
 %
 % This is a script for creating a statMatrix for a single .continuous file
 % Example input for running statMatrix script for Channel 1 of a session:
