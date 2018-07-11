@@ -1,9 +1,9 @@
-function [statMatrixColIDs, statMatrix] = CreateStatMatrixFromOE(recStart,processorNum,channelNum,fileDir,ssnDir,varargin)
+function [statMatrixColIDs, statMatrix] = CreateStatMatrixFromOE(recStart,processorNum,channelNum,fileDir,ssnDir,rigRoom,varargin)
 %% Updated 7/10/2018: Added 'PokeInEvents' Column and information for additionional frequency bands. Updated for new EventsTS script(formerly BehavTS)
 %
 % This is a script for creating a statMatrix for a single .continuous file
 % Example input for running statMatrix script for Channel 1 of a session:
-% [statMatrixColIDs,statMatrix] = CreateStatMatrixFromOE_new(recStart, 100 ,1, fileDir, ssnDir,'processor', 'ADC', 'CH','session','allfreq')
+% [statMatrixColIDs,statMatrix] = CreateStatMatrixFromOE(recStart, 100 ,1, fileDir, ssnDir,rigRoom,'processor', 'ADC', 'CH','session','allfreq')
 % ProcessorNum = 100 (FPGA or Raw); processorNum = 102 (Bandpass)
 % fileDir = the folder directory of .continuous, .events, and/or .spike files
 % For recStart, open the messages.events file (using Notepad or Notepad++) in target file directory to find starting time of recording
@@ -13,7 +13,7 @@ function [statMatrixColIDs, statMatrix] = CreateStatMatrixFromOE(recStart,proces
 % Determines what data to extract from data sets
 
 if sum(cell2mat(cellfun(@(a)(strcmp(a,'ADC') | strcmp(a, 'adc')), varargin, 'uniformoutput', 0)))>=1
-    [Events_TS,~,~,~] = EventsTS(fileDir,processorNum,recStart,'downsample');
+    [Events_TS,~,~,~] = EventsTS(fileDir,processorNum,recStart,rigRoom,'downsample');
 end
 
 if sum(cell2mat(cellfun(@(a)(strcmp(a,'CH') | strcmp(a, 'ch')), varargin, 'uniformoutput', 0)))>=1
