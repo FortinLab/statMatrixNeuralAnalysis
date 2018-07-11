@@ -13,7 +13,7 @@ function [statMatrixColIDs, statMatrix] = CreateStatMatrixFromOE(recStart,proces
 % Determines what data to extract from data sets
 
 if sum(cell2mat(cellfun(@(a)(strcmp(a,'ADC') | strcmp(a, 'adc')), varargin, 'uniformoutput', 0)))>=1
-    [Events_TS,~,~,~] = EventsTS(fileDir,processorNum,recStart,rigRoom,'downsample');
+    [Events_TS,OnTS,~,~] = EventsTS(fileDir,processorNum,recStart,rigRoom,'downsample');
 end
 
 if sum(cell2mat(cellfun(@(a)(strcmp(a,'CH') | strcmp(a, 'ch')), varargin, 'uniformoutput', 0)))>=1
