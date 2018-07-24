@@ -9,6 +9,8 @@ if fileDir==0
 else
     cd(fileDir)
 end
+
+%%
 dirContents = dir(fileDir);
 fileNames = {dirContents.name};
 
@@ -18,7 +20,7 @@ ensembleUniDta = ensembleMatrix(:,2:end);
 samp = mode(diff(ensembleMatrix(:,1)));
 %% Extract Spike Data Based on Trial Period %%
 pokeInAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
-% % trialEnsembles = ExtractTrialData_SM(pokeInAlignedBehavMatrix, ensembleMatrix(:,2:end));
+% trialEnsembles = ExtractTrialData_SM(pokeInAlignedBehavMatrix, ensembleMatrix(:,2:end));
 
 pokeOutAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeOut');
 % trialEnsembles = ExtractTrialData_SM(pokeOutAlignedBehavMatrix, ensembleMatrix(:,2:end));
@@ -34,7 +36,7 @@ odorDlog = [trialBehavMatrix.Odor] == 4;
 odorElog = [trialBehavMatrix.Odor] == 5;
 
 perfLog = [trialBehavMatrix.Performance] == 1;
-inSeqLog = [trialBehavMatrix.TranspositionDistance] == 0;
+inSeqLog = [trialBehavMatrix.ItemItemDistance] == 1;
 
 xCorrBins = -0.2:0.01:0.2;
 %% Straight xCorr Per Session
@@ -154,20 +156,21 @@ for u1 = 1:size(ensembleUniDta,2)
                 dYmax = max(get(oD, 'ylim'));
             end
             title('Odor D');
-            % Odor E
-%             curPairOElag = cell2mat(cellfun(@(e)e{u1,u2}, spkTmDiffTrl(odorElog & inSeqLog & perfLog), 'uniformoutput', 0)');
-%             curPairOElag(isnan(curPairOElag)) = [];
-            oE = subplot(5,4,17:18);
-%             histogram(curPairOElag, xCorrBins);
-            eLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(e)e{u1,u2}, spkTmDiffTrl(odorElog & inSeqLog & perfLog), 'uniformoutput', 0), 'uniformoutput', 0)'));
-            bar(xCorrBins(2:end)-(mode(diff(xCorrBins))/2),eLagMean,1, 'k');
-            if sum(eLagMean) == 0
-                eYmax = 0.000001;
-            else
-                eYmax = max(get(oE, 'ylim'));
-            end
-            title('Odor E');
-            set([oA,oB,oC,oD,oE], 'ylim', [0 max([aYmax, bYmax, cYmax, dYmax, eYmax])], 'xlim', [min(xCorrBins) max(xCorrBins)]);
+%             % Odor E
+% %             curPairOElag = cell2mat(cellfun(@(e)e{u1,u2}, spkTmDiffTrl(odorElog & inSeqLog & perfLog), 'uniformoutput', 0)');
+% %             curPairOElag(isnan(curPairOElag)) = [];
+%             oE = subplot(5,4,17:18);
+% %             histogram(curPairOElag, xCorrBins);
+%             eLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(e)e{u1,u2}, spkTmDiffTrl(odorElog & inSeqLog & perfLog), 'uniformoutput', 0), 'uniformoutput', 0)'));
+%             bar(xCorrBins(2:end)-(mode(diff(xCorrBins))/2),eLagMean,1, 'k');
+%             if sum(eLagMean) == 0
+%                 eYmax = 0.000001;
+%             else
+%                 eYmax = max(get(oE, 'ylim'));
+%             end
+%             title('Odor E');
+%             set([oA,oB,oC,oD,oE], 'ylim', [0 max([aYmax, bYmax, cYmax, dYmax, eYmax])], 'xlim', [min(xCorrBins) max(xCorrBins)]);
+            set([oA,oB,oC,oD], 'ylim', [0 max([aYmax, bYmax, cYmax, dYmax])], 'xlim', [min(xCorrBins) max(xCorrBins)]);
             
             % Overall
             subplot(5,4,[3:4, 7:8])
