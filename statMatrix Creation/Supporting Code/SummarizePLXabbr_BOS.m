@@ -355,12 +355,12 @@ for trl = 1:length(cleanOdorTimes)
     
     pokeOdorDelvOffset = plxSession(trl).ItemPresentationTime - plxSession(trl).OdorTrigPokeTime;
     
-    if ~isempty(frontReward) && (plxSession(trl).TranspositionDistance == 0)
+    trialEndTime = [];
+    if ~isempty(frontReward)
         trialEndTime = plxSession(trl).FrontRewardTime;
-    elseif isempty(frontReward) && (plxSession(trl).TranspositionDistance == 0)
-        trialEndTime = curOdorTime + odorTrigPokeDur;
-    elseif isempty(frontReward) && ~(plxSession(trl).TranspositionDistance == 0)
-        trialEndTime = curOdorTime + 1;
+    elseif isempty(frontReward) 
+        nextOdorTrigPoke = pokeInitiationTimes(find(pokeInitiationTimes<nextOdorTime,1,'last'));
+        trialEndTime = nextOdorTrigPoke;
     end
     trialPokeLog = (pokeInitiationTimes>curOdorTime) & (pokeInitiationTimes<trialEndTime);
     trialPokes = pokeInitiationTimes(trialPokeLog);
@@ -369,7 +369,14 @@ for trl = 1:length(cleanOdorTimes)
         error('Go here this code should not. Tell gabe you should!');
     end
     trialInterPokeIntervals = interPokeInterval(trialPokeLog);
+    
     if ~isempty(trialPokes)
+        lastTrialPoke = find(trialInterPokeIntervals>0.3,1,'first');
+        if ~isempty(lastTrialPoke)
+            trialPokes = trialPokes(1:lastTrialPoke);
+            trialPokesDurations = trialPokesDurations(1:lastTrialPoke);
+            trialInterPokeIntervals = trialInterPokeIntervals(1:lastTrialPoke);
+        end
         plxSession(trl).MultiOdorPokeLog = 1;
         plxSession(trl).OdorPokesDurations = [[max(preOdorPokes), odorTrigPokeDur, odorTrigPokeIPI]; [trialPokes, trialPokesDurations, trialInterPokeIntervals]];
         plxSession(trl).PokeDuration = sum(plxSession(trl).OdorPokesDurations(:,2));

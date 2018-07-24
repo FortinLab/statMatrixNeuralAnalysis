@@ -23,8 +23,8 @@ spkFiles = spkFiles(logical(cellfun(@(a)~isempty(a), strfind(spkFiles, '.plx')))
 outputFileName = inputdlg('Name Output File', 'origPlxFile', 1, {[origPlxFile(1:end-4) '_MS']});
 
 %% Behavioral Data
-% [behaviorData] = SummarizePLXabbr_BOS(origPlxFile);
-[behaviorData] = SummarizePLXevents_SD(origPlxFile);
+[behaviorData] = SummarizePLXabbr_BOS(origPlxFile);
+% [behaviorData] = SummarizePLXevents_SD(origPlxFile);
 chan = 1;
 [samp, ~, tetTS, fn, ~] = plx_ad_v(origPlxFile, chan);
 while tetTS == -1
