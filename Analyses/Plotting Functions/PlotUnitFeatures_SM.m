@@ -57,20 +57,40 @@ text(maxTemplate, curUnitSummary.Spike_Features(3,1), curUnitSummary.Spike_Featu
     {'\bf \fontsize{12} Peak', '\downarrow'}, 'horizontalalignment', 'center', 'verticalalignment', 'bottom');
 
 %% Plot Autocorrelation
-autoCorrBySpk = nan(length(curUniSpikeTimes), 160);
+% autoCorrBySpk = nan(length(curUniSpikeTimes), 160);
+% for spk = 1:length(curUniSpikeTimes)
+%     curRelativeSpikeTimes = curUniSpikeTimes(spk)-curUniSpikeTimes;
+%     curRelativeSpikeTimes(curRelativeSpikeTimes==0)=[];
+%     autoCorrBySpk(spk,:) = histcounts(curRelativeSpikeTimes, linspace(-1,1,161));
+% end
+% autoCorr = sum(autoCorrBySpk,1);
+% 
+% subplot(2,4,5:6)
+% bar(linspace(-1,1,160), autoCorr, 'black');
+% title({'Autocorrellogram', sprintf('Mean Spike Rate = %.02g spk/s', curUnitSummary.Mean_SpikeRate)});
+% axis tight
+% xlabel Time
+% ylabel Counts
+
+relSpkTms = nan(length(curUniSpikeTimes), 2);
 for spk = 1:length(curUniSpikeTimes)
-    curRelativeSpikeTimes = curUniSpikeTimes(spk)-curUniSpikeTimes;
-    curRelativeSpikeTimes(curRelativeSpikeTimes==0)=[];
-    autoCorrBySpk(spk,:) = histcounts(curRelativeSpikeTimes, linspace(-1,1,161));
+    postSpkDiff = (curUniSpikeTimes(find(curUniSpikeTimes>curUniSpikeTimes(spk),1,'first')) - curUniSpikeTimes(spk));
+    if ~isempty(postSpkDiff)
+        relSpkTms(spk,1) = postSpkDiff;
+    end
+    preSpkDiff = (curUniSpikeTimes(find(curUniSpikeTimes<curUniSpikeTimes(spk),1,'last')) - curUniSpikeTimes(spk));
+    if ~isempty(preSpkDiff)
+        relSpkTms(spk,2) = preSpkDiff;
+    end
 end
-autoCorr = sum(autoCorrBySpk,1);
 
 subplot(2,4,5:6)
-bar(linspace(-1,1,160), autoCorr, 'black');
+histogram(relSpkTms, -0.5:0.001:0.5);
 title({'Autocorrellogram', sprintf('Mean Spike Rate = %.02g spk/s', curUnitSummary.Mean_SpikeRate)});
 axis tight
 xlabel Time
 ylabel Counts
+
 
 %% Plot Text blah
 subplot(2,4,7:8)
