@@ -245,6 +245,7 @@ plxSession = struct('TrialNum', {txtDta.TrialNum},...
     'PokeDuration', repmat({nan}, size(txtDta)),...
     'OdorPokeWithdrawTime', repmat({nan}, size(txtDta)),...
     'OdorPokesDurations', repmat({[]}, size(txtDta)),...
+    'TrialPokesDurations', repmat({[]}, size(txtDta)),...
     'PositionData', repmat({nan}, size(txtDta)),...
     'AniReturnToOrigin', repmat({nan}, size(txtDta)),...
     'FrontRewardTime', repmat({nan}, size(txtDta)),...
@@ -267,65 +268,71 @@ for trl = 1:length(plxSession)
     if trl == length(plxSession)
         frontRwdTime = frontRewardTimes(find(frontRewardTimes>odorTimesAllSorted(trl,1),1,'first'));
         rearRwdTime = backRewardTimes(find(backRewardTimes>odorTimesAllSorted(trl,1),1,'first'));
+        allTrlPokesLog = pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime;
     else
         frontRwdTime = frontRewardTimes((frontRewardTimes>odorTimesAllSorted(trl,1)) & (frontRewardTimes<odorTimesAllSorted(trl+1,1)));
         rearRwdTime = backRewardTimes((backRewardTimes>odorTimesAllSorted(trl,1)) & (backRewardTimes<odorTimesAllSorted(trl+1,1)));
+        allTrlPokesLog = (pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime) &...
+            (pokeInitiationTimes<odorTimesAllSorted(trl+1,1));
     end
     plxSession(trl).FrontRewardTime = frontRwdTime;
     plxSession(trl).BackRewardTime = rearRwdTime;
+        
+    allTrlPokesMtrx = [pokeInitiationTimes(allTrlPokesLog),...
+        pokeEndTimes(allTrlPokesLog),...
+        pokeInitiationTimes(allTrlPokesLog)-plxSession(trl).OdorTrigPokeTime,...
+        pokeEndTimes(allTrlPokesLog)-plxSession(trl).OdorTrigPokeTime,...
+        interPokeInterval(allTrlPokesLog)];
+    if trl ~= length(plxSession)
+        allTrlPokesMtrx(end,:) = [];
+    end
+    plxSession(trl).TrialPokesDurations = allTrlPokesMtrx;
     
 %     if (frontRwdTime - odorTimesAllSorted(trl,1)) > (curTargDur + 1)
 %         plxSession(trl).Errors = [plxSession(trl).Errors; {sprintf('Excessive reward latency (%i), possible poke in timing error on #%i', round(frontRwdTime - odorTimesAllSorted(trl,1), 4), trl)}];
 %     end
     
+        
     % Next identify all potential trial pokes
-    if isempty(plxSession(trl).OdorPokesDurations)
-        switch rwdCase
-            case 'InSeq'
-                if plxSession(trl).TranspositionDistance==0 && plxSession(trl).Performance==1
-                    if ~isempty(frontRwdTime)
-                        potTrlPokesLog = (pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime) &...
-                            (pokeInitiationTimes<frontRwdTime);
-                    else
-                        plxSession(trl).Errors = [plxSession(trl).Errors; {'ErrType1: No reward time stamp when one should be present'}];
-                        fprintf(outfile, 'ErrType1: No reward time stamp when one should be present on trial %i\n', trl);
-                        potTrlPokesLog = (pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime) &...
-                            (pokeInitiationTimes<(plxSession(trl).ItemPresentationTime + curTargDur));
-                    end                        
+    switch rwdCase
+        case 'InSeq'
+            if plxSession(trl).TranspositionDistance==0 && plxSession(trl).Performance==1
+                if ~isempty(frontRwdTime)
+                    potTrlPokesLog = (pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime) &...
+                        (pokeInitiationTimes<frontRwdTime);
                 else
+                    plxSession(trl).Errors = [plxSession(trl).Errors; {'ErrType1: No reward time stamp when one should be present'}];
+                    fprintf(outfile, 'ErrType1: No reward time stamp when one should be present on trial %i\n', trl);
                     potTrlPokesLog = (pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime) &...
                         (pokeInitiationTimes<(plxSession(trl).ItemPresentationTime + curTargDur));
                 end
-            case 'Both'
-        end
-        
-        curTrlPokeMtrx = [pokeInitiationTimes(potTrlPokesLog),...
-            pokeEndTimes(potTrlPokesLog),...
-            pokeInitiationTimes(potTrlPokesLog)-plxSession(trl).OdorTrigPokeTime,...
-            pokeEndTimes(potTrlPokesLog)-plxSession(trl).OdorTrigPokeTime,...
-            interPokeInterval(potTrlPokesLog)];
-        
-        plxSession(trl).OdorPokesDurations = curTrlPokeMtrx;
-    else
-        curTrlPokeMtrx = plxSession(trl).OdorPokesDurations;
+            else
+                potTrlPokesLog = (pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime) &...
+                    (pokeInitiationTimes<(plxSession(trl).ItemPresentationTime + curTargDur));
+            end
+        case 'Both'
     end
+    
+    curTrlPokeMtrx = [pokeInitiationTimes(potTrlPokesLog),...
+        pokeEndTimes(potTrlPokesLog),...
+        pokeInitiationTimes(potTrlPokesLog)-plxSession(trl).OdorTrigPokeTime,...
+        pokeEndTimes(potTrlPokesLog)-plxSession(trl).OdorTrigPokeTime,...
+        interPokeInterval(potTrlPokesLog)];
+    
+    plxSession(trl).OdorPokesDurations = curTrlPokeMtrx;
     
     
     if size(curTrlPokeMtrx,1)==1
+        plxSession(trl).PokeDuration = curTrlPokeMtrx(1,4);
+        plxSession(trl).OdorPokeWithdrawTime = curTrlPokeMtrx(1,2);
+        plxSession(trl).MultiOdorPokeLog = false;
         if (round(curTrlPokeMtrx(1,4),4) == round(txtPokeDur(trl),4)) ||...
                 round(curTrlPokeMtrx(1,4),5) == round(txtPokeDur(trl),5)
-            plxSession(trl).PokeDuration = curTrlPokeMtrx(1,4);
-            plxSession(trl).OdorPokeWithdrawTime = curTrlPokeMtrx(1,2);
-            plxSession(trl).MultiOdorPokeLog = false;
         elseif ((round(curTrlPokeMtrx(1,4),4) > round(txtPokeDur(trl),4))||...
                 (round(curTrlPokeMtrx(1,4),5) > round(txtPokeDur(trl),5))) &&...
                 ((plxSession(trl).TranspositionDistance==0 && plxSession(trl).Performance==1) ||...
                 (plxSession(trl).TranspositionDistance~=0 && plxSession(trl).Performance~=1))
-            plxSession(trl).PokeDuration = curTrlPokeMtrx(1,4);
-            plxSession(trl).OdorPokeWithdrawTime = curTrlPokeMtrx(1,2);
-            plxSession(trl).MultiOdorPokeLog = false;
         else
-            plxSession(trl).PokeDuration = curTrlPokeMtrx(:,4);
             plxSession(trl).Errors = [plxSession(trl).Errors; {'ErrType2: Here''s a stupid trial'}];
             fprintf(outfile, 'ErrType2: Here''s a stupid trial %i is stupid, probable flick buffer error\n', trl);
         end
@@ -340,6 +347,7 @@ for trl = 1:length(plxSession)
                 curPokeDur = curTrlPokeMtrx(p,4);
                 if (curIPI > curTxtBuffer) && (p<size(curTrlPokeMtrx,1))
                     plxSession(trl).PokeDuration = curTrlPokeMtrx(end,4);
+                    plxSession(trl).OdorPokeWithdrawTime = curTrlPokeMtrx(end,2);
                     plxSession(trl).Errors = [plxSession(trl).Errors; {sprintf('ErrType3: Buffer Error, IPI between pokes %i and %i are longer than buffer', p, p+1)}];
                     fprintf(outfile, 'ErrType3: Buffer Error, IPI between pokes %i and %i are longer than buffer on trial #%i\n', p, p+1, trl);
                     break
@@ -446,6 +454,7 @@ for trl = 1:length(plxSession)
                             end
                         else
                             plxSession(trl).PokeDuration = curTrlPokeMtrx(end,4);
+                            plxSession(trl).OdorPokeWithdrawTime = curTrlPokeMtrx(end,2);
                             plxSession(trl).Errors = [plxSession(trl).Errors; {'ErrType11: No matching poke duration for the textfile hold duration value'}];
                             fprintf(outfile, 'ErrType11: No matching poke duration for the textfile hold duration value for trial #%i\n', trl);
                             break
@@ -457,6 +466,7 @@ for trl = 1:length(plxSession)
             end
         else
             plxSession(trl).PokeDuration = curTrlPokeMtrx(end,4);
+            plxSession(trl).OdorPokeWithdrawTime = curTrlPokeMtrx(end,2);
             plxSession(trl).Errors = [plxSession(trl).Errors; {sprintf('ErrType12: Initial poke buffer error on trial #%i', trl)}];
             fprintf(outfile, 'ErrType12: Initial poke buffer error on trial... flicking? #%i\n', trl);
         end
