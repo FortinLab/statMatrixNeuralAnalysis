@@ -27,6 +27,7 @@ plxHDscatX = [];
 plxHDscatY = [];
 for trl = 1:length(errorTrls)
     curPokeMtrx = errorTrls(trl).OdorPokesDurations;
+%     curPokeMtrx = errorTrls(trl).TrialPokesDurations;
     for p = 1:size(curPokeMtrx,1)
         if errorTrls(trl).TranspositionDistance == 0
             line(curPokeMtrx(p,3:4), ones(1,2).*(length(errorTrls)-trl+1), 'marker', '*', 'color', 'black');
