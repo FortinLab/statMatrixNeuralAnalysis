@@ -280,8 +280,12 @@ for trl = 1:length(plxSession)
         allTrlPokesLog = (pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime) &...
             (pokeInitiationTimes<odorTimesAllSorted(trl+1,1));
     end
-    plxSession(trl).FrontRewardTime = frontRwdTime;
-    plxSession(trl).BackRewardTime = rearRwdTime;
+    if ~isempty(frontRwdTime)
+        plxSession(trl).FrontRewardTime = frontRwdTime;
+    end
+    if ~isempty(rearRwdTime)
+        plxSession(trl).BackRewardTime = rearRwdTime;
+    end
         
     % Create the trial poke matrix, depicting the observed poking behavior
     % on the trial.

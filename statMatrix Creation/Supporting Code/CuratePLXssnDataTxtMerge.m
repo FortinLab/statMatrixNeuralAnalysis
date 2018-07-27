@@ -11,8 +11,8 @@ identifier = plxData.Summary.Identifier;
 
 errTrials = find(logical(cell2mat(arrayfun(@(a)~isempty(a.Errors), plxSession, 'uniformoutput',0))));
 
-outfile = fopen(sprintf('%s_CuratePLX_%i.txt', plxData.Summary.FileName(1:end-4), identifier), 'wt');
-fprintf(outfile, '%s txtDta file merger PLX timestamp curation summary\n', plxData.Summary.FileName);
+outfile = fopen(sprintf('%s_CuratePLX_%i.txt', plxData.Summary.PlxFile(1:end-4), identifier), 'wt');
+fprintf(outfile, '%s txtDta file merger PLX timestamp curation summary\n', plxData.Summary.PlxFile);
 
 
 %% Run through the error trials
@@ -80,4 +80,4 @@ PlotErrorTrialsPLXtxtMerge(plxSession, plxText, plxData.Summary)
 plxData.CuratedPLX = plxSession;
 plxData.CuratedTXT = plxText;
 fclose(outfile);
-uisave('plxData', [plxData.Summary.FileName(1:end-4) '_plxData.mat']);
+uisave('plxData', [plxData.Summary.PlxFile(1:end-4) '_plxData.mat']);

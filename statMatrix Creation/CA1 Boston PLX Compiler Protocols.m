@@ -7,11 +7,11 @@
 % is composed of multiple plx files you merge them appropriately using the
 % PlexUtil program.
 
-% plxFile = 'SuperChris-2-12-09.plx'
+plxFile = 'SuperChris-2-12-09.plx'
 % plxFile = 'Stella-2-12-2009.plx'
 % plxFile = 'Barat-11-06-2008Skips_mrg.plx'
 % plxFile = 'Buchanan4-20-withskips_mrg.plx'
-plxFile = 'Mitt_July18_5odorswithSkips.plx'
+% plxFile = 'Mitt_July18_5odorswithSkips.plx'
 
 % Run the plxData compiler.
 %   -It will generate a text file with the suffix "_MergeSummary_####" 
