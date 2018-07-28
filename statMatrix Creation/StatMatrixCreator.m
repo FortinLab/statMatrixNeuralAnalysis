@@ -467,10 +467,11 @@ for chan = 1:length(tetLFPchanNames)
         fprintf('          %s saved!\n', curTet);
     end
 end
-
-ensembleMatrix = [tsVect(1:end-1), cell2mat(ensembleMatrix)]; %#ok<NASGU>
-ensembleMatrixColIDs = [{'TimeBin'}, ensembleMatrixColIDs{:}]; %#ok<NASGU>
-ensembleUnitSummaries = cell2mat(ensembleUnitSummaries); %#ok<NASGU>
-save([outputFileName{1} '_EnsembleMatrix.mat'], 'ensembleMatrix', 'ensembleMatrixColIDs', 'ensembleUnitSummaries', '-v7.3');
-fprintf('%s ensembleMatrix saved!\n', outputFileName{1});
+if ~isempty(cell2mat(ensembleMatrix))
+    ensembleMatrix = [tsVect(1:end-1), cell2mat(ensembleMatrix)]; %#ok<NASGU>
+    ensembleMatrixColIDs = [{'TimeBin'}, ensembleMatrixColIDs{:}]; %#ok<NASGU>
+    ensembleUnitSummaries = cell2mat(ensembleUnitSummaries); %#ok<NASGU>
+    save([outputFileName{1} '_EnsembleMatrix.mat'], 'ensembleMatrix', 'ensembleMatrixColIDs', 'ensembleUnitSummaries', '-v7.3');
+    fprintf('%s ensembleMatrix saved!\n', outputFileName{1});
+end
 end

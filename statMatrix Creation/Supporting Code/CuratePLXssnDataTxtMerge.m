@@ -20,8 +20,8 @@ flRmvlLog = false(size(plxSession));
 for trl = 1:length(errTrials)
     h = figure('position', [680 750 560 210]);
     hold on
-%     curPokeMtrx = plxSession(errTrials(trl)).OdorPokesDurations;
-    curPokeMtrx = plxSession(errTrials(trl)).TrialPokesDurations;
+    curPokeMtrx = plxSession(errTrials(trl)).OdorPokesDurations;
+%     curPokeMtrx = plxSession(errTrials(trl)).TrialPokesDurations;
     for p = 1:size(curPokeMtrx,1)
         if plxSession(errTrials(trl)).TranspositionDistance == 0
             line(curPokeMtrx(p,3:4), ones(1,2), 'marker', '*', 'color', 'black');
