@@ -1,5 +1,6 @@
 %% StatMatrixCreator
 % Code to create the statMatrix data structure from recorded data
+start = tic;
 %% Identify experimental Type
 % Tetrode Ensemble
 % Multi-site LFP
@@ -19,6 +20,7 @@ switch expType
         exp = 3;
     case ''
         disp('statMatrix creation cancelled');
+        return
 end
 
 %% Identify data source
@@ -52,8 +54,13 @@ switch dataSource
                     case 'Don''t got it, gotta make it'
                         disp('statMatrix creation cancelled because of no plxData file');
                         return
+                    case ''
+                        disp('statMatrix creation cancelled');
                 end
                 rig = 2;
+            case ''
+                disp('statMatrix creation cancelled');
+                return
         end
         [fileName, filePath] = uigetfile('.plx','Identify .PLX Session File');
         if fileName == 0
@@ -70,6 +77,7 @@ switch dataSource
         outputFileName = inputdlg('Determine File Suffix');
     case ''
         disp('statMatrix creation cancelled');
+        return
 end
 
 %% Data Type
@@ -95,18 +103,43 @@ switch dataType
         end
     case ''
         disp('statMatrix creation cancelled');
+        return
 end
-
+%% Create Log File
+outfile = fopen([outputFileName{1} '_SMcreationLog.txt'], 'wt');
+curTime = clock;
+fprintf(outfile, 'Initialized %s at %i:%i.%i\n', date, curTime(4), curTime(5), round(curTime(6)));
+fprintf(outfile, 'Working Directory = %s\n', cd);
+if rig==1 || rig==2
+    fprintf(outfile, '     Plexon File used = %s\n', plxFile);
+end
+fprintf(outfile, 'Experiment Type = %s\n', expType);
+fprintf(outfile, '     Data Source = %s\n', dataSource);
+if rig==1 || rig==2
+    fprintf(outfile, '     Rig = %s\n', plexonType);
+end
+fprintf(outfile, '     Data Type = %s\n', dataType);
+fprintf(outfile, '********************************************************\n');
 %% Now create the statMatrix files
 %% Create Behavior Matrix
 if rig == 1                                                                 % Irvine .plx files
     [plxData] = SummarizePLXevents_SD(plxFile);
     behaviorData = plxData.Raw;
     summary = plxData.Summary;
-    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorData, summary, outputFileName);
+    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorData, summary, outputFileName, outfile);
 elseif rig == 2                                                             % Boston .plx files
     [fileName, filePath] = uigetfile('.mat','Select the plxData file for the recording session');
     load([filePath fileName]);
+    if fileName == 0
+        fprintf(outfile, 'No file plxData file selected... statMatrix creator terminated.\n');
+        error('No file selected, terminating statMatrix creation');
+    else
+        fprintf(outfile, 'Plexon summary file (plxData structure) used = %s\n', fileName);
+        fprintf(outfile, '     File ID = %i\n', plxData.Summary.Identifier);
+        fclose all;
+        movefile([outputFileName{1} '_SMcreationLog.txt'], sprintf('%s_SMcreationLog_%i.txt', outputFileName{1}, plxData.Summary.Identifier));
+        outfile = fopen(sprintf('%s_SMcreationLog_%i.txt', outputFileName{1}, plxData.Summary.Identifier), 'At');
+    end        
     trialType = questdlg('Which trials do you want to compile?',...
         'Determine trials to compile',...
         'All trials',...
@@ -119,15 +152,19 @@ elseif rig == 2                                                             % Bo
             behaviorData = plxData.CuratedPLX;
     end
     summary = plxData.Summary;
-    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorData, summary, outputFileName);
+    fprintf(outfile, '     Trial data used = %s\n', trialType);
+    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorData, summary, outputFileName, outfile);
 elseif rig == 3                                                             % Open Ephys files
     error('Open Ephys not implemented yet');
 end
+clc
 %% Create statMatrix
-CreateNeuralMatrix(exp, data, rig, behavMatrix(:,1), summary, outputFileName)
-    
+CreateNeuralMatrix(exp, data, rig, behavMatrix(:,1), summary, outputFileName, outfile)
+
+fprintf(outfile, 'StatMatrix creation complete. Process took %im\n', round(toc(start))/60);
+fclose(outfile);
 %% Behavior Matrix Creation Functions
-function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorData, summary, outputFileName)
+function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorData, summary, outputFileName, outfile)
     if rig == 1
         file = summary.PLXfile;
     elseif rig == 2
@@ -156,20 +193,25 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorDa
     behDataHeaders = cell(1,seqLength + maxSeqLength + 7);
     % Step through each sequence item/position and identify when odors were
     % presented
+    fprintf(outfile, 'Odor Counts\n');
     for seq = 1:seqLength
-        for pos = 1:maxSeqLength
-            itemPresTimes = [behaviorData([behaviorData.SequenceItem]==seq).ItemPresentationTime];
-            posPresTimes = [behaviorData([behaviorData.OrdinalPosition]==pos).ItemPresentationTime];
-            behVals(:,seq) = histcounts(itemPresTimes, tsVect)';
-            behVals(:,pos+seqLength) = histcounts(posPresTimes, tsVect)';
-            behDataHeaders{seq} = ['Odor' num2str(seq)];
-            behDataHeaders{pos+seqLength} = ['Position' num2str(pos)];
-        end
+        itemPresTimes = [behaviorData([behaviorData.SequenceItem]==seq).ItemPresentationTime];
+        behVals(:,seq) = histcounts(itemPresTimes, tsVect)';
+        behDataHeaders{seq} = ['Odor' num2str(seq)];
+        fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
+    end
+    fprintf(outfile, 'Position Counts\n');
+    for pos = 1:maxSeqLength
+        posPresTimes = [behaviorData([behaviorData.OrdinalPosition]==pos).ItemPresentationTime];
+        behVals(:,pos+seqLength) = histcounts(posPresTimes, tsVect)';
+        behDataHeaders{pos+seqLength} = ['Position' num2str(pos)];
+        fprintf(outfile, '     Position #%i = %i trials\n', pos, length(posPresTimes));
     end
     inSeqOdorPres = [behaviorData([behaviorData.TranspositionDistance]==0).ItemPresentationTime];
     outSeqOdorPres = [behaviorData(~([behaviorData.TranspositionDistance]==0)).ItemPresentationTime];
     behVals(:,seqLength+maxSeqLength+1) = histcounts(inSeqOdorPres, tsVect)' - histcounts(outSeqOdorPres,tsVect)';
     behDataHeaders{maxSeqLength+seqLength+1} = 'InSeqLog';
+    fprintf(outfile, '\nCompiling InSeq trials.....\n     %i trials were InSeq (%i%%)\n', length(inSeqOdorPres), round(length(inSeqOdorPres)/length(behaviorData),2)*100);
     itmPresTimes = [behaviorData.ItemPresentationTime];
     trialPerformance = [behaviorData.Performance];
     corrTrials = itmPresTimes(logical(trialPerformance));
@@ -178,6 +220,7 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorDa
     inCorTrlHistCounts = histcounts(inCorrTrials, tsVect)';
     behVals(:,seqLength + maxSeqLength+2) = corTrlHistCounts + (inCorTrlHistCounts*-1);
     behDataHeaders{seqLength + maxSeqLength+2} = 'PerformanceLog';
+    fprintf(outfile, 'Compiling Performance.....\n     %i trials were correct (%i%%)\n', sum(trialPerformance), round(mean(trialPerformance),2)*100);
 
     behVals(:,seqLength + maxSeqLength+3) = histcounts([behaviorData.OdorTrigPokeTime], tsVect)' - histcounts([behaviorData.OdorPokeWithdrawTime], tsVect)';
     behDataHeaders{seqLength + maxSeqLength+3} = 'PokeEvents';
@@ -251,227 +294,236 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorDa
     behavMatrixColIDs = [{'TimeBin'}, behDataHeaders];
     save([outputFileName{1} '_BehaviorMatrix.mat'], 'behavMatrix', 'behavMatrixColIDs');
     disp('Behavior data saved.');
+    fprintf(outfile, 'Behavior Matrix saved as %s_BehaviorMatrix.mat\n', outputFileName{1});
 end
 
 %% Neural Matrix Creation Function
-function CreateNeuralMatrix(exp, data, rig, tsVect, summary, outputFileName)
-tsVect(end+1) = tsVect(end)+(mode(diff(tsVect)));
-% Identify the source for the lfp Files 
-if rig == 1 || rig == 2
-    if rig == 1                                                         % Plexon collected in Irvine
-        plxFile = summary.PLXfile;
-    elseif rig == 2                                                     % Plexon collected in Boston
-        plxFile = summary.PlxFile;
-    end
-    [~, plxADchanNames] = plx_adchan_names(plxFile);
-    tetLFPchanNames = cell(size(plxADchanNames,1),1);
-    for tet = 1:size(plxADchanNames,1)
-        curADchan = plxADchanNames(tet,:);
-        tetLFPchanNames{tet} = deblank(curADchan);
-    end 
-    [~, ~, ~, contCountFl] = plx_info(plxFile, 0);
-    lfpDataLog = contCountFl ~= 0;
-    tetLFPchanNames(~lfpDataLog) = [];
-    tetLFPchanNames(cellfun(@(a)isempty(a), regexp(tetLFPchanNames, '^T([0-9]*)'))) = [];
-elseif rig == 3                                                             % Open Ephys collection
-    error('Open Ephys not implemented yet');
-end
-% Identify the Spiking Data
-if exp == 1 || 3                                                            % Single-site ensemble data set
-    if data == 1                                                            % Plexon session file
-        % Unit and LFP data pulled from the same file
-        [tsCountFl, ~, ~, ~] = plx_info(plxFile, 0);
-        numUnis = sum(tsCountFl(:,2:end)~=0)-1;
-        numUnis(numUnis==-1) = 0;
-        [~,chanNames] = plx_chan_names(plxFile);
-        tetNames = cell(size(chanNames,1),1);
-        for t = 1:size(chanNames,1)
-            curChanName = deblank(chanNames(t,:));
-            tetNames{t} = curChanName(1:end-2);
-        end
-        tetsWithUnits = unique(tetNames(numUnis>=1));     
-    elseif data == 2 || data == 3                                           % MountainSort cut files
-        % Unit and LFP data pulled from different files
-        %   Unit = individually cut .plx files
-        %   LFP = PLX file (data==2) OR .CONTINUOUS files (data==3)
-        spikeFileDir = uigetdir(cd, 'Where are the cut MountainSort .PLX files?');
-        spikeFileDirFiles = dir([spikeFileDir '\']);
-        spkFiles = {spikeFileDirFiles.name};
-        spkFiles = spkFiles(logical(cellfun(@(a)~isempty(a), strfind(spkFiles, '.plx'))));
-        if data == 2
-            [tetNameStart, tetNameEnd] = regexp(spkFiles, '^T([0-9]*)');
-        elseif data == 3
-            % Determine naming convention for Open Ephys data files.
-            error('Open Ephys not implemented yet');
-        end            
-        tetsWithUnits = cellfun(@(a,b,c)a(b:c), spkFiles, tetNameStart, tetNameEnd, 'uniformoutput', 0);
-    end
-end
-ensembleMatrix = cell(size(tetsWithUnits));
-ensembleMatrixColIDs = cell(size(tetsWithUnits));
-ensembleUnitSummaries = cell(size(tetsWithUnits));
-% Now run through each channel individually to identify things
-% tetLFPchanNames
-% tetsWithUnits
-for chan = 1:length(tetLFPchanNames)
+function CreateNeuralMatrix(exp, data, rig, tsVect, summary, outputFileName, outfile)
+    tsVect(end+1) = tsVect(end)+(mode(diff(tsVect)));
+    % Identify the source for the lfp Files
     if rig == 1 || rig == 2
-        curADchan = tetLFPchanNames{chan};
-        curTet = curADchan(1:end-2);
-        
-        fprintf('Found LFP data for %s on %s\n', curTet, curADchan);
-        [samp, ~, ~, ~, tetV] = plx_ad_v(plxFile, curADchan);
-        
-        [tetRawHilb, tetRawLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1));
-        [tetThetaHilb, tetThetaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),4,12);
-        [tetLowBetaHilb, tetLowBetaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),13,19);
-        [tetBetaHilb, tetBetaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),20,40);
-        [tetLowGammaHilb, tetLowGammaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),41,59);
-        [tetHighGammaHilb, tetHighGammaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),61,80);
-        [tetRipHilb, tetRipLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),150,250);
-        
-        
-        if ~isempty(find(strcmp(curTet, tetsWithUnits), 1))
-            if data == 2 || data == 3
-                tetFile = [spikeFileDir '\' spkFiles{find(strcmp(curTet, tetsWithUnits),1)}];
-                [tsCountFl, ~, ~, ~] = plx_info(tetFile, 0);
-                curNumUnis = sum(tsCountFl(:,2)>0)-1;            
-                curChanNums = 1:4;
-            else
-                tetFile = plxFile;
-                curUniLog = strcmp(tetNames, curTet);                
-                curNumUnis = unique(numUnis(curUniLog));
-                if length(curNumUnis)>1
-                    error('Unit ID selection done plum goofed');
-                end
-                curChanNums = find(curUniLog);
-            end
-        else
-            curNumUnis = 0;
+        if rig == 1                                                         % Plexon collected in Irvine
+            plxFile = summary.PLXfile;
+        elseif rig == 2                                                     % Plexon collected in Boston
+            plxFile = summary.PlxFile;
         end
-        
-        % Now pull out spike data
-        tetUnitTSs = cell(1,curNumUnis);
-        tetUnitIDs = cell(1,curNumUnis);
-        meanTemplates = repmat({cell(1,4)}, [1,curNumUnis]);
-        meanTemplateValues = repmat({nan(3,2)}, [1, curNumUnis]);
-        stdTemplates = repmat({cell(1,4)}, [1,curNumUnis]);
-        meanSpkRt = cell(1,curNumUnis);
-        spkWdth = cell(1,curNumUnis);
-        phaseVals = struct('Mean', nan, 'Median', nan, 'R_Length', nan,...
-            'AngDev', nan, 'CircStDev', nan, 'R_Test', [nan, nan]);
-        phaseInfo = repmat({struct('Theta', phaseVals, 'LowBeta', phaseVals,...
-            'Beta', phaseVals, 'LowGamma', phaseVals, 'HighGamma', phaseVals,...
-            'Ripple', phaseVals)}, [1,curNumUnis]);
-        for uni = 1:curNumUnis
-            tetUnitIDs{uni} = [curTet '-U' num2str(uni)];
-            fprintf('     Compiling unit %s\n', tetUnitIDs{uni});
-            [~, tempTSs] = plx_ts(tetFile, curChanNums(1), uni);
-            tetUnitTSs{uni} = histcounts(tempTSs, tsVect)';
-            wire = 1;
-            for tetChan = 1:length(curChanNums)
-                [~, ~, ~, wave] = plx_waves_v(tetFile, curChanNums(tetChan), uni);
-                meanTemplates{uni}{wire} = mean(wave);
-                stdTemplates{uni}{wire} = std(wave);
-                wire = wire+1;
-            end
-            % Calculate the spike width using the spike template
-            % First find the largest template of the four wires
-            templateHeights = cellfun(@(a)diff([min(a) max(a)]), meanTemplates{uni});
-            largestTemplateNum = find(max(templateHeights)==templateHeights,1,'first');
-            largestTemplate = meanTemplates{uni}{largestTemplateNum};
-            meanTemplateValues{uni}(1,1) = largestTemplateNum;
-            % Find the valley
-            valleyNdx = find(largestTemplate==min(largestTemplate),1,'first');
-            meanTemplateValues{uni}(2,:) = [valleyNdx, largestTemplate(valleyNdx)];
-            % Bag the peak... following the valley
-            peakNdx = find(largestTemplate(valleyNdx:end)==max(largestTemplate(valleyNdx:end)),1,'first') + (valleyNdx-1);
-            meanTemplateValues{uni}(3,:) = [peakNdx, largestTemplate(peakNdx)];
-            % Determine the width
-            spkWdth{uni} = (peakNdx-valleyNdx)/samp;
-            
-            % Calculate the overall spike rate (spk/s)
-            meanSpkRt{uni} = length(tempTSs)/(size(tetUnitTSs{uni},1)/samp);
-            
-            % Now pull out summary phase values
-            % Theta
-            thetaUniPhase = tetThetaHilb(tetUnitTSs{uni}==1);
-            phaseInfo{uni}.Theta.Mean = circ_mean(thetaUniPhase);
-            %         phaseInfo{uni}.Theta.Median = circ_median(thetaUniPhase);
-            phaseInfo{uni}.Theta.R_Length = circ_r(thetaUniPhase);
-            [phaseInfo{uni}.Theta.AngDev, phaseInfo{uni}.Theta.CircStDev] = circ_std(thetaUniPhase);
-            [phaseInfo{uni}.Theta.R_Test(1), phaseInfo{uni}.Theta.R_Test(2)] = circ_rtest(thetaUniPhase);
-            % Low Beta
-            lowBetaUniPhase = tetLowBetaHilb(tetUnitTSs{uni}==1);
-            phaseInfo{uni}.LowBeta.Mean = circ_mean(lowBetaUniPhase);
-            %         phaseInfo{uni}.LowBeta.Median = circ_median(lowBetaUniPhase);
-            phaseInfo{uni}.LowBeta.R_Length = circ_r(lowBetaUniPhase);
-            [phaseInfo{uni}.LowBeta.AngDev, phaseInfo{uni}.LowBeta.CircStDev] = circ_std(lowBetaUniPhase);
-            [phaseInfo{uni}.LowBeta.R_Test(1), phaseInfo{uni}.LowBeta.R_Test(2)] = circ_rtest(lowBetaUniPhase);
-            % Beta
-            betaUniPhase = tetBetaHilb(tetUnitTSs{uni}==1);
-            phaseInfo{uni}.Beta.Mean = circ_mean(betaUniPhase);
-            %         phaseInfo{uni}.Beta.Median = circ_median(betaUniPhase);
-            phaseInfo{uni}.Beta.R_Length = circ_r(betaUniPhase);
-            [phaseInfo{uni}.Beta.AngDev, phaseInfo{uni}.Beta.CircStDev] = circ_std(betaUniPhase);
-            [phaseInfo{uni}.Beta.R_Test(1), phaseInfo{uni}.Beta.R_Test(2)] = circ_rtest(betaUniPhase);
-            % Low Gamma
-            lowGammaUniPhase = tetLowGammaHilb(tetUnitTSs{uni}==1);
-            phaseInfo{uni}.LowGamma.Mean = circ_mean(lowGammaUniPhase);
-            %         phaseInfo{uni}.LowGamma.Median = circ_median(lowGammaUniPhase);
-            phaseInfo{uni}.LowGamma.R_Length = circ_r(lowGammaUniPhase);
-            [phaseInfo{uni}.LowGamma.AngDev, phaseInfo{uni}.LowGamma.CircStDev] = circ_std(lowGammaUniPhase);
-            [phaseInfo{uni}.LowGamma.R_Test(1), phaseInfo{uni}.LowGamma.R_Test(2)] = circ_rtest(lowGammaUniPhase);
-            % High Gamma
-            highGammaUniPhase = tetHighGammaHilb(tetUnitTSs{uni}==1);
-            phaseInfo{uni}.HighGamma.Mean = circ_mean(highGammaUniPhase);
-            %         phaseInfo{uni}.HighGamma.Median = circ_median(highGammaUniPhase);
-            phaseInfo{uni}.HighGamma.R_Length = circ_r(highGammaUniPhase);
-            [phaseInfo{uni}.HighGamma.AngDev, phaseInfo{uni}.HighGamma.CircStDev] = circ_std(highGammaUniPhase);
-            [phaseInfo{uni}.HighGamma.R_Test(1), phaseInfo{uni}.HighGamma.R_Test(2)] = circ_rtest(highGammaUniPhase);
-            % Ripple
-            rippleUniPhase = tetRipHilb(tetUnitTSs{uni}==1);
-            phaseInfo{uni}.Ripple.Mean = circ_mean(rippleUniPhase);
-            %         phaseInfo{uni}.Ripple.Median = circ_median(rippleUniPhase);
-            phaseInfo{uni}.Ripple.R_Length = circ_r(rippleUniPhase);
-            [phaseInfo{uni}.Ripple.AngDev, phaseInfo{uni}.Ripple.CircStDev] = circ_std(rippleUniPhase);
-            [phaseInfo{uni}.Ripple.R_Test(1), phaseInfo{uni}.Ripple.R_Test(2)] = circ_rtest(rippleUniPhase);
-        end        
-        unitSummary = struct('UnitName', tetUnitIDs, 'Spike_Features', meanTemplateValues,...
-            'TemplateMean', meanTemplates, 'TemplateStDev', stdTemplates,...
-            'Mean_SpikeRate', meanSpkRt, 'Spike_Width', spkWdth,...
-            'Spike_Phase_Relations', phaseInfo); 
-        statMatrix = [tsVect(1:end-1),tetRawLFP, tetRawHilb,...
-            tetThetaLFP, tetThetaHilb,...
-            tetLowBetaLFP, tetLowBetaHilb,...
-            tetBetaLFP, tetBetaHilb,...
-            tetLowGammaLFP, tetLowGammaHilb,...
-            tetHighGammaLFP, tetHighGammaHilb,...
-            tetRipLFP, tetRipHilb,...
-            cell2mat(tetUnitTSs)]; %#ok<NASGU>
-        statMatrixColIDs = [{'TimeBin'}, {[curTet '_LFP_Raw']}, {[curTet '_LFP_Raw_HilbVals']},...
-            {[curTet '_LFP_Theta']}, {[curTet '_LFP_Theta_HilbVals']},...
-            {[curTet '_LFP_LowBeta']}, {[curTet '_LFP_LowBeta_HilbVals']},...
-            {[curTet '_LFP_Beta']}, {[curTet '_LFP_Beta_HilbVals']},...
-            {[curTet '_LFP_LowGamma']}, {[curTet '_LFP_LowGamma_HilbVals']},...
-            {[curTet '_LFP_HighGamma']}, {[curTet '_LFP_HighGamma_HilbVals']},...
-            {[curTet '_LFP_Ripple']}, {[curTet '_LFP_Ripple_HilbVals']},...
-            tetUnitIDs]; %#ok<NASGU>
-        
-        if curNumUnis >= 1
-            ensembleMatrix{find(strcmp(curTet, tetsWithUnits), 1)} = cell2mat(tetUnitTSs);
-            ensembleMatrixColIDs{find(strcmp(curTet, tetsWithUnits), 1)} = tetUnitIDs;
-            ensembleUnitSummaries{find(strcmp(curTet, tetsWithUnits), 1)} = unitSummary;
+        [~, plxADchanNames] = plx_adchan_names(plxFile);
+        tetLFPchanNames = cell(size(plxADchanNames,1),1);
+        for tet = 1:size(plxADchanNames,1)
+            curADchan = plxADchanNames(tet,:);
+            tetLFPchanNames{tet} = deblank(curADchan);
         end
-        
-        save([outputFileName{1} '_' curTet '.mat'], 'statMatrix', 'statMatrixColIDs', 'unitSummary', '-v7.3');
-        fprintf('          %s saved!\n', curTet);
+        [~, ~, ~, contCountFl] = plx_info(plxFile, 0);
+        lfpDataLog = contCountFl ~= 0;
+        tetLFPchanNames(~lfpDataLog) = [];
+        tetLFPchanNames(cellfun(@(a)isempty(a), regexp(tetLFPchanNames, '^T([0-9]*)'))) = [];
+    elseif rig == 3                                                             % Open Ephys collection
+        error('Open Ephys not implemented yet');
     end
-end
-if ~isempty(cell2mat(ensembleMatrix))
-    ensembleMatrix = [tsVect(1:end-1), cell2mat(ensembleMatrix)]; %#ok<NASGU>
-    ensembleMatrixColIDs = [{'TimeBin'}, ensembleMatrixColIDs{:}]; %#ok<NASGU>
-    ensembleUnitSummaries = cell2mat(ensembleUnitSummaries); %#ok<NASGU>
-    save([outputFileName{1} '_EnsembleMatrix.mat'], 'ensembleMatrix', 'ensembleMatrixColIDs', 'ensembleUnitSummaries', '-v7.3');
-    fprintf('%s ensembleMatrix saved!\n', outputFileName{1});
-end
+    % Identify the Spiking Data
+    if exp == 1 || 3                                                            % Single-site ensemble data set
+        if data == 1                                                            % Plexon session file
+            % Unit and LFP data pulled from the same file
+            [tsCountFl, ~, ~, ~] = plx_info(plxFile, 0);
+            numUnis = sum(tsCountFl(:,2:end)~=0)-1;
+            numUnis(numUnis==-1) = 0;
+            [~,chanNames] = plx_chan_names(plxFile);
+            tetNames = cell(size(chanNames,1),1);
+            for t = 1:size(chanNames,1)
+                curChanName = deblank(chanNames(t,:));
+                tetNames{t} = curChanName(1:end-2);
+            end
+            tetsWithUnits = unique(tetNames(numUnis>=1));
+        elseif data == 2 || data == 3                                           % MountainSort cut files
+            % Unit and LFP data pulled from different files
+            %   Unit = individually cut .plx files
+            %   LFP = PLX file (data==2) OR .CONTINUOUS files (data==3)
+            spikeFileDir = uigetdir(cd, 'Where are the cut MountainSort .PLX files?');
+            fprintf(outfile, 'MountainSort pre-processed, manually curated .plx flies selected from: %s\n\n', [spikeFileDir '\']);
+            spikeFileDirFiles = dir([spikeFileDir '\']);
+            spkFiles = {spikeFileDirFiles.name};
+            spkFiles = spkFiles(logical(cellfun(@(a)~isempty(a), strfind(spkFiles, '.plx'))));
+            if data == 2
+                [tetNameStart, tetNameEnd] = regexp(spkFiles, '^T([0-9]*)');
+            elseif data == 3
+                % Determine naming convention for Open Ephys data files.
+                error('Open Ephys not implemented yet');
+            end
+            tetsWithUnits = cellfun(@(a,b,c)a(b:c), spkFiles, tetNameStart, tetNameEnd, 'uniformoutput', 0);
+        end
+    end
+    ensembleMatrix = cell(size(tetsWithUnits));
+    ensembleMatrixColIDs = cell(size(tetsWithUnits));
+    ensembleUnitSummaries = cell(size(tetsWithUnits));
+    % Now run through each channel individually to identify things
+    % tetLFPchanNames
+    % tetsWithUnits
+    for chan = 1:length(tetLFPchanNames)
+        if rig == 1 || rig == 2
+            curADchan = tetLFPchanNames{chan};
+            curTet = curADchan(1:end-2);
+            fprintf('Found LFP data for %s on %s\n', curTet, curADchan);
+            fprintf(outfile, 'Processing Tetrode %s\n', curTet);
+            fprintf(outfile, '     LFP data taken from %s\n', curADchan);
+
+            [samp, ~, ~, ~, tetV] = plx_ad_v(plxFile, curADchan);
+
+            [tetRawHilb, tetRawLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1));
+            [tetThetaHilb, tetThetaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),4,12);
+            [tetLowBetaHilb, tetLowBetaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),13,19);
+            [tetBetaHilb, tetBetaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),20,40);
+            [tetLowGammaHilb, tetLowGammaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),41,59);
+            [tetHighGammaHilb, tetHighGammaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),61,80);
+            [tetRipHilb, tetRipLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),150,250);
+
+
+            if ~isempty(find(strcmp(curTet, tetsWithUnits), 1))
+                if data == 2 || data == 3
+                    tetFile = [spikeFileDir '\' spkFiles{find(strcmp(curTet, tetsWithUnits),1)}];
+                    [tsCountFl, ~, ~, ~] = plx_info(tetFile, 0);
+                    curNumUnis = sum(tsCountFl(:,2)>0)-1;
+                    curChanNums = 1:4;
+                else
+                    tetFile = plxFile;
+                    curUniLog = strcmp(tetNames, curTet);
+                    curNumUnis = unique(numUnis(curUniLog));
+                    if length(curNumUnis)>1
+                        error('Unit ID selection done plum goofed');
+                    end
+                    curChanNums = find(curUniLog);
+                end
+                fprintf(outfile, '     Tetrode has %i units, extracted from %s\n', curNumUnis, tetFile);
+            else
+                curNumUnis = 0;
+                fprintf(outfile, '     Tetrode has 0 units\n');
+            end
+            % Now pull out spike data
+            tetUnitTSs = cell(1,curNumUnis);
+            tetUnitIDs = cell(1,curNumUnis);
+            meanTemplates = repmat({cell(1,4)}, [1,curNumUnis]);
+            meanTemplateValues = repmat({nan(3,2)}, [1, curNumUnis]);
+            stdTemplates = repmat({cell(1,4)}, [1,curNumUnis]);
+            meanSpkRt = cell(1,curNumUnis);
+            spkWdth = cell(1,curNumUnis);
+            phaseVals = struct('Mean', nan, 'Median', nan, 'R_Length', nan,...
+                'AngDev', nan, 'CircStDev', nan, 'R_Test', [nan, nan]);
+            phaseInfo = repmat({struct('Theta', phaseVals, 'LowBeta', phaseVals,...
+                'Beta', phaseVals, 'LowGamma', phaseVals, 'HighGamma', phaseVals,...
+                'Ripple', phaseVals)}, [1,curNumUnis]);
+            for uni = 1:curNumUnis
+                tetUnitIDs{uni} = [curTet '-U' num2str(uni)];
+                fprintf('     Compiling unit %s\n', tetUnitIDs{uni});
+                fprintf(outfile, '          Compiling %s.......', tetUnitIDs{uni});
+                [~, tempTSs] = plx_ts(tetFile, curChanNums(1), uni);
+                tetUnitTSs{uni} = histcounts(tempTSs, tsVect)';
+                wire = 1;
+                for tetChan = 1:length(curChanNums)
+                    [~, ~, ~, wave] = plx_waves_v(tetFile, curChanNums(tetChan), uni);
+                    meanTemplates{uni}{wire} = mean(wave);
+                    stdTemplates{uni}{wire} = std(wave);
+                    wire = wire+1;
+                end
+                fprintf(outfile, 'Waveform extraction complete, %i spikes found for %s\n', length(tempTSs), tetUnitIDs{uni});
+                % Calculate the spike width using the spike template
+                % First find the largest template of the four wires
+                templateHeights = cellfun(@(a)diff([min(a) max(a)]), meanTemplates{uni});
+                largestTemplateNum = find(max(templateHeights)==templateHeights,1,'first');
+                largestTemplate = meanTemplates{uni}{largestTemplateNum};
+                meanTemplateValues{uni}(1,1) = largestTemplateNum;
+                % Find the valley
+                valleyNdx = find(largestTemplate==min(largestTemplate),1,'first');
+                meanTemplateValues{uni}(2,:) = [valleyNdx, largestTemplate(valleyNdx)];
+                % Bag the peak... following the valley
+                peakNdx = find(largestTemplate(valleyNdx:end)==max(largestTemplate(valleyNdx:end)),1,'first') + (valleyNdx-1);
+                meanTemplateValues{uni}(3,:) = [peakNdx, largestTemplate(peakNdx)];
+                % Determine the width
+                spkWdth{uni} = (peakNdx-valleyNdx)/samp;
+
+                % Calculate the overall spike rate (spk/s)
+                meanSpkRt{uni} = length(tempTSs)/(size(tetUnitTSs{uni},1)/samp);
+
+                % Now pull out summary phase values
+                % Theta
+                thetaUniPhase = tetThetaHilb(tetUnitTSs{uni}==1);
+                phaseInfo{uni}.Theta.Mean = circ_mean(thetaUniPhase);
+                %         phaseInfo{uni}.Theta.Median = circ_median(thetaUniPhase);
+                phaseInfo{uni}.Theta.R_Length = circ_r(thetaUniPhase);
+                [phaseInfo{uni}.Theta.AngDev, phaseInfo{uni}.Theta.CircStDev] = circ_std(thetaUniPhase);
+                [phaseInfo{uni}.Theta.R_Test(1), phaseInfo{uni}.Theta.R_Test(2)] = circ_rtest(thetaUniPhase);
+                % Low Beta
+                lowBetaUniPhase = tetLowBetaHilb(tetUnitTSs{uni}==1);
+                phaseInfo{uni}.LowBeta.Mean = circ_mean(lowBetaUniPhase);
+                %         phaseInfo{uni}.LowBeta.Median = circ_median(lowBetaUniPhase);
+                phaseInfo{uni}.LowBeta.R_Length = circ_r(lowBetaUniPhase);
+                [phaseInfo{uni}.LowBeta.AngDev, phaseInfo{uni}.LowBeta.CircStDev] = circ_std(lowBetaUniPhase);
+                [phaseInfo{uni}.LowBeta.R_Test(1), phaseInfo{uni}.LowBeta.R_Test(2)] = circ_rtest(lowBetaUniPhase);
+                % Beta
+                betaUniPhase = tetBetaHilb(tetUnitTSs{uni}==1);
+                phaseInfo{uni}.Beta.Mean = circ_mean(betaUniPhase);
+                %         phaseInfo{uni}.Beta.Median = circ_median(betaUniPhase);
+                phaseInfo{uni}.Beta.R_Length = circ_r(betaUniPhase);
+                [phaseInfo{uni}.Beta.AngDev, phaseInfo{uni}.Beta.CircStDev] = circ_std(betaUniPhase);
+                [phaseInfo{uni}.Beta.R_Test(1), phaseInfo{uni}.Beta.R_Test(2)] = circ_rtest(betaUniPhase);
+                % Low Gamma
+                lowGammaUniPhase = tetLowGammaHilb(tetUnitTSs{uni}==1);
+                phaseInfo{uni}.LowGamma.Mean = circ_mean(lowGammaUniPhase);
+                %         phaseInfo{uni}.LowGamma.Median = circ_median(lowGammaUniPhase);
+                phaseInfo{uni}.LowGamma.R_Length = circ_r(lowGammaUniPhase);
+                [phaseInfo{uni}.LowGamma.AngDev, phaseInfo{uni}.LowGamma.CircStDev] = circ_std(lowGammaUniPhase);
+                [phaseInfo{uni}.LowGamma.R_Test(1), phaseInfo{uni}.LowGamma.R_Test(2)] = circ_rtest(lowGammaUniPhase);
+                % High Gamma
+                highGammaUniPhase = tetHighGammaHilb(tetUnitTSs{uni}==1);
+                phaseInfo{uni}.HighGamma.Mean = circ_mean(highGammaUniPhase);
+                %         phaseInfo{uni}.HighGamma.Median = circ_median(highGammaUniPhase);
+                phaseInfo{uni}.HighGamma.R_Length = circ_r(highGammaUniPhase);
+                [phaseInfo{uni}.HighGamma.AngDev, phaseInfo{uni}.HighGamma.CircStDev] = circ_std(highGammaUniPhase);
+                [phaseInfo{uni}.HighGamma.R_Test(1), phaseInfo{uni}.HighGamma.R_Test(2)] = circ_rtest(highGammaUniPhase);
+                % Ripple
+                rippleUniPhase = tetRipHilb(tetUnitTSs{uni}==1);
+                phaseInfo{uni}.Ripple.Mean = circ_mean(rippleUniPhase);
+                %         phaseInfo{uni}.Ripple.Median = circ_median(rippleUniPhase);
+                phaseInfo{uni}.Ripple.R_Length = circ_r(rippleUniPhase);
+                [phaseInfo{uni}.Ripple.AngDev, phaseInfo{uni}.Ripple.CircStDev] = circ_std(rippleUniPhase);
+                [phaseInfo{uni}.Ripple.R_Test(1), phaseInfo{uni}.Ripple.R_Test(2)] = circ_rtest(rippleUniPhase);
+            end
+            unitSummary = struct('UnitName', tetUnitIDs, 'Spike_Features', meanTemplateValues,...
+                'TemplateMean', meanTemplates, 'TemplateStDev', stdTemplates,...
+                'Mean_SpikeRate', meanSpkRt, 'Spike_Width', spkWdth,...
+                'Spike_Phase_Relations', phaseInfo);
+            statMatrix = [tsVect(1:end-1),tetRawLFP, tetRawHilb,...
+                tetThetaLFP, tetThetaHilb,...
+                tetLowBetaLFP, tetLowBetaHilb,...
+                tetBetaLFP, tetBetaHilb,...
+                tetLowGammaLFP, tetLowGammaHilb,...
+                tetHighGammaLFP, tetHighGammaHilb,...
+                tetRipLFP, tetRipHilb,...
+                cell2mat(tetUnitTSs)]; %#ok<NASGU>
+            statMatrixColIDs = [{'TimeBin'}, {[curTet '_LFP_Raw']}, {[curTet '_LFP_Raw_HilbVals']},...
+                {[curTet '_LFP_Theta']}, {[curTet '_LFP_Theta_HilbVals']},...
+                {[curTet '_LFP_LowBeta']}, {[curTet '_LFP_LowBeta_HilbVals']},...
+                {[curTet '_LFP_Beta']}, {[curTet '_LFP_Beta_HilbVals']},...
+                {[curTet '_LFP_LowGamma']}, {[curTet '_LFP_LowGamma_HilbVals']},...
+                {[curTet '_LFP_HighGamma']}, {[curTet '_LFP_HighGamma_HilbVals']},...
+                {[curTet '_LFP_Ripple']}, {[curTet '_LFP_Ripple_HilbVals']},...
+                tetUnitIDs]; %#ok<NASGU>
+
+            if curNumUnis >= 1
+                ensembleMatrix{find(strcmp(curTet, tetsWithUnits), 1)} = cell2mat(tetUnitTSs);
+                ensembleMatrixColIDs{find(strcmp(curTet, tetsWithUnits), 1)} = tetUnitIDs;
+                ensembleUnitSummaries{find(strcmp(curTet, tetsWithUnits), 1)} = unitSummary;
+            end
+
+            save([outputFileName{1} '_' curTet '.mat'], 'statMatrix', 'statMatrixColIDs', 'unitSummary', '-v7.3');
+            fprintf('          %s saved!\n', curTet);
+            fprintf(outfile, '     %s saved as %s\n\n', curTet, sprintf('%s_%s.mat', outputFileName{1}, curTet));
+        end
+    end
+    if ~isempty(cell2mat(ensembleMatrix))
+        ensembleMatrix = [tsVect(1:end-1), cell2mat(ensembleMatrix)]; %#ok<NASGU>
+        ensembleMatrixColIDs = [{'TimeBin'}, ensembleMatrixColIDs{:}]; %#ok<NASGU>
+        ensembleUnitSummaries = cell2mat(ensembleUnitSummaries); %#ok<NASGU>
+        save([outputFileName{1} '_EnsembleMatrix.mat'], 'ensembleMatrix', 'ensembleMatrixColIDs', 'ensembleUnitSummaries', '-v7.3');
+        fprintf('%s ensembleMatrix saved!\n', outputFileName{1});
+        fprintf(outfile, '%s ensembleMatrix saved as %s\n', outputFileName{1}, sprintf('%s_EnsembleMatrix.mat', outputFileName{1}));
+    end
 end
