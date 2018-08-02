@@ -275,8 +275,8 @@ for trl = 1:length(plxSession)
         rearRwdTime = backRewardTimes(find(backRewardTimes>odorTimesAllSorted(trl,1),1,'first'));
         allTrlPokesLog = pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime;
     else
-        frontRwdTime = frontRewardTimes((frontRewardTimes>odorTimesAllSorted(trl,1)) & (frontRewardTimes<odorTimesAllSorted(trl+1,1)));
-        rearRwdTime = backRewardTimes((backRewardTimes>odorTimesAllSorted(trl,1)) & (backRewardTimes<odorTimesAllSorted(trl+1,1)));
+        frontRwdTime = frontRewardTimes(find((frontRewardTimes>odorTimesAllSorted(trl,1)) & (frontRewardTimes<odorTimesAllSorted(trl+1,1)),1,'first'));
+        rearRwdTime = backRewardTimes(find((backRewardTimes>odorTimesAllSorted(trl,1)) & (backRewardTimes<odorTimesAllSorted(trl+1,1)),1,'first'));
         allTrlPokesLog = (pokeInitiationTimes>=plxSession(trl).OdorTrigPokeTime) &...
             (pokeInitiationTimes<odorTimesAllSorted(trl+1,1));
     end
