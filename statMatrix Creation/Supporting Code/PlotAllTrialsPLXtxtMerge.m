@@ -38,4 +38,4 @@ lgd = legend([corr inCorr], 'Correct', 'Incorrect');
 title(lgd, 'Text File Performance');
 line(repmat(plxData.Summary.TargetDuration, [1,2]), get(gca, 'ylim'));
 set(gca, 'ytick', 1:length(trialDta), 'yticklabel', fliplr([trialDta.TrialNum]));
-title({[plxData.Summary.PlxFile ' All trials']; 'Black lines = InSeq; Blue = OutSeq'; 'Red Circle = Text Timestamp, Green = Plexon'})
+title({[plxData.Summary.PlxFile ' All trials']; 'Black lines = InSeq; Blue = OutSeq'; 'Red Circle = Text Timestamp, Green = Plexon'}, 'interpreter', 'none')
