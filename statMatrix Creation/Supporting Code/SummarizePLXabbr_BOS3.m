@@ -380,6 +380,10 @@ for trl = 1:length(plxSession)
                 plxSession(trl).PokeDuration = trlPokesMtrx(postThreshPokeOut,4);
                 plxSession(trl).OdorPokeWithdrawTime = trlPokesMtrx(postThreshPokeOut,2);
                 plxSession(trl).OdorPokesDurations = trlPokesMtrx(1:postThreshPokeOut,:);
+            elseif isempty(ipiBufferViolation) && isnan(trlPokesMtrx(end,5))
+                plxSession(trl).PokeDuration = trlPokesMtrx(end,4);
+                plxSession(trl).OdorPokeWithdrawTime = trlPokesMtrx(end,2);
+                plxSession(trl).OdorPokesDurations = trlPokesMtrx;
             else
                 plxSession(trl).PokeDuration = trlPokesMtrx(ipiBufferViolation,4);
                 plxSession(trl).OdorPokeWithdrawTime = trlPokesMtrx(ipiBufferViolation,2);
@@ -629,7 +633,7 @@ scatter(txtHD, plxHD);
 hold on;
 scatter(txtHD(inSeqLog), plxHD(inSeqLog), 'r');
 set(gca, 'xlim', [0 2], 'ylim', [0 2]);
-title(plxFile)
+title(plxFile, 'interpreter', 'off')
 xlabel('Text File Durations');
 ylabel('Plexon Durations');
 subplot(2,2,3:4)
