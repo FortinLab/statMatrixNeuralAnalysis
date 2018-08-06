@@ -175,7 +175,7 @@ while o < size(odorTimesAllSorted,1)
 end
 
 % Remove spurious odor A flags
-dblOdrA = find(diff(odorTimesAllSorted(:,1))<0.001);
+dblOdrA = find(diff(odorTimesAllSorted(:,1))<0.1);
 if sum(odorTimesAllSorted(dblOdrA,2)==1) == length(dblOdrA)
     odorTimesAllSorted(dblOdrA,:) = [];
 else
@@ -633,7 +633,7 @@ scatter(txtHD, plxHD);
 hold on;
 scatter(txtHD(inSeqLog), plxHD(inSeqLog), 'r');
 set(gca, 'xlim', [0 2], 'ylim', [0 2]);
-title(plxFile, 'interpreter', 'off')
+title(plxFile, 'interpreter', 'none')
 xlabel('Text File Durations');
 ylabel('Plexon Durations');
 subplot(2,2,3:4)
