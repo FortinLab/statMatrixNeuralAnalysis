@@ -13,7 +13,8 @@ oldBinMtx = repmat(oldBins, [size(spkLog,1),1]);
 
 oldSpkRelTimes = oldBinMtx(spkLog);
 
-newBins = linspace(window(1), window(2), (sum(abs(window))/newBinSize)+1);
+% newBins = linspace(window(1), window(2), (sum(abs(window))/newBinSize)+1);
+newBins = window(1):newBinSize:window(2);
 newHist = histcounts(oldSpkRelTimes, newBins);
 
 meanPEH = newHist./size(spkLog,1);

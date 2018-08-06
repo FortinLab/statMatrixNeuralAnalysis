@@ -68,7 +68,7 @@ for trl = 1:numTrials
     trialPerf{trl} = curTrlPerf;
     trialTransDist{trl} = curTrlPos - curTrlOdor;
     if curTrlPos==1
-        trialItmItmDist{trl} = nan;
+        trialItmItmDist{trl} = 1;
         seq = seq+1;
     else
         trialItmItmDist{trl} = curTrlOdor - trialOdor{trl-1};
@@ -101,7 +101,7 @@ for trl = 1:numTrials
             end
         case 'ErrorSignal'
             curIndex = errorSigNdxs(find(errorSigNdxs>trialIndices(trl)==1,1,'first'));
-            if trl==numTrials || curIndex<trialIndices(trl+1)
+            if isempty(curIndex) || trl==numTrials || curIndex<trialIndices(trl+1)
             else
                 curIndex = nan;
             end
