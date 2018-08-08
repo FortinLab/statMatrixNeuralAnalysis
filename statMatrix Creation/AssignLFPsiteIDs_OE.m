@@ -22,7 +22,6 @@ function varargout = AssignLFPsiteIDs_OE(varargin)
 
 % Edit the above text to modify the response to help AssignLFPsiteIDs_OE
 
-% Last Modified by GUIDE v2.5 02-May-2018 12:36:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -209,3 +208,40 @@ curRecTags = handles.output.UserData;
 handles.regionID_INPUT.String = curRecTags{curChanNum,2};
 handles.probeNum_INPUT.String = curRecTags{curChanNum,3};
 guidata(hObject,handles);
+
+
+% --- Executes on button press in pushbutton5.
+function pushbutton5_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on selection change in listbox3.
+function listbox3_Callback(hObject, eventdata, handles)
+% hObject    handle to listbox3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns listbox3 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from listbox3
+
+
+% --- Executes during object creation, after setting all properties.
+function listbox3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to listbox3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: listbox controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pushbutton6.
+function pushbutton6_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton6 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
