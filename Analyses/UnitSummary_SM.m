@@ -7,7 +7,7 @@ function UnitSummary_SM
 pehBinSize = 0.125;
 eventWindow = [-1 1];
 spectFreqWindow = [1 120];
-printYN = 0;
+printYN = 1;
 %%
 origDir = cd;
 [fileDir] = uigetdir(origDir);
@@ -42,18 +42,18 @@ tetsWithUnits = unique(cellfun(@(a,b,c)a(b:c), unitNames, tetStart, tetEnd, 'uni
 pokeInAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeIn');
 pokeOutAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'PokeOut');
 rewardAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'FrontReward');
-errorAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'ErrorSignal');
+% errorAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, eventWindow, 'ErrorSignal');
+% 
+% behEventData = [pokeInAlignedBehavMatrix;...
+%     pokeOutAlignedBehavMatrix;...
+%     rewardAlignedBehavMatrix;...
+%     errorAlignedBehavMatrix];
+% behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}, {'Error'}];
 
 behEventData = [pokeInAlignedBehavMatrix;...
     pokeOutAlignedBehavMatrix;...
-    rewardAlignedBehavMatrix;...
-    errorAlignedBehavMatrix];
-behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}, {'Error'}];
-
-% behEventData = [pokeInAlignedBehavMatrix;...
-%     pokeOutAlignedBehavMatrix;...
-%     rewardAlignedBehavMatrix];
-% behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}];
+    rewardAlignedBehavMatrix];
+behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}];
 
 %% Create Trial Based Logical Vectors
 seqLength = pokeInAlignedBehavMatrix(1).SeqLength;
@@ -66,13 +66,6 @@ inCorrTrlLog = [pokeInAlignedBehavMatrix.Performance]==0;
 % Temporal Context vectors
 inSeqLog = [pokeInAlignedBehavMatrix.TranspositionDistance]==0;
 outSeqLog = ~inSeqLog;
-% 
-% %%%%%%% Comment in to revise perfLog Vectors %% GE Experiment
-% pokeDur = [pokeOutAlignedBehavMatrix.PokeDuration];
-% targDurLog = pokeDur>0.85;
-% corrTrlLog = (inSeqLog & targDurLog) | (outSeqLog & ~targDurLog);
-% inCorrTrlLog = (inSeqLog & ~targDurLog) | (outSeqLog & targDurLog);
-% %%%%%%
 
 perfLogs = [allTrlLog;corrTrlLog;inCorrTrlLog];
 perfLogIDs = [{'All'},{'Correct'},{'Incorrect'}];
@@ -104,11 +97,7 @@ for t = 1:length(tetsWithUnits)
     unitSummaryUnis = {unitSummary.UnitName};
     clear curTetStatDiffPERF curTetStatDiffTC 
     
-<<<<<<< HEAD
-%     %% Plot Per-Tetrode Spectrograms
-=======
     %% Plot Per-Tetrode Spectrograms
->>>>>>> master
 %     % Performance
 %     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
 %         perfLogs, perfLogIDs,...
