@@ -72,9 +72,15 @@ switch dataSource
         outputFileName = inputdlg('Determine File Suffix', 'Filename', 1, {fileName(1:end-4)});
     case 'Open Ephys'
         rig = 3;
-        dir = uigetdir('Identify file directory for recording session');
-        cd(dir);
-        outputFileName = inputdlg('Determine File Suffix');
+        if exp == 2
+            [fileName, filePath] = uigetfile('.mat', 'Identify the Channel ID Mapping file');
+            cd(filePath);
+            load([filePath '\' fileName]);
+        else
+            dir = uigetdir('Identify file directory for recording session');
+            cd(dir);
+        end
+        outputFileName = inputdlg('Determine File Suffix', 'Filename', 1, {fileName(1:end-4)});
     case ''
         disp('statMatrix creation cancelled');
         return
@@ -89,6 +95,7 @@ dataType = questdlg('What type of data are you compiling?',...
     'Identify Data Storage',...
     'Plexon Session File',...
     'MountainSort Cut Files',...
+    'Open Ephys .continuous',...
     'Plexon Session File');
 switch dataType
     case 'Plexon Session File'
@@ -101,6 +108,8 @@ switch dataType
         elseif rig == 3
             data = 3;
         end
+    case 'Open Ephys .continuous'
+        data = 4;
     case ''
         disp('statMatrix creation cancelled');
         return
@@ -313,7 +322,7 @@ function CreateNeuralMatrix(exp, data, rig, tsVect, summary, outputFileName, out
             curADchan = plxADchanNames(tet,:);
             tetLFPchanNames{tet} = deblank(curADchan);
         end
-        [~, ~, ~, contCountFl] = plx_info(plxFile, 0);
+        [~, ~, ~, contCountFl] = plx_info(plxFile, 1);
         lfpDataLog = contCountFl ~= 0;
         tetLFPchanNames(~lfpDataLog) = [];
         tetLFPchanNames(cellfun(@(a)isempty(a), regexp(tetLFPchanNames, '^T([0-9]*)'))) = [];
@@ -324,7 +333,7 @@ function CreateNeuralMatrix(exp, data, rig, tsVect, summary, outputFileName, out
     if exp == 1 || 3                                                            % Single-site ensemble data set
         if data == 1                                                            % Plexon session file
             % Unit and LFP data pulled from the same file
-            [tsCountFl, ~, ~, ~] = plx_info(plxFile, 0);
+            [tsCountFl, ~, ~, ~] = plx_info(plxFile, 1);
             numUnis = sum(tsCountFl(:,2:end)~=0)-1;
             numUnis(numUnis==-1) = 0;
             [~,chanNames] = plx_chan_names(plxFile);
@@ -380,7 +389,7 @@ function CreateNeuralMatrix(exp, data, rig, tsVect, summary, outputFileName, out
             if ~isempty(find(strcmp(curTet, tetsWithUnits), 1))
                 if data == 2 || data == 3
                     tetFile = [spikeFileDir '\' spkFiles{find(strcmp(curTet, tetsWithUnits),1)}];
-                    [tsCountFl, ~, ~, ~] = plx_info(tetFile, 0);
+                    [tsCountFl, ~, ~, ~] = plx_info(tetFile, 1);
                     curNumUnis = sum(tsCountFl(:,2)>0)-1;
                     curChanNums = 1:4;
                 else
