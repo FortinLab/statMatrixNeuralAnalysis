@@ -71,14 +71,33 @@ switch dataSource
         plxFile = [filePath fileName];
         outputFileName = inputdlg('Determine File Suffix', 'Filename', 1, {fileName(1:end-4)});
     case 'Open Ephys'
-        rig = 3;
+        oeRig = questdlg('What setup was used to record the data?',...
+            'Identify Recording Room',...
+            '206',...
+            '212',...
+            '214',...
+            '206');
+        switch oeRig
+            case '206'
+                rig = 3;
+            case '212'
+                rig = 4;
+            case '214'
+                rig = 5;
+            case ''
+                disp('statMatrix creation cancelled');
+                return
+        end
         if exp == 2
             [fileName, filePath] = uigetfile('.mat', 'Identify the Channel ID Mapping file');
             cd(filePath);
-            load([filePath '\' fileName]);
-        else
+            chanMapFile = [filePath '\' fileName];
+            load(chanMapFile);
+        elseif exp == 3
             dir = uigetdir('Identify file directory for recording session');
             cd(dir);
+        else
+            error('Something''s wrong, start over (if you get this more than once talk to gabe');
         end
         outputFileName = inputdlg('Determine File Suffix', 'Filename', 1, {fileName(1:end-4)});
     case ''
@@ -121,11 +140,15 @@ fprintf(outfile, 'Initialized %s at %i:%i.%i\n', date, curTime(4), curTime(5), r
 fprintf(outfile, 'Working Directory = %s\n', cd);
 if rig==1 || rig==2
     fprintf(outfile, '     Plexon File used = %s\n', plxFile);
+elseif rig==3 || rig==4 || rig==5
+    fprintf(outfile, '     OpenEphys Directory = %s\n', chanMapFile);
 end
 fprintf(outfile, 'Experiment Type = %s\n', expType);
 fprintf(outfile, '     Data Source = %s\n', dataSource);
 if rig==1 || rig==2
     fprintf(outfile, '     Rig = %s\n', plexonType);
+elseif rig==3 || rig==4 || rig==5
+    fprintf(outfile, '     Rig = %s\n', oeRig);
 end
 fprintf(outfile, '     Data Type = %s\n', dataType);
 fprintf(outfile, '********************************************************\n');
@@ -135,7 +158,7 @@ if rig == 1                                                                 % Ir
     [plxData] = SummarizePLXevents_SD(plxFile);
     behaviorData = plxData.Raw;
     summary = plxData.Summary;
-    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorData, summary, outputFileName, outfile);
+    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile);
 elseif rig == 2                                                             % Boston .plx files
     [fileName, filePath] = uigetfile('.mat','Select the plxData file for the recording session');
     load([filePath fileName]);
@@ -162,18 +185,26 @@ elseif rig == 2                                                             % Bo
     end
     summary = plxData.Summary;
     fprintf(outfile, '     Trial data used = %s\n', trialType);
-    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorData, summary, outputFileName, outfile);
-elseif rig == 3                                                             % Open Ephys files
-    error('Open Ephys not implemented yet');
+    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile);
+elseif rig == 3 || rig == 4                                                         % Open Ephys files
+    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFileName, outfile);
+elseif rig == 5
+    error('No statMatrix creator code implemented for the tardis yet');
 end
 clc
 %% Create statMatrix
-CreateNeuralMatrix(exp, data, rig, behavMatrix(:,1), summary, outputFileName, outfile)
+if rig == 1 || rig == 2
+    CreateNeuralMatrixPLX(exp, data, rig, behavMatrix(:,1), summary, outputFileName, outfile)
+else
+    CreateNeuralMatrixOE(exp, data, rig, behavMatrix(:,1), chanMapStruct, outputFileName, outfile);
+end
 
 fprintf(outfile, 'StatMatrix creation complete. Process took %im\n', round(toc(start))/60);
 fclose(outfile);
-%% Behavior Matrix Creation Functions
-function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorData, summary, outputFileName, outfile)
+%% Plexon Matrix Creation Functions
+% Behavior Matrix
+function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile)
+    % Identify the PLX file being used for stuff
     if rig == 1
         file = summary.PLXfile;
     elseif rig == 2
@@ -306,8 +337,8 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrix(rig, behaviorDa
     fprintf(outfile, 'Behavior Matrix saved as %s_BehaviorMatrix.mat\n', outputFileName{1});
 end
 
-%% Neural Matrix Creation Function
-function CreateNeuralMatrix(exp, data, rig, tsVect, summary, outputFileName, outfile)
+% Neural Matrix
+function CreateNeuralMatrixPLX(exp, data, rig, tsVect, summary, outputFileName, outfile)
     tsVect(end+1) = tsVect(end)+(mode(diff(tsVect)));
     % Identify the source for the lfp Files
     if rig == 1 || rig == 2
@@ -535,4 +566,53 @@ function CreateNeuralMatrix(exp, data, rig, tsVect, summary, outputFileName, out
         fprintf('%s ensembleMatrix saved!\n', outputFileName{1});
         fprintf(outfile, '%s ensembleMatrix saved as %s\n', outputFileName{1}, sprintf('%s_EnsembleMatrix.mat', outputFileName{1}));
     end
+end
+
+%% Open Matrix Creation Functions
+% Behavior Matrix
+function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFileName, outfile)
+    % Identify the ADC channels
+    files = dir(cd);
+    % Identify recording start time
+    msgFlLog = cellfun(@(a)~isempty(a), strfind({files.name}, 'messages'));
+    if sum(msgFlLog)==1
+        msgFl = fopen(files(msgFlLog).name, 'r');
+        txt = fgetl(msgFl);
+        [recStartStart, recStartEnd] = regexp(txt, '^([0-9]*)');
+        recStartTime = str2double(txt(recStartStart:recStartEnd));
+        fclose(msgFl);
+    elseif sum(msgFlLog)>=2
+        error('Multiple ''messages'' files... why is it like thist, it should not be like this!')
+    else
+        recStartTime = inputdlg('Specify recording start time');
+    end
+    
+   %*********** WILL NEED TO PULL THE ssnData STRUCTURE TO CROSS REFERENCE
+   %AND ENSURE THE TRIAL ODOR AND POSITION VALUES ARE CORRECT**************
+    adcFiles = {files(cellfun(@(a)~isempty(a),regexp({files.name}, '100_ADC([1-9]*)'))).name};
+    fprintf('Pulling event record from %s\n', adcFiles{1});
+    [tempContData,~,info] = load_open_ephys_data_faster(adcFiles{1});
+    sampleRate = info.header.sampleRate;
+    rawADC = cell(fliplr(size(adcFiles)));
+    rawADC{1} = tempContData;
+    for fl = 2:length(adcFiles)
+        fprintf('Pulling event record from %s\n', adcFiles{fl});
+        [rawADC{fl},~,~] = load_open_ephys_data_faster(adcFiles{fl});
+    end
+    
+    % Now create the timestamp vector used to bin the events.
+    tsVect = recStartTime:1/sampleRate:recStartTime+(length(tempContData)/sampleRate);
+    % If the sampleRate was higher than 1k (which is an unofficial standard
+    % given the previously collected data). The timestamp vector should be
+    % downsampled to create what a 1k sample rate would have seen.
+    %       NOTE: The ADC channels should NOT be downsampled, as doing so
+    %           may cause issues 
+    if sampleRate ~= 1000
+        dsRate = sampleRate/1000;
+        tsVect = downsample(tsVect,dsRate);
+    end
+    
+    for fl = 1:length(rawADC)
+    
+        
 end
