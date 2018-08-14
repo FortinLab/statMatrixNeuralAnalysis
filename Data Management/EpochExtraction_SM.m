@@ -1,5 +1,5 @@
 function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, trialInfo] = EpochExtraction_SM(eventRef, windowStart, windowEnd)
-%% EpochExtraction
+%% EpochExtraction_SM
 % Runs through all the files in the current directory to extract user
 % specified epochs from all the statMatrix files present and organize them
 % into 3D structures for unit and LFP data as well as a vector containing
@@ -46,6 +46,7 @@ function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, tr
 %               Column 4) Trial Odor.
 %
 % Made by GE 08/14/2018
+
 %% Locate files
 files = dir(cd);
 fileNames = {files.name};
