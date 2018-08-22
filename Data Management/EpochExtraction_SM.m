@@ -1,5 +1,5 @@
-function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, trialInfo] = EpochExtraction_SM(eventRef, windowStart, windowEnd)
-%% EpochExtraction
+function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, trialInfo] = EpochExtraction_SM(eventRef, windowStart, windowEnd, varargin)
+%% EpochExtraction_SM
 % Runs through all the files in the current directory to extract user
 % specified epochs from all the statMatrix files present and organize them
 % into 3D structures for unit and LFP data as well as a vector containing
@@ -24,6 +24,20 @@ function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, tr
 %           negative values in order to extract a period prior to the event
 %           reference point.
 %       'windowEnd' : End point of the epoch in seconds.
+%       'varargin' : Variable inputs to affect the way things run. Standard
+%           structure of the input is a vector of cells with an identifier
+%           string leading a parameter value.
+%               Identifier:Values
+%                   1) 'lfpBand': 'Raw'
+%                               : 'Theta'
+%                               : 'LowBeta'
+%                               : 'Beta'
+%                               : 'LowGamma'
+%                               : 'HighGamma'
+%                               : 'Ripple'
+%                   2) 'lfpData': 'Phase' (the time series data is default,
+%                                   'Phase' gives you the hilbert values);
+%                               : 'Both' (This gives time series and phase)
 %
 %   Outputs:
 %       'unitEpoch' : Extracted epoch with binary indicator for when a unit
@@ -46,6 +60,7 @@ function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, tr
 %               Column 4) Trial Odor.
 %
 % Made by GE 08/14/2018
+
 %% Locate files
 files = dir(cd);
 fileNames = {files.name};
@@ -92,7 +107,7 @@ for fl = 1:length(smFiles)
     fprintf('%s Loaded....', smFiles{fl});
     unitCols = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, 'T([0-9]*)-U([0-9]*)'));
     unitIDs = [unitIDs, statMatrixColIDs(unitCols)]; %#ok<AGROW>
-    lfpCol = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, 'T([0-9]*)_LFP_Raw\>'));
+    lfpCol = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '_LFP_Raw\>'));
     lfpIDs = [lfpIDs, statMatrixColIDs(lfpCol)]; %#ok<AGROW>
     
     lfpEventData = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); %#ok<NODEF>
