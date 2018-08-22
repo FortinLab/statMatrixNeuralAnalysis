@@ -124,7 +124,7 @@ switch dataType
             'File Name Verification', 'Ok', 'Ok');
         if rig == 1 || rig == 2
             data = 2;
-        elseif rig == 3
+        elseif rig == 3 || rig == 4 || rig == 5
             data = 3;
         end
     case 'Open Ephys .continuous'
@@ -141,7 +141,7 @@ fprintf(outfile, 'Working Directory = %s\n', cd);
 if rig==1 || rig==2
     fprintf(outfile, '     Plexon File used = %s\n', plxFile);
 elseif rig==3 || rig==4 || rig==5
-    fprintf(outfile, '     OpenEphys Directory = %s\n', chanMapFile);
+    fprintf(outfile, '     OpenEphys Channel Map File Used = %s\n', chanMapFile);
 end
 fprintf(outfile, 'Experiment Type = %s\n', expType);
 fprintf(outfile, '     Data Source = %s\n', dataSource);
@@ -186,9 +186,9 @@ elseif rig == 2                                                             % Bo
     summary = plxData.Summary;
     fprintf(outfile, '     Trial data used = %s\n', trialType);
     [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile);
-elseif rig == 3 || rig == 4                                                         % Open Ephys files
+elseif rig == 3 || rig == 4                                                         % Open Ephys files in a behavior rig
     [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFileName, outfile);
-elseif rig == 5
+elseif rig == 5                                                                     % Open Ephys in main acoustic chamber (Tardis)
     error('No statMatrix creator code implemented for the tardis yet');
 end
 clc
@@ -199,7 +199,7 @@ else
     CreateNeuralMatrixOE(exp, data, rig, behavMatrix(:,1), chanMapStruct, outputFileName, outfile);
 end
 
-fprintf(outfile, 'StatMatrix creation complete. Process took %im\n', round(toc(start))/60);
+fprintf(outfile, 'StatMatrix creation complete. Process took %ih\n', round(toc(start),2)/3600);
 fclose(outfile);
 %% Plexon Matrix Creation Functions
 % Behavior Matrix
@@ -568,10 +568,19 @@ function CreateNeuralMatrixPLX(exp, data, rig, tsVect, summary, outputFileName, 
     end
 end
 
-%% Open Matrix Creation Functions
+%% Open Ephys Matrix Creation Functions
 % Behavior Matrix
 function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFileName, outfile)
-    % Identify the ADC channels
+    % Event Channels:
+    %       1) OdorA
+    %       2) OdorB
+    %       3) OdorC
+    %       4) OdorD
+    %       5) Front PB
+    %       6) Front Water
+    %       7) Rear Water
+    %       8) Auditory Feedback
+    % Pull filenames
     files = dir(cd);
     % Identify recording start time
     msgFlLog = cellfun(@(a)~isempty(a), strfind({files.name}, 'messages'));
@@ -582,23 +591,89 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
         recStartTime = str2double(txt(recStartStart:recStartEnd));
         fclose(msgFl);
     elseif sum(msgFlLog)>=2
-        error('Multiple ''messages'' files... why is it like thist, it should not be like this!')
+        error('Multiple ''messages'' files... why is it like this, it should not be like this!')
     else
         recStartTime = inputdlg('Specify recording start time');
     end
     
-   %*********** WILL NEED TO PULL THE ssnData STRUCTURE TO CROSS REFERENCE
-   %AND ENSURE THE TRIAL ODOR AND POSITION VALUES ARE CORRECT**************
-    adcFiles = {files(cellfun(@(a)~isempty(a),regexp({files.name}, '100_ADC([1-9]*)'))).name};
-    fprintf('Pulling event record from %s\n', adcFiles{1});
-    [tempContData,~,info] = load_open_ephys_data_faster(adcFiles{1});
-    sampleRate = info.header.sampleRate;
-    rawADC = cell(fliplr(size(adcFiles)));
-    rawADC{1} = tempContData;
-    for fl = 2:length(adcFiles)
-        fprintf('Pulling event record from %s\n', adcFiles{fl});
-        [rawADC{fl},~,~] = load_open_ephys_data_faster(adcFiles{fl});
+    % Find and load the ssnData file
+    matFiles = {files(cellfun(@(a)~isempty(a), strfind({files.name}, '.mat'))).name};
+    ssnDataFlLog = false(size(matFiles));
+    for fl = 1:length(matFiles)
+        variableInfo = who('-file', matFiles{fl});
+        if sum(ismember(variableInfo, 'ssnData'))==1
+            ssnDataFlLog(fl) = true;
+        end
     end
+    if sum(ssnDataFlLog)==1
+        load(matFiles{ssnDataFlLog});
+    else
+        error('More than one .mat file.... this was prophesized! Tell gabe if you are not him!')
+    end
+    
+    % Assess the ssnData structure; extract data and fill in missing info
+    % (trial number and sequence number)
+    if ~isfield(ssnData, 'TrialNum')
+        trialNum = num2cell(1:length(ssnData));
+    end
+    if ~isfield(ssnData, 'SeqNum')
+        seq = 0;
+        seqNum = cell(size(ssnData));
+        for trl = 1:length(ssnData)
+            if ssnData(trl).TrialPosition == 1
+                seq = seq+1;
+            end
+            seqNum{trl} = seq;
+        end
+    end
+    sequenceLength = ssnData(1).Settings.SequenceLength;
+    bufferPrd = ssnData(1).Settings.ShortPokeBuffer;
+    if isfield(ssnData(1).Settings, 'ShortPokeBufferDur')
+        bufferDur = ssnData(1).Settings.ShortPokeBufferDur;
+    else
+        bufferDur = 0.3;
+    end
+        
+    adcFiles = {files(cellfun(@(a)~isempty(a),regexp({files.name}, '100_ADC([1-9]*)'))).name};
+    adcEventTimes = cell(length(adcFiles),2);
+    for fl = 1:length(adcFiles)
+        fprintf('Pulling event record from %s...', adcFiles{fl});
+        if fl==1
+            [tempContData,~,info] = load_open_ephys_data_faster(adcFiles{1});
+            sampleRate = info.header.sampleRate;
+        else
+            [tempContData,~,~] = load_open_ephys_data_faster(adcFiles{fl});
+        end
+        if rig == 3
+            [~, adcEventTimes{fl,2}] = findpeaks([0; diff(tempContData)],sampleRate, 'MinPeakProminence', 0.25);
+            [~, adcEventTimes{fl,1}] = findpeaks([0; diff(tempContData)*-1],sampleRate, 'MinPeakProminence', 0.25);
+        elseif rig == 4
+            [~, adcEventTimes{fl,1}] = findpeaks([0; diff(tempContData)],sampleRate, 'MinPeakProminence', 0.25);
+            [~, adcEventTimes{fl,2}] = findpeaks([0; diff(tempContData)*-1],sampleRate, 'MinPeakProminence', 0.25);
+        end
+        if length(adcEventTimes{fl,1}) + 1 == length(adcEventTimes{fl,2})
+            adcEventTimes{fl,2}(end) = [];
+        elseif length(adcEventTimes{fl,2}) + 1 == length(adcEventTimes{fl,1})
+            adcEventTimes{fl,1}(end) = [];
+        end
+        fprintf('timestamps found\n');
+    end   
+    odorOnTimes = adcEventTimes(1:4,1);
+    odorOnMatrix = cellfun(@(a,b) [a(:), ones(length(a),1)*b], odorOnTimes, num2cell(1:4)', 'uniformoutput', 0);
+    odorOnMatrix = sortrows(cell2mat(odorOnMatrix));
+    
+    % Check the number of odor events vs number of trials in the ssnData
+    % structure.
+    if length(ssnData) ~= size(odorOnMatrix,1)
+        if sum(odorOnMatrix(end-3:end,2) == [1:4]')==4 && sum(diff(odorOnMatrix(end-3:end,1))) == 0
+            odorOnMatrix = odorOnMatrix(1:end-4,:);
+            if length(ssnData) ~= size(odorOnMatrix,1)
+                error('Something no correct... odors no match!')
+            elseif sum([ssnData.Odor] - odorOnMatrix(:,2)') ~=0
+            end
+        end
+    end                
+    odorOnMatrix(:,3) = [ssnData.TrialPosition]';
     
     % Now create the timestamp vector used to bin the events.
     tsVect = recStartTime:1/sampleRate:recStartTime+(length(tempContData)/sampleRate);
@@ -611,8 +686,211 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
         dsRate = sampleRate/1000;
         tsVect = downsample(tsVect,dsRate);
     end
-    
-    for fl = 1:length(rawADC)
-    
         
+    % Create the behavMatrix
+    behavMatrix = [tsVect(1:end-1)',...
+        histcounts(odorOnMatrix(odorOnMatrix(:,2)==1,1), tsVect)',...
+        histcounts(odorOnMatrix(odorOnMatrix(:,2)==2,1), tsVect)',...
+        histcounts(odorOnMatrix(odorOnMatrix(:,2)==3,1), tsVect)',...
+        histcounts(odorOnMatrix(odorOnMatrix(:,2)==4,1), tsVect)',...
+        histcounts(odorOnMatrix(odorOnMatrix(:,3)==1,1), tsVect)',...
+        histcounts(odorOnMatrix(odorOnMatrix(:,3)==2,1), tsVect)',...
+        histcounts(odorOnMatrix(odorOnMatrix(:,3)==3,1), tsVect)',...
+        histcounts(odorOnMatrix(odorOnMatrix(:,3)==4,1), tsVect)',...
+        zeros(length(tsVect)-1,6)];
+    behavMatrixColIDs = [{'TimeBin'}, {'Odor1'}, {'Odor2'}, {'Odor3'}, {'Odor4'},...
+        {'Position1'}, {'Position2'}, {'Position3'}, {'Position4'},...
+        {'InSeqLog'}, {'PerformanceLog'}, {'PokeEvents'}, {'FrontReward'},...
+        {'BackReward'}, {'ErrorSignal'}];
+    
+    % This may seem odd to do things this way (below) but it allows
+    % flexibility in the ColIDs above, without having to change all the
+    % tons of stuff below to make the statMatrix with it.
+    isCol = strcmp(behavMatrixColIDs, 'InSeqLog');
+    perfCol = strcmp(behavMatrixColIDs, 'PerformanceLog');
+    pokeCol = strcmp(behavMatrixColIDs, 'PokeEvents');
+    fRwdCol = strcmp(behavMatrixColIDs, 'FrontReward');
+    rRwdCol = strcmp(behavMatrixColIDs, 'BackReward');
+    errCol = strcmp(behavMatrixColIDs, 'ErrorSignal');
+    
+    % Fill In InSeqLog Column
+    isLog = [ssnData.TranspositionDistance]==0;
+    behavMatrix(:,isCol) = histcounts(odorOnMatrix(isLog,1), tsVect);
+    behavMatrix(:,isCol) =  behavMatrix(:,isCol) - histcounts(odorOnMatrix(~isLog,1), tsVect)';
+    
+    % Fill In PerformanceLog Column
+    perfLog = [ssnData.Performance]==1;
+    behavMatrix(:,perfCol) = histcounts(odorOnMatrix(perfLog,1), tsVect);
+    behavMatrix(:,perfCol) = behavMatrix(:,perfCol) - histcounts(odorOnMatrix(~perfLog,1), tsVect)';
+    
+    % Fill In Front Reward Column
+    behavMatrix(:,fRwdCol) = histcounts(adcEventTimes{6,1}, tsVect);
+    behavMatrix(:,fRwdCol) = behavMatrix(:,fRwdCol) - histcounts(adcEventTimes{6,2}, tsVect)';
+    
+    % Fill in Rear Reward Column
+    behavMatrix(:,rRwdCol) = histcounts(adcEventTimes{7,1}, tsVect);
+    behavMatrix(:,rRwdCol) = behavMatrix(:,rRwdCol) - histcounts(adcEventTimes{7,2}, tsVect)';
+    
+    % Extract Auditory Signal Data (Buzzer... error signal & trial/sequence
+    % available signals based on temporal characteristics) & Fill in Error
+    % Signal column
+    audSigDurs = diff(cell2mat(adcEventTimes(8,:)),1,2);
+    behavMatrix(:,errCol) = histcounts(adcEventTimes{8,1}(audSigDurs>0.15), tsVect);
+    behavMatrix(:,errCol) = behavMatrix(:,errCol) - histcounts(adcEventTimes{8,2}(audSigDurs>0.15), tsVect)';
+    
+    % Extract Poke Events
+    pokeTSs = [adcEventTimes{5,:}];   
+    pokeInTSs = nan(size(ssnData));
+    pokeOutTSs = nan(size(ssnData));
+    for trl = 1:size(odorOnMatrix,1)
+        curOdorTS = odorOnMatrix(trl,1);
+        pokeNdx = find(pokeTSs(:,1)<curOdorTS,1,'last');
+        pokeInTSs(trl) = pokeTSs(pokeNdx,1);
+        
+        if trl == size(odorOnMatrix,1)
+            trialPokes = pokeTSs(pokeTSs(:,1)>=pokeTSs(pokeNdx,1),:);
+        else
+            trialPokes = pokeTSs(pokeTSs(:,1)>=pokeTSs(pokeNdx,1) & pokeTSs(:,1)<odorOnMatrix(trl+1,1),:);
+            trialPokes(end,:) = []; % Remove the last poke from here because that's what initiates the next trial.
+        end
+        
+        trialPokesMatrix = [trialPokes, trialPokes-trialPokes(1), [diff(trialPokes(:,1),1,1); nan]];
+                
+        if (round(trialPokesMatrix(1,4),4) == round(ssnData(trl).PokeDuration,4) ||...  % IF the poke durations match
+                round(trialPokesMatrix(1,4),5) == round(ssnData(trl).PokeDuration,5))          %... once floating point values are removed.
+            pokeOutTSs(trl) = pokeTSs(pokeNdx,2);                                   % THEN use the poke out value associated with that poke in! ezpz
+        else                                                                    % HOWEVER, if they don't match, check the trial based on it's type
+            if ssnData(trl).TranspositionDistance == 0                              % IF the trial is InSeq
+                if (ssnData(trl).Performance == 1)                                     % IF they got it correct
+                    if (trialPokesMatrix(1,4) > ssnData(trl).TargetPokeDur)                % IF they held for longer than the trial's target duration
+                        pokeOutTSs(trl) = pokeTSs(pokeNdx,2);                                       % THEN use the poke out value associated with that poke in!
+                    elseif trialPokesMatrix(1,4) < ssnData(trl).TargetPokeDur              % ELSEIF they didn't hold long enough on the poke that started the trial... they should have triggerd the buffer
+                        if size(trialPokesMatrix,1)>=2 &&...                                         % IF there was more than one poke on that trial (which there SHOULD be)
+                                trialPokesMatrix(1,4) < bufferPrd &&...                                         % AND they withdrew during the buffer period
+                                trialPokesMatrix(1,5) < bufferDur                                               % AND they poked back in within the buffer duration
+                            curPokeDur = trialPokesMatrix(1,4);                                             % THEN step through the poke matrix to identify when they crossed threshold!
+                            pk = 1;
+                            while curPokeDur < ssnData(trl).TargetPokeDur &&...
+                                    pk<=size(trialPokesMatrix,1)
+                                pk = pk + 1;
+                                curPokeDur = trialPokesMatrix(pk,4);
+                            end
+                            % After stepping through it SHOULD be at a point
+                            % where the hold duration is correctly beyond the
+                            % target.
+                            if curPokeDur > ssnData(trl).TargetPokeDur
+                                pokeOutTSs(trl) = trialPokesMatrix(pk,2);
+                            else
+                                % If it isn't... something's wrong.
+                                error('Code no should go here... something wrong');
+                            end
+                        else
+                            error('Code no should go here also... something wrong');
+                        end
+                    else
+                        error('Code no should go here either... something wrong');
+                    end
+                elseif ssnData(trl).Performance == 0
+                    % With InSeq trials, the error signal should happen
+                    % AFTER they withdraw
+                    audSigTS = adcEventTimes{8,1}(find(adcEventTimes{8,1}>trialPokesMatrix(1,1), 1, 'first'));
+                    pokeOutTSs(trl) = trialPokesMatrix(find(trialPokesMatrix(:,2)<audSigTS,1,'last'),2);                    
+                else
+                    error('Huh?')
+                end
+            else
+                if size(trialPokesMatrix,1) == 1                            % IF there's only one poke...
+                    pokeOutTSs(trl) = trialPokesMatrix(1,2);                    % THEN just use the poke out value because that's all there is! ezpz
+                else                                                        % ELSE there must be more than one poke... so time to examine the trial events
+                    if (ssnData(trl).Performance == 1)                          % IF they got the trial correct
+                        nxtRwdTS = adcEventTimes{6,1}(find(adcEventTimes{6,1}>trialPokesMatrix(1,1),1,'first'));
+                        if trl~=size(odorOnMatrix,1) &&...                  % IF it's not the last trial
+                                nxtRwdTS < odorOnMatrix(trl+1,1)                % AND the next reward timestamp comes before the next odor presentation (which it should in this case)
+                            % Remove any poke events that happened after
+                            % the reward ... I am confident in the logic of
+                            % my control code that there shouldn't be any
+                            trialPokesMatrix(trialPokesMatrix(:,1)>nxtRwdTS,:) = [];
+                            % Then use the final poke out value from the
+                            % edited trial pokes matrix as the poke out
+                            % time
+                            pokeOutTSs(trl) = trialPokesMatrix(end,2);
+                        else
+                            error('Code should not go here.');
+                        end
+                    elseif ssnData(trl).Performance == 0
+                        % If they got it wrong, find the first triggering
+                        % of the error channel after the poke initiation
+                        audSigTS = adcEventTimes{8,1}(find(adcEventTimes{8,1}>trialPokesMatrix(1,1), 1, 'first'));
+                        % With OutSeq trials the error should trigger after
+                        % the decision threshold passes, i.e. poke
+                        % withdrawal should follow the error signal trigger
+                        pokeOutTSs(trl) = trialPokesMatrix(find(trialPokesMatrix(:,2)>audSigTS,1,'first'),2);
+                    else
+                        error('Impossible! Inconceivable! Unexpected that the code would go here!');
+                    end
+                end
+            end
+        end
+    end
+    % Now fill in the Poke events column
+    behavMatrix(:,pokeCol) = histcounts(pokeInTSs, tsVect);
+    behavMatrix(:,pokeCol) = behavMatrix(:,pokeCol) - histcounts(pokeOutTSs, tsVect)';  
+    
+    % Now Save it all!    
+    save([outputFileName{1} '_BehaviorMatrix.mat'], 'behavMatrix', 'behavMatrixColIDs');
+    disp('Behavior data saved.');
+    fprintf(outfile, 'Behavior Matrix saved as %s_BehaviorMatrix.mat\n', outputFileName{1});
+end
+% 
+function CreateNeuralMatrixOE(exp, data, rig, tsVect, chanMapStruct, outputFileName, outfile)
+    % Define the LFP bands to be used in the statMatrix
+    lfpBands = [{'Raw'}, {[]},...
+        {'Theta'}, {[4 12]},...
+        {'LowBeta'}, {[13 19]},...
+        {'Beta'}, {[20 40]},...
+        {'LowGamma'}, {[41 59]},...
+        {'HighGamma'}, {[61 80]},...
+        {'Ripple'}, {[150 250]}];
+    
+    tsVect(end+1) = tsVect(end)+(mode(diff(tsVect)));
+    % For this one... right now focus on the multi-site LFP code... put
+    % errors in for other exp codes.
+    if exp == 2 
+    elseif exp == 3 || data == 3
+        error('Code not implemented yet to compile ensemble and multi-site LFP data');
+    else
+        error('Incorrect experiment selection... start over');
+    end
+    if rig == 3 || rig == 4 || rig == 5
+    else
+        error('Incorrect rig selection... start over');
+    end
+    % Determine regional groupings
+    fileIDs = chanMapStruct.FileIDs;
+    
+    for fl = 1:size(fileIDs,1)
+        [tempContData,~,info] = load_open_ephys_data_faster(fileIDs{fl,1});
+        sampleRate = info.header.sampleRate;
+        if sampleRate ~= 1000
+            dsRate = sampleRate/1000;
+            tempContData = downsample(tempContData,dsRate);
+        end
+        statMatrix = nan(length(tsVect)-1, length(lfpBands));
+        statMatrixColIDs = cell(1,length(lfpBands));
+        for bnd = 2:2:length(lfpBands)
+            if isempty(lfpBands{bnd})
+                [statMatrix(:,bnd), statMatrix(:,bnd-1)] = PhaseFreqDetectAbbr(tempContData,tsVect(1:end-1));
+            else
+                [statMatrix(:,bnd), statMatrix(:,bnd-1)] = PhaseFreqDetectAbbr(tempContData,tsVect(1:end-1),lfpBands{bnd}(1),lfpBands{bnd}(2));
+            end
+            statMatrixColIDs{bnd-1} = [fileIDs{fl,2} '_LFP_' lfpBands{bnd-1}];
+            statMatrixColIDs{bnd} = [fileIDs{fl,2} '_LFP_' lfpBands{bnd-1} '_HilbVals'];
+        end
+        statMatrix = [tsVect(1:end-1),statMatrix];
+        statMatrixColIDs = [{'TimeBin'},statMatrixColIDs];
+        
+        save([outputFileName{1} '_' fileIDs{fl,2} '_SM.mat'], 'statMatrix', 'statMatrixColIDs','-v7.3');
+        fprintf('          %s saved!\n', fileIDs{fl,2});
+        fprintf(outfile, '     %s saved as %s\n\n', fileIDs{fl,2}, sprintf('%s_%s_SM.mat', outputFileName{1}, fileIDs{fl,2}));
+    end
 end
