@@ -10,7 +10,7 @@ function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, tr
 %           events are limited to those used by the OrganizeTrialData_SM.m
 %           function:
 %               1) 'Odor' : Timepoint of odor presentation
-%               2) 'PokeIn' : Timepoint triggering odor presentatino
+%               2) 'PokeIn' : Timepoint triggering odor presentation
 %               3) 'PokeOut' : Timepoint of port withdrawal
 %               4) 'FrontReward' : Timepoint of odor delivery 
 %               5) 'RearReward' : Timepoint when reward was delivered at
@@ -26,18 +26,20 @@ function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, tr
 %       'windowEnd' : End point of the epoch in seconds.
 %       'varargin' : Variable inputs to affect the way things run. Standard
 %           structure of the input is a vector of cells with an identifier
-%           string leading a parameter value.
-%               Identifier:Values
-%                   1) 'lfpBand': 'Raw'
-%                               : 'Theta'
-%                               : 'LowBeta'
-%                               : 'Beta'
-%                               : 'LowGamma'
-%                               : 'HighGamma'
-%                               : 'Ripple'
-%                   2) 'lfpData': 'Phase' (the time series data is default,
-%                                   'Phase' gives you the hilbert values);
-%                               : 'Both' (This gives time series and phase)
+%           string leading a parameter value. Defaults reflect what data is
+%           passed were the identifiers not passed as varargin
+%               *Identifier:Values*
+%                   1) 'lfpBand': Default is Raw time series data
+%                               : 'Theta' - 4:12Hz filtered
+%                               : 'LowBeta' - 13:19Hz filtered
+%                               : 'Beta' - 20:40Hz filtered
+%                               : 'LowGamma' - 41:59Hz filtered
+%                               : 'HighGamma' - 59:61Hz filtered
+%                               : 'Ripple' - 150:250Hz filtered
+%                               : 'All' - Pulls all the LFP band columns
+%                   2) 'lfpData': Default = voltage values
+%                               : 'Phase' - Hilbert values
+%                               : 'Both' - voltage and Hilbert values
 %
 %   Outputs:
 %       'unitEpoch' : Extracted epoch with binary indicator for when a unit
@@ -94,6 +96,35 @@ eventTimeBins = trialTimeBins{1} - eventTimes{1};
 
 fprintf('Trial and event timebins extracted\n');
 
+%% Evaluate varargin inputs
+if sum(strcmp(varargin, 'lfpBand'))==1
+    lfpBandSpot = find(strcmp(varargin, 'lfpBand'));
+    bandIDs = varargin{lfpBandSpot+1};
+    if iscell(bandIDs)
+        bandID = '([';
+        b = 1;
+        while b<=length(bandIDs)
+            bandID = [bandID '|' bandIDs{b}]; %#ok<AGROW>
+            b = b+1;
+        end
+        bandID = [bandID '])'];
+    elseif strcmp(bandIDs, 'All')
+        bandID = '([A-Z]*|[a-z]*)';
+    end
+else
+    bandID = 'Raw';    
+end
+if sum(strcmp(varargin, 'lfpData'))==1
+    lfpDataSpot = find(strcmp(varargin, 'lfpData'));
+    dataID = varargin{lfpDataSpot+1};
+    if strcmp(dataID, 'Both')
+        lfpColRegXprsnString = ['_LFP_' bandID];
+    elseif strcmp(dataID, 'Phase')
+        lfpColRegXprsnString = ['_LFP_' bandID '_HilbVals\>'];
+    end
+else
+    lfpColRegXprsnString = ['_LFP_' bandID '\>'];
+end
 %% Extract data from the statMatrix files
 % Initialize the unit and LFP matrices
 unitEpochs = cell(1,1,length(smFiles));
@@ -105,14 +136,15 @@ lfpIDs = [];
 for fl = 1:length(smFiles)
     load(smFiles{fl});
     fprintf('%s Loaded....', smFiles{fl});
-    unitCols = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, 'T([0-9]*)-U([0-9]*)'));
+    unitCols = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '-U([0-9]*)'));
     unitIDs = [unitIDs, statMatrixColIDs(unitCols)]; %#ok<AGROW>
-    lfpCol = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '_LFP_Raw\>'));
+    lfpCol = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, lfpColRegXprsnString));
     lfpIDs = [lfpIDs, statMatrixColIDs(lfpCol)]; %#ok<AGROW>
     
     lfpEventData = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); %#ok<NODEF>
+    lfpEventData = cellfun(@(a)reshape(a, [1, size(a,1), size(a,2)]), lfpEventData, 'uniformoutput',0);
     
-    lfpEpochs{fl} = cell2mat(lfpEventData)';
+    lfpEpochs{fl} = cell2mat(lfpEventData');
     fprintf('LFP data collected......');
     numUnis = sum(unitCols);    
     fprintf('%i units found.....', numUnis);
