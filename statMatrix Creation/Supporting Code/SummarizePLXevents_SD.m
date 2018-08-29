@@ -34,15 +34,29 @@ if ~(nargin == 2)
     end
 end
 plxSummary.MATfile = matFileName;
-plxSummary.PLXfile = fileName;
+plxSummary.PLXfile = [fileName '.plx'];
 %% Load Data
 % Load the ssnData file first
 load(matFile);
-if isfield(ssnData(1).Settings, 'ShortPokeBufferDur')
+if isfield(ssnData(1).Settings, 'ShortPokeBufferDur') %#ok<NODEF>
     bufferPeriod = ssnData(1).Settings.ShortPokeBuffer;
     bufferDuration = ssnData(1).Settings.ShortPokeBufferDur;
 else
-    error('This data was collected with an old version of the code that didn''t allow declaration of buffer duration, please use an older plxAnalysis script for it');
+    bufferPeriod = ssnData(1).Settings.ShortPokeBuffer;
+    bufferDuration = ssnData(1).Settings.ShortPokeBuffer;
+    % This also doesn't have a sequence number field, so we need to make
+    % one.
+    seqStarts = ([ssnData.Odor]==1 & [ssnData.TrialPosition]==1);
+    seq = 0;
+    for t = 1:length(ssnData)
+        if seqStarts(t)==1
+            seq = seq+1;
+        end
+        ssnData(t).SequenceNumber = seq; %#ok<AGROW>
+    end
+    %%% Need to also account for the absence of the trial end times in the
+    %%% event timestamps.
+%     error('This data was collected with an old version of the code that didn''t allow declaration of buffer duration, please use an older plxAnalysis script for it');
 end
 % Now extract event data from the .plx file
 [numChans, chanNames] = plx_event_names(plxFile);
@@ -327,13 +341,17 @@ end
 % This flag is inserted at the start and end of every trial... it should
 % probably be called Trial Boundaries come to think of it... too late....
 trialEndChanNum = strcmp(channels, 'Trial End');
-trialEndTimes = plxStruct(trialEndChanNum).ts;
+if sum(trialEndChanNum)~=0
+    trialEndTimes = plxStruct(trialEndChanNum).ts;
+else
+    trialEndTimes = sort([beepTimes; nonDoubleBuzzBuzzer; sequenceBlockInitiationTimes]);
+end
 
 if term
     trialEndTimes(end) = [];
 end
 
-if ~(length(trialEndTimes)==length(ssnData)*2)
+if ~(length(trialEndTimes)==length(ssnData)*2) && sum(trialEndChanNum)~=0
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
     error('More Trial End Time events than trials in ssnData, check files');
@@ -405,6 +423,9 @@ for trl = 1:size(odorPresSsn,1)
     
     % Fill in timestamp for when the trial ended
     plxSession(trl).TrialEndTime = trialEndTimes(find(trialEndTimes>plxSession(trl).ItemPresentationTime,1,'first'));
+    if isempty(plxSession(trl).TrialEndTime)
+        plxSession(trl).TrialEndTime = inf;
+    end
     
     % Identify trial poke trigger timestamp
     plxSession(trl).OdorTrigPokeTime = pokeInitiationTimes(find(pokeInitiationTimes<plxSession(trl).ItemPresentationTime,1,'last'));
