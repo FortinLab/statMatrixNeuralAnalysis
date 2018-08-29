@@ -373,7 +373,7 @@ function CreateNeuralMatrixPLX(exp, data, rig, tsVect, summary, outputFileName, 
                 curChanName = deblank(chanNames(t,:));
                 tetNames{t} = curChanName(1:end-2);
             end
-            tetsWithUnits = unique(tetNames(numUnis>=1));
+            tetsWithUnits = unique(tetNames(numUnis>=1))';
         elseif data == 2 || data == 3                                           % MountainSort cut files
             % Unit and LFP data pulled from different files
             %   Unit = individually cut .plx files
@@ -557,6 +557,12 @@ function CreateNeuralMatrixPLX(exp, data, rig, tsVect, summary, outputFileName, 
             fprintf('          %s saved!\n', curTet);
             fprintf(outfile, '     %s saved as %s\n\n', curTet, sprintf('%s_%s.mat', outputFileName{1}, curTet));
         end
+    end
+    if ~isempty(tetsWithUnits(cellfun(@(a)isempty(a), ensembleMatrix)))
+        lfpLessChan = tetsWithUnits{cellfun(@(a)isempty(a), ensembleMatrix)};
+        fprintf(outfile, '%s was flagged as having units but has no LFP data. Channel skipped\n', lfpLessChan);
+        ensembleUnitSummaries(cellfun(@(a)isempty(a), ensembleMatrix)) = [];
+        ensembleMatrix(cellfun(@(a)isempty(a), ensembleMatrix)) = [];
     end
     if ~isempty(cell2mat(ensembleMatrix))
         ensembleMatrix = [tsVect(1:end-1), cell2mat(ensembleMatrix)]; %#ok<NASGU>
