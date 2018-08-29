@@ -189,7 +189,7 @@ else
     chanMapStruct = struct('FileDir', handles.output.UserData{3},...
         'FileIDs', {[curRecTags(:,1), regionTags]}, 'RatName', ratName,...
         'SessionID', ssnID); %#ok<NASGU>
-    save([ratName '_Session' ssnID '_ChanMap.mat'], 'chanMapStruct');
+    uisave('chanMapStruct', [ratName '_Session' ssnID '_ChanMap.mat']);
     d = msgbox('Channel ID map saved!');
     uiwait(d);
 end
