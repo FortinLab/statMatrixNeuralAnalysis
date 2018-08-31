@@ -18,12 +18,12 @@ ErrorVector = nan(size(statMatrix(:,2)));
 % figure('units','normalized','outerposition',[0 0 1 1]) %For full a fullscreen figure
 LFP_trace = statMatrix(:,2);
 figure(1)
-LFP_plot = plot(LFP_trace,'b');
+LFP_plot = plot(statMatrix(:,1),LFP_trace,'b');
 hold on
 rms_line = (rms(LFP_trace)*ones(length(LFP_trace),1)) + 2*std(LFP_trace);
-RMS_plot = plot(rms_line,'c','LineWidth',1);
+RMS_plot = plot(statMatrix(:,1),rms_line,'c','LineWidth',1);
 hold on
-Error_plot = plot(ErrorVector,'r');
+Error_plot = plot(statMatrix(:,1),ErrorVector,'r');
 title(file, 'Interpreter', 'none');
 
 % UI buttons for manual artifact detection and removal
