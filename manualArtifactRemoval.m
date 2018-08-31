@@ -13,6 +13,14 @@ currFileName = strcat(path,file);
 load(currFileName,'statMatrix')
 ErrorVector = nan(size(statMatrix(:,2)));
 
+% Identify the behaviorMatrix file
+files = dir(path);
+fileNames = {files.name};
+behMatFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))};
+load([path behMatFile]);
+pokeEventsCol = cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'PokeEvents'));
+pokeInTSs = behavMatrix(behavMatrix(:,pokeEventsCol)==1,1);
+
 % Plot LFP trace
 
 % figure('units','normalized','outerposition',[0 0 1 1]) %For full a fullscreen figure
