@@ -752,6 +752,11 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
     
     % Extract Poke Events
     pokeTSs = [adcEventTimes{5,:}];   
+    % Calculate Inter-Poke-Intervals
+    ipi = nan(size(pokeTSs,1),1);
+    for poke = 1:length(ipi)-1
+        ipi(poke) = pokeTSs(poke+1,1) - pokeTSs(poke,2);
+    end
     pokeInTSs = nan(size(ssnData));
     pokeOutTSs = nan(size(ssnData));
     for trl = 1:size(odorOnMatrix,1)
@@ -761,12 +766,15 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
         
         if trl == size(odorOnMatrix,1)
             trialPokes = pokeTSs(pokeTSs(:,1)>=pokeTSs(pokeNdx,1),:);
+            trialIPI = ipi(pokeTSs(:,1)>=pokeTSs(pokeNdx,1),:);
         else
             trialPokes = pokeTSs(pokeTSs(:,1)>=pokeTSs(pokeNdx,1) & pokeTSs(:,1)<odorOnMatrix(trl+1,1),:);
+            trialIPI = ipi(pokeTSs(:,1)>=pokeTSs(pokeNdx,1) & pokeTSs(:,1)<odorOnMatrix(trl+1,1),:);
             trialPokes(end,:) = []; % Remove the last poke from here because that's what initiates the next trial.
+            trialIPI(end,:) = [];
         end
         
-        trialPokesMatrix = [trialPokes, trialPokes-trialPokes(1), [diff(trialPokes(:,1),1,1); nan]];
+        trialPokesMatrix = [trialPokes, trialPokes-trialPokes(1), trialIPI];
                 
         if (round(trialPokesMatrix(1,4),4) == round(ssnData(trl).PokeDuration,4) ||...  % IF the poke durations match
                 round(trialPokesMatrix(1,4),5) == round(ssnData(trl).PokeDuration,5))          %... once floating point values are removed.
