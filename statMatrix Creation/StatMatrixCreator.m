@@ -89,8 +89,9 @@ switch dataSource
                 return
         end
         if exp == 2
+            dir = uigetdir('Identify file directory for recording session');
+            cd(dir);
             [fileName, filePath] = uigetfile('.mat', 'Identify the Channel ID Mapping file');
-            cd(filePath);
             chanMapFile = [filePath '\' fileName];
             load(chanMapFile);
         elseif exp == 3
@@ -613,8 +614,11 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
     end
     if sum(ssnDataFlLog)==1
         load(matFiles{ssnDataFlLog});
-    else
+    elseif sum(ssnDataFlLog)>=2
         error('More than one .mat file.... this was prophesized! Tell gabe if you are not him!')
+    else
+        [ssnDataFileName,filePath] = uigetfile('.mat', 'Identify the ssnData file for this session');
+        load([filePath ssnDataFileName]);
     end
     
     % Assess the ssnData structure; extract data and fill in missing info
@@ -650,13 +654,13 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
         else
             [tempContData,~,~] = load_open_ephys_data_faster(adcFiles{fl});
         end
-        if rig == 3
+%         if rig == 3
             [~, adcEventTimes{fl,2}] = findpeaks([0; diff(tempContData)],sampleRate, 'MinPeakProminence', 0.25);
             [~, adcEventTimes{fl,1}] = findpeaks([0; diff(tempContData)*-1],sampleRate, 'MinPeakProminence', 0.25);
-        elseif rig == 4
-            [~, adcEventTimes{fl,1}] = findpeaks([0; diff(tempContData)],sampleRate, 'MinPeakProminence', 0.25);
-            [~, adcEventTimes{fl,2}] = findpeaks([0; diff(tempContData)*-1],sampleRate, 'MinPeakProminence', 0.25);
-        end
+%         elseif rig == 4
+%             [~, adcEventTimes{fl,1}] = findpeaks([0; diff(tempContData)],sampleRate, 'MinPeakProminence', 0.25);
+%             [~, adcEventTimes{fl,2}] = findpeaks([0; diff(tempContData)*-1],sampleRate, 'MinPeakProminence', 0.25);
+%         end
         if length(adcEventTimes{fl,1}) + 1 == length(adcEventTimes{fl,2})
             adcEventTimes{fl,2}(end) = [];
         elseif length(adcEventTimes{fl,2}) + 1 == length(adcEventTimes{fl,1})
@@ -671,12 +675,14 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
     % Check the number of odor events vs number of trials in the ssnData
     % structure.
     if length(ssnData) ~= size(odorOnMatrix,1)
-        if sum(odorOnMatrix(end-3:end,2) == [1:4]')==4 && sum(diff(odorOnMatrix(end-3:end,1))) == 0
+        if sum(odorOnMatrix(end-3:end,2) == [1:4]')==4 && sum(diff(odorOnMatrix(end-3:end,1))) == 0 % Captured odor pressure release
             odorOnMatrix = odorOnMatrix(1:end-4,:);
             if length(ssnData) ~= size(odorOnMatrix,1)
                 error('Something no correct... odors no match!')
             elseif sum([ssnData.Odor] - odorOnMatrix(:,2)') ~=0
             end
+        else
+            error('Odor lengths do not match... something is wrong');
         end
     end                
     odorOnMatrix(:,3) = [ssnData.TrialPosition]';
@@ -880,6 +886,11 @@ function CreateNeuralMatrixOE(exp, data, rig, tsVect, chanMapStruct, outputFileN
         if sampleRate ~= 1000
             dsRate = sampleRate/1000;
             tempContData = downsample(tempContData,dsRate);
+            if length(tempContData) == length(tsVect)
+                tempContData = tempContData(1:end-1);
+            elseif length(tempContData) ~= length(tsVect)-1
+                error('Something wrong!');
+            end
         end
         statMatrix = nan(length(tsVect)-1, length(lfpBands));
         statMatrixColIDs = cell(1,length(lfpBands));
