@@ -655,8 +655,10 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
             [tempContData,~,~] = load_open_ephys_data_faster(adcFiles{fl});
         end
 %         if rig == 3
-            [~, adcEventTimes{fl,2}] = findpeaks([0; diff(tempContData)],sampleRate, 'MinPeakProminence', 0.25);
-            [~, adcEventTimes{fl,1}] = findpeaks([0; diff(tempContData)*-1],sampleRate, 'MinPeakProminence', 0.25);
+            [~, offTimes] = findpeaks([0; diff(tempContData)],sampleRate, 'MinPeakProminence', 0.25);
+            adcEventTimes{fl,2} = offTimes + recStartTime;
+            [~, onTimes] = findpeaks([0; diff(tempContData)*-1],sampleRate, 'MinPeakProminence', 0.25);
+            adcEventTimes{fl,1} = onTimes + recStartTime;
 %         elseif rig == 4
 %             [~, adcEventTimes{fl,1}] = findpeaks([0; diff(tempContData)],sampleRate, 'MinPeakProminence', 0.25);
 %             [~, adcEventTimes{fl,2}] = findpeaks([0; diff(tempContData)*-1],sampleRate, 'MinPeakProminence', 0.25);
