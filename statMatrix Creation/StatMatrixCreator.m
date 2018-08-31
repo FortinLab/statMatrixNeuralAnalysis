@@ -781,7 +781,7 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
             pokeOutTSs(trl) = pokeTSs(pokeNdx,2);                                   % THEN use the poke out value associated with that poke in! ezpz
         else                                                                    % HOWEVER, if they don't match, check the trial based on it's type
             if ssnData(trl).TranspositionDistance == 0                              % IF the trial is InSeq
-                if (ssnData(trl).Performance == 1)                                     % IF they got it correct
+                if ssnData(trl).Performance == 1                                        % IF they got it correct
                     if (trialPokesMatrix(1,4) > ssnData(trl).TargetPokeDur)                % IF they held for longer than the trial's target duration
                         pokeOutTSs(trl) = pokeTSs(pokeNdx,2);                                       % THEN use the poke out value associated with that poke in!
                     elseif trialPokesMatrix(1,4) < ssnData(trl).TargetPokeDur              % ELSEIF they didn't hold long enough on the poke that started the trial... they should have triggerd the buffer
@@ -804,8 +804,7 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFi
                                 % If it isn't... something's wrong.
                                 error('Code no should go here... something wrong');
                             end
-                        elseif size(trialPokesMatrix,1)==1 &&...
-                                (round(trialPokesMatrix(1,4),2) >= round(ssnData(trl).TargetPokeDur,2))
+                        elseif (round(trialPokesMatrix(1,4),2) >= round(ssnData(trl).TargetPokeDur,2))
                             pokeOutTSs(trl) = pokeTSs(pokeNdx,2);
                         else
                             error('Code no should go here also... something wrong');
