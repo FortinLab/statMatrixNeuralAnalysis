@@ -144,7 +144,7 @@ for fl = 1:length(smFiles)
     lfpEventData = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); %#ok<NODEF>
     lfpEventData = cellfun(@(a)reshape(a, [1, size(a,1), size(a,2)]), lfpEventData, 'uniformoutput',0);
     
-    lfpEpochs{fl} = cell2mat(lfpEventData');
+    lfpEpochs{1,1,fl} = cell2mat(lfpEventData');
     fprintf('LFP data collected......');
     numUnis = sum(unitCols);    
     fprintf('%i units found.....', numUnis);
@@ -154,7 +154,7 @@ for fl = 1:length(smFiles)
         for uni = 1:numUnis
             tempUniData(:,:,uni) = cell2mat(cellfun(@(a)a(:,uni), uniEventData, 'uniformoutput', 0))';
         end
-        unitEpochs{fl} = tempUniData;
+        unitEpochs{1,1,fl} = tempUniData;
         fprintf('Unit data collected... File complete\n');
     else
         fprintf('File complete\n');
