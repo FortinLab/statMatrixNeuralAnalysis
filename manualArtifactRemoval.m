@@ -24,6 +24,7 @@ rms_line = (rms(LFP_trace)*ones(length(LFP_trace),1)) + 2*std(LFP_trace);
 RMS_plot = plot(rms_line,'c','LineWidth',1);
 hold on
 Error_plot = plot(ErrorVector,'r');
+title(file, 'Interpreter', 'none');
 
 % UI buttons for manual artifact detection and removal
 saveLimitsbtn = uicontrol('Style', 'pushbutton', 'String', 'Get Axes Limits',...
@@ -93,6 +94,7 @@ changeCHbtn = uicontrol('Style', 'pushbutton', 'String', 'Change current channel
 
     function changeCH(source,event)
         global BadIndxs
+        title('Loading plot.....');
         [file,path] = uigetfile('*.mat');
         if isequal(file,0)
             disp('User selected Cancel');
@@ -109,6 +111,7 @@ changeCHbtn = uicontrol('Style', 'pushbutton', 'String', 'Change current channel
         
         LFP_trace(BadIndxs==1) = nan;
         set( LFP_plot, 'YData', LFP_trace );
+        title(file, 'Interpreter', 'none');
     end
 
 end
