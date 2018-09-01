@@ -1,130 +1,200 @@
 function manualArtifactRemoval
-global LFP_trace LFP_plot rms_line RMS_plot ...
-    ErrorVector Error_plot statMatrix file path
-% Load file directory and desired file
-[file,path] = uigetfile('*.mat');
-if isequal(file,0)
+%% manualArtifactRemoval
+%   Tool for visualizing statMatrix data and removing artifact periods by
+%   examining the raw LFP trace relative to that channel's RMS values.
+%
+%% Ideas/To Do:
+% 1) Add in listbox to enable quick switching between traces
+% 2) Add in listbox to show a list of the periods removed, add
+%   functionality to highlight that region and then enable you to add
+%   selected period back into the "good trace" or to "redefine" the period
+% 3) Add in output... probably to save copies of the statMatrix files that
+%   have been "cleaned" by this script.
+
+%% Define Globals
+global goodDataTrace badDataTrace timeVals badIndx badIndxs statMatrix smFile...
+    artifactRemovalFig figAxes goodDataPlot badDataPlot rmsPlot pokePlotHandles
+
+%#ok<*NASGU>
+%% Load smFile directory and select the desired smFile
+[smFile,smPath] = uigetfile('*.mat');
+if isequal(smFile,0)
     disp('User selected Cancel');
 else
-    disp(['User selected ', fullfile(path,file)]);
+    disp(['User selected ', fullfile(smPath,smFile)]);
     disp('Loading plot.....')
 end
-currFileName = strcat(path,file);
+cd(smPath);
+currFileName = strcat(smPath,smFile);
 load(currFileName,'statMatrix')
-ErrorVector = nan(size(statMatrix(:,2)));
 
-% Identify the behaviorMatrix file
-files = dir(path);
+files = dir(smPath);
 fileNames = {files.name};
+% Load the behavior matrix file for poke events plots
 behMatFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))};
-load([path behMatFile]);
-pokeEventsCol = cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'PokeEvents'));
-pokeInTSs = behavMatrix(behavMatrix(:,pokeEventsCol)==1,1);
+load([smPath behMatFile]);
+% Identify list of all statMatrix files
+smFileList = fileNames(cellfun(@(a)~isempty(a), strfind(fileNames, '_SM')))'; %% Glenn, use this for the listbox.
 
-% Plot LFP trace
-
-% figure('units','normalized','outerposition',[0 0 1 1]) %For full a fullscreen figure
-LFP_trace = statMatrix(:,2);
+%% Initialize variables
+goodDataTrace = statMatrix(:,2);
+assignin('base', 'goodDataTrace', goodDataTrace);
+badDataTrace = nan(size(goodDataTrace));
+assignin('base', 'badDataTrace', badDataTrace);
+pokePlotHandles = [];
+badIndx = [];
+badIndxs = [];
 timeVals = statMatrix(:,1)-statMatrix(1,1);
-figure(1)
-LFP_plot = plot(timeVals,LFP_trace,'b');
-hold on
-rms_line = (rms(LFP_trace)*ones(length(LFP_trace),1)) + 2*std(LFP_trace);
-RMS_plot = plot(timeVals,rms_line,'c','LineWidth',1);
-hold on
-Error_plot = plot(timeVals,ErrorVector,'r');
-title(file, 'Interpreter', 'none');
+assignin('base', 'timeVals', timeVals);
+rmsThresh = rms(goodDataTrace) + 2*std(abs(goodDataTrace));
 
-% UI buttons for manual artifact detection and removal
-saveLimitsbtn = uicontrol('Style', 'pushbutton', 'String', 'Get Axes Limits',...
-    'Position', [100,360,100,20],'Callback', @saveAxisLimits);
-clearLimitsbtn = uicontrol('Style', 'pushbutton', 'String', 'Clear Stored Axes',...
-    'Position', [100,330,120,20],'Callback', @clearAxisLimits);
-removeBadInxsbtn = uicontrol('Style', 'pushbutton', 'String', 'Remove Unwanted Indices',...
-    'Position', [100,300,150,20],'Callback', @removeUnwantedIndx);
-updateRMSbtn = uicontrol('Style', 'pushbutton', 'String', 'Refresh RMS Line',...
-    'Position', [100,270,100,20],'Callback', @updateRMS);
-changeCHbtn = uicontrol('Style', 'pushbutton', 'String', 'Change current channel',...
-    'Position', [100,240,150,20],'Callback', @changeCH);
-% Should I add a save file 
+% Pull out poke events data.
+pokeEventsCol = cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'PokeEvents'));
+pokeInTSs = behavMatrix(behavMatrix(:,pokeEventsCol)==1,1) - statMatrix(1,1); %#ok<NODEF>
+pokeOutTSs = behavMatrix(behavMatrix(:,pokeEventsCol)==-1,1) - statMatrix(1,1);
+pokeVals = [pokeInTSs, pokeOutTSs];
 
-% UI callback functions
-    function saveAxisLimits(source,event) % Saves current x-axis limits based on what the user zooms into
-        global BadIndx
-        currentXLimits = {get(gca,'xlim')};
-        BadIndx = vertcat(BadIndx,currentXLimits);
-        disp('X-axis limits storage updated')
-        disp(currentXLimits{1})
-        fprintf('Index pair count: %d\n',length(BadIndx))
-    end
 
-    function clearAxisLimits(source,event) % Clear current storage of saved x-axis limits
-        global BadIndx BadIndxs
-        BadIndx = [];
-        BadIndxs = [];
-        disp('Stored axes index limits have been cleared')
-    end
+%% Create Figure
+% artifactRemovalFig = figure('units','normalized','outerposition',[0 0 1 1]); %For full a fullscreen figure
+artifactRemovalFig = figure;
+figAxes = axes(artifactRemovalFig, 'position', [0.2, 0.1, 0.7, 0.8]);
+goodDataPlot = plot(figAxes, timeVals, goodDataTrace, 'b', 'YDataSource', 'goodDataTrace');
+axis tight;
+hold on;
+badDataPlot = plot(figAxes, timeVals, badDataTrace, 'r', 'YDataSource', 'badDataTrace');
+rmsPlot = line(get(figAxes, 'xlim'), repmat(rmsThresh, [1,2]), 'color', 'k', 'LineWidth', 1);
+title(smFile, 'Interpreter', 'none');
+PlotPokeVals(figAxes, pokeVals, rmsThresh);
 
-    function removeUnwantedIndx(source,event) % Removes sections from original LFP signal based on saved limits
-        global BadIndx BadIndxs 
-        BadIndxs = zeros(size(LFP_trace));
-        for ndx = 1:length(BadIndx)
-            BadIndxVector = BadIndx{ndx};
-            % Compensates for the case that the captured x-limits exceed
-            % length of the LFP trace
-            if BadIndxVector(2)> length(LFP_trace)
-                Index_Init = round(BadIndxVector(1)); % Values are rounded as needed for index values
-                Index_Fin = length(LFP_trace);
-            else
-                Index_Init = round(BadIndxVector(1));
-                Index_Fin = round(BadIndxVector(2));
-            end
-            BadIndxs(Index_Init:Index_Fin) = true;
-        end
-        LFP_trace = statMatrix(:,2); % This line is repeated for this function to prevent LFP_trace from 
-                                     % overwritten as a result of repeated
-                                     % clicks
-        
-        ErrorVector(find(BadIndxs)) = LFP_trace(find(BadIndxs));
-        set (Error_plot,'YData',ErrorVector);
-        
-        LFP_trace(BadIndxs==1) = nan;
-        set( LFP_plot, 'YData', LFP_trace );
-        
-        disp('LFP trace has been updated with removed indices')
-        disp('Removed sections have been highlighted in red')
-    end
 
-    function updateRMS(source,event)
-        rms_line = rms(LFP_trace(~isnan(LFP_trace)))*ones(length(LFP_trace),1)...
-            + 2*nanstd(LFP_trace);
-        set( RMS_plot, 'YData', rms_line );
-    end
+%% Define UI buttons
+% UI buttons for index control
+saveLimitsbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Select Bad Indices',...
+    'Position', [0.025,0.2,0.075,0.035],'Callback', @SaveAxisLimits); 
+removeBadInxsbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Remove Bad Indices',...
+    'Position', [0.1,0.2,0.075,0.035],'Callback', @RemoveBadIndx);
+clearLimitsbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Clear Stored Indices',...
+    'Position', [0.0625,0.15,0.075,0.035],'Callback', @ClearStoredIndexes);
+updateRMSbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Refresh RMS Line',...
+    'Position', [0.025,0.1,0.15,0.035],'Callback', @UpdateRMS);
 
-    function changeCH(source,event)
-        global BadIndxs
-        title('Loading plot.....');
-        [file,path] = uigetfile('*.mat');
-        if isequal(file,0)
-            disp('User selected Cancel');
-        else
-            disp(['User selected ', fullfile(path,file)]);
-            disp('Loading plot.....')
-        end
-        currFileName = strcat(path,file);
-        load(currFileName,'statMatrix')
-        LFP_trace = statMatrix(:,2);
-        
-        ErrorVector(find(BadIndxs)) = LFP_trace(find(BadIndxs));
-        set (Error_plot,'YData',ErrorVector);
-        
-        LFP_trace(BadIndxs==1) = nan;
-        set( LFP_plot, 'YData', LFP_trace );
-        title(file, 'Interpreter', 'none');
-    end
-
+% UI buttons for file control
+changeCHbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Change current channel',...
+    'Position', [0.025,0.8,0.15,0.035],'Callback', @ChangeCH);
 end
 
+%% UI callback functions
+function SaveAxisLimits(source,event) % Saves current x-axis limits based on what the user zooms into
+    global badIndx figAxes
+    currentXLimits = {get(figAxes,'xlim')};
+    badIndx = vertcat(badIndx,currentXLimits);
+    disp('X-axis limits storage updated')
+    disp(currentXLimits{1})
+    fprintf('Index pair count: %d\n',length(badIndx))
+end
+
+function ClearStoredIndexes(source,event) % Clear current storage of saved x-axis limits
+    global badIndx badIndxs goodDataTrace badDataTrace
+    badIndx = [];
+    badIndxs = [];
+    goodDataTrace = nansum([goodDataTrace, badDataTrace],2);
+    assignin('base', 'goodDataTrace', goodDataTrace);
+    badDataTrace = nan(size(goodDataTrace));
+    assignin('base', 'badDataTrace', badDataTrace);
+    refreshdata
+    drawnow;    
+    disp('Stored axes index limits have been cleared')
+end
+
+function RemoveBadIndx(source,event) % Removes sections from original LFP signal based on saved limits
+    global badIndx badIndxs goodDataTrace badDataTrace statMatrix timeVals
+    badIndxs = false(size(goodDataTrace));
+    for ndx = 1:length(badIndx)
+        % Compensates for the case that the captured x-limits exceed
+%         % length of the LFP trace
+%         if badIndx{ndx}(2) >= timeVals(end)
+%             initIndx = find(badIndx{ndx}(1)>timeVals,1,'last'); % Values are rounded as needed for index values
+%             finIndx = length(goodDataTrace);
+%         else
+        initIndx = find(badIndx{ndx}(1)>timeVals,1,'last');
+        if isempty(initIndx)
+            initIndx = 1;
+        end
+        finIndx = find(badIndx{ndx}(2)<timeVals,1,'first');
+        if isempty(finIndx)
+            finIndx = length(timeVals);
+        end
+
+        %         end
+        badIndxs(initIndx:finIndx) = true;
+    end
+    goodDataTrace = statMatrix(:,2); % This line is repeated for this function to prevent goodDataTrace from
+    % overwritten as a result of repeated
+    % clicks
+
+    badDataTrace(badIndxs) = goodDataTrace(badIndxs);
+    assignin('base', 'badDataTrace', badDataTrace);
+%     set (badDataPlot,'YData',badDataTrace);
+
+    goodDataTrace(badIndxs) = nan;
+    assignin('base', 'goodDataTrace', goodDataTrace);
+%     set(dataPlot, 'YData', goodDataTrace);
+    refreshdata
+    drawnow
+    disp('LFP trace has been updated with removed indices')
+    disp('Removed sections have been highlighted in red')
+end
+
+function UpdateRMS(source,event)
+    global rmsPlot goodDataTrace
+    newRMSthresh = rms(goodDataTrace(~isnan(goodDataTrace))) + 2*nanstd(abs(goodDataTrace));
+    set(rmsPlot, 'YData', repmat(newRMSthresh, [1,2]));
+    UpdatePokePlotVals(newRMSthresh);
+end
+
+function ChangeCH(source,event)
+    global badIndxs goodDataTrace badDataTrace statMatrix smFile
+    title('Loading plot.....');
+    [curFile,curPath] = uigetfile('*.mat');
+    smFile = curFile;
+    if isequal(smFile,0)
+        disp('User selected Cancel');
+    else
+        disp(['User selected ', fullfile(curPath,curFile)]);
+        disp('Loading plot.....')
+    end
+    currFileName = strcat(curPath,curFile);
+    load(currFileName,'statMatrix')
+    goodDataTrace = statMatrix(:,2);
+
+    badDataTrace(badIndxs) = goodDataTrace(badIndxs);
+    assignin('base', 'badDataTrace', badDataTrace);
+%     set (badDataPlot,'YData',badDataTrace);
+
+    goodDataTrace(badIndxs) = nan;
+%     set( dataPlot, 'YData', goodDataTrace );
+    assignin('base', 'goodDataTrace', goodDataTrace);
+    title(smFile, 'Interpreter', 'none');
+    refreshdata
+    drawnow
+end
+
+%% Plotting Functions
+function PlotPokeVals(figAxes, pokeVals, rmsThresh)
+    global pokePlotHandles
+    for poke = 1:size(pokeVals,1)
+        pokePlotHandles{poke} = plot(figAxes, pokeVals(poke,:), repmat(rmsThresh+(rmsThresh*0.1), [1,2]), 'linewidth', 1, 'marker', '*', 'color', 'k');
+    end
+end
+
+function UpdatePokePlotVals(rmsThresh)
+    global pokePlotHandles
+    for poke = 1:length(pokePlotHandles)
+        set(pokePlotHandles{poke}, 'YData', repmat(rmsThresh + (rmsThresh*0.5), [1,2]));
+    end
+end
+%% Glenn notes
 % Add a function that allows to switch channels 
 % May be better to use 
 % Have two vectors: original LFP and a NaN vector
