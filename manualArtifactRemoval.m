@@ -13,7 +13,8 @@ function manualArtifactRemoval
 
 %% Define Globals
 global goodDataTrace badDataTrace timeVals badIndx badIndxs statMatrix smFile...
-    artifactRemovalFig figAxes goodDataPlot badDataPlot rmsPlot pokePlotHandles
+    artifactRemovalFig figAxes goodDataPlot badDataPlot rmsPlot pokePlotHandles...
+    selectFilebtn smFileList 
 
 %#ok<*NASGU>
 %% Load smFile directory and select the desired smFile
@@ -34,7 +35,7 @@ fileNames = {files.name};
 behMatFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))};
 load([smPath behMatFile]);
 % Identify list of all statMatrix files
-smFileList = fileNames(cellfun(@(a)~isempty(a), strfind(fileNames, '_SM')))'; %% Glenn, use this for the listbox.
+smFileList = fileNames(cellfun(@(a)~isempty(a), strfind(fileNames, '_SM')))'; 
 
 %% Initialize variables
 goodDataTrace = statMatrix(:,2);
@@ -78,10 +79,14 @@ clearLimitsbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', '
     'Position', [0.0625,0.15,0.075,0.035],'Callback', @ClearStoredIndexes);
 updateRMSbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Refresh RMS Line',...
     'Position', [0.025,0.1,0.15,0.035],'Callback', @UpdateRMS);
+indicesListbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'listbox', 'String', smFileList,...
+    'Position', [0.0375,0.25,0.125,0.28],'Callback', @selectFile);
 
 % UI buttons for file control
-changeCHbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Change current channel',...
-    'Position', [0.025,0.8,0.15,0.035],'Callback', @ChangeCH);
+selectFilebtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'listbox', 'String', smFileList,...
+    'Position', [0.0375,0.65,0.125,0.28],'Callback', @selectFile);
+changeCHbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Change to Selected Channel',...
+    'Position', [0.025,0.6,0.15,0.035],'Callback', @ChangeCH);
 end
 
 %% UI callback functions
@@ -153,11 +158,18 @@ function UpdateRMS(source,event)
     UpdatePokePlotVals(newRMSthresh);
 end
 
+function selectFile (source,event)
+global smListIndex selectFilebtn
+smListIndex = selectFilebtn.Value;
+end
+
 function ChangeCH(source,event)
-    global badIndxs goodDataTrace badDataTrace statMatrix smFile
+    global badIndxs goodDataTrace badDataTrace statMatrix smFile...
+        smFileList smListIndex
     title('Loading plot.....');
-    [curFile,curPath] = uigetfile('*.mat');
+    curFile = smFileList{smListIndex};
     smFile = curFile;
+    curPath = strcat(pwd,'\');
     if isequal(smFile,0)
         disp('User selected Cancel');
     else
