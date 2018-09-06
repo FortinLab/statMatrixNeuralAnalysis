@@ -79,14 +79,12 @@ clearLimitsbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', '
     'Position', [0.0625,0.15,0.075,0.035],'Callback', @ClearStoredIndexes);
 updateRMSbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Refresh RMS Line',...
     'Position', [0.025,0.1,0.15,0.035],'Callback', @UpdateRMS);
-indicesListbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'listbox', 'String', smFileList,...
-    'Position', [0.0375,0.25,0.125,0.28],'Callback', @selectFile);
 
 % UI buttons for file control
 selectFilebtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'listbox', 'String', smFileList,...
-    'Position', [0.0375,0.65,0.125,0.28],'Callback', @selectFile);
+    'Position', [0.0375,0.5,0.125,0.35],'Callback', @selectFile);
 changeCHbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Change to Selected Channel',...
-    'Position', [0.025,0.6,0.15,0.035],'Callback', @ChangeCH);
+    'Position', [0.025,0.45,0.15,0.035],'Callback', @ChangeCH);
 end
 
 %% UI callback functions
