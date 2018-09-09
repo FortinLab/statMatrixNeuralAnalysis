@@ -35,7 +35,7 @@ fileNames = {files.name};
 behMatFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))};
 load([smPath behMatFile]);
 % Identify list of all statMatrix files
-smFileList = fileNames(cellfun(@(a)~isempty(a), strfind(fileNames, '_SM')))';
+smFileList = fileNames(cellfun(@(a)~isempty(a), strfind(fileNames, 'statMatrix_')))';
 
 %% Initialize variables
 goodDataTrace = statMatrix(:,2);
@@ -94,21 +94,12 @@ end
 
 %% UI callback functions
 function SaveAxisLimits(source,event) % Saves current x-axis limits based on what the user zooms into
-global badIndx figAxes storedIndices indicesListbtn
+global badIndx figAxes 
 currentXLimits = {get(figAxes,'xlim')};
 badIndx = vertcat(badIndx,currentXLimits);
 disp('X-axis limits storage updated')
 disp(currentXLimits{1})
 fprintf('Index pair count: %d\n',length(badIndx))
-for indxPairCount = 1:length(badIndx)
-    if indxPairCount == 1
-        indxStrings = cellstr(num2str(badIndx{indxPairCount}));
-    else
-        indxStrings = vertcat(indxStrings,cellstr(num2str(badIndx{indxPairCount})));
-    end
-end
-storedIndices = indxStrings;
-set(indicesListbtn,'String',storedIndices)
 end
 
 function ClearStoredIndexes(source,event) % Clear current storage of saved x-axis limits
@@ -127,7 +118,17 @@ disp('Stored axes index limits have been cleared')
 end
 
 function RemoveBadIndx(source,event) % Removes sections from original LFP signal based on saved limits
-global badIndx badIndxs goodDataTrace badDataTrace statMatrix timeVals
+global badIndx badIndxs goodDataTrace badDataTrace statMatrix timeVals storedIndices indicesListbtn
+for indxPairCount = 1:length(badIndx)
+    if indxPairCount == 1
+        indxStrings = cellstr(num2str(badIndx{indxPairCount}));
+    else
+        indxStrings = vertcat(indxStrings,cellstr(num2str(badIndx{indxPairCount})));
+    end
+end
+storedIndices = indxStrings;
+set(indicesListbtn,'String',storedIndices)
+
 badIndxs = false(size(goodDataTrace));
 for ndx = 1:length(badIndx)
     % Compensates for the case that the captured x-limits exceed
