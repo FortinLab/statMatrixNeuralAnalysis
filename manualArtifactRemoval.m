@@ -19,29 +19,17 @@ global goodDataTrace badDataTrace timeVals badIndx badIndxs statMatrix smFile...
 %#ok<*NASGU>
 %% Load smFile directory and select the desired smFile
 [smFile,smPath] = uigetfile('*.mat');
-if isequal(smFile,0)
-    disp('User selected Cancel');
-else
-    disp(['User selected ', fullfile(smPath,smFile)]);
-    disp('Loading plot.....')
-end
 cd(smPath);
-currFileName = strcat(smPath,smFile);
-load(currFileName,'statMatrix')
-
+UpdateDataTrace;
 files = dir(smPath);
 fileNames = {files.name};
 % Load the behavior matrix file for poke events plots
 behMatFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))};
 load([smPath behMatFile]);
 % Identify list of all statMatrix files
-smFileList = fileNames(cellfun(@(a)~isempty(a), strfind(fileNames, '_SM')))'; 
+smFileList = fileNames(cellfun(@(a)~isempty(a), regexp(fileNames, '_SM\>')))'; 
 
 %% Initialize variables
-goodDataTrace = statMatrix(:,2);
-assignin('base', 'goodDataTrace', goodDataTrace);
-badDataTrace = nan(size(goodDataTrace));
-assignin('base', 'badDataTrace', badDataTrace);
 pokePlotHandles = [];
 badIndx = [];
 badIndxs = [];
@@ -156,28 +144,17 @@ function UpdateRMS(source,event)
     UpdatePokePlotVals(newRMSthresh);
 end
 
-function selectFile (source,event)
+function selectFile(source,event)
 global smListIndex selectFilebtn
 smListIndex = selectFilebtn.Value;
 end
 
 function ChangeCH(source,event)
-    global badIndxs goodDataTrace badDataTrace statMatrix smFile...
-        smFileList smListIndex
-    title('Loading plot.....');
-    curFile = smFileList{smListIndex};
-    smFile = curFile;
-    curPath = strcat(pwd,'\');
-    if isequal(smFile,0)
-        disp('User selected Cancel');
-    else
-        disp(['User selected ', fullfile(curPath,curFile)]);
-        disp('Loading plot.....')
-    end
-    currFileName = strcat(curPath,curFile);
-    load(currFileName,'statMatrix')
-    goodDataTrace = statMatrix(:,2);
-
+    global badIndxs goodDataTrace badDataTrace smFile...
+        smFileList smListIndex figAxes
+    title(figAxes,'Loading plot.....');
+    smFile = smFileList{smListIndex};
+    UpdateDataTrace;
     badDataTrace(badIndxs) = goodDataTrace(badIndxs);
     assignin('base', 'badDataTrace', badDataTrace);
 %     set (badDataPlot,'YData',badDataTrace);
@@ -185,7 +162,7 @@ function ChangeCH(source,event)
     goodDataTrace(badIndxs) = nan;
 %     set( dataPlot, 'YData', goodDataTrace );
     assignin('base', 'goodDataTrace', goodDataTrace);
-    title(smFile, 'Interpreter', 'none');
+    title(figAxes, smFile, 'Interpreter', 'none');
     refreshdata
     drawnow
 end
@@ -204,6 +181,26 @@ function UpdatePokePlotVals(rmsThresh)
         set(pokePlotHandles{poke}, 'YData', repmat(rmsThresh + (rmsThresh*0.5), [1,2]));
     end
 end
+
+function UpdateDataTrace
+    global smFile goodDataTrace badDataTrace statMatrix
+    if isequal(smFile,0)
+        disp('User selected Cancel');
+    else
+        disp(['User selected ', smFile]);
+        disp('Loading plot.....')
+    end
+    load(smFile,'statMatrix')
+    
+    goodDataTrace = statMatrix(:,2);
+    % Enable the following to filter the data
+    [b1, a1] = butter(2, [59/500 61/500], 'stop');                      %% Remove 60hz Harmonic (noise)
+    goodDataTrace = filtfilt(b1, a1, goodDataTrace);                    %% Apply Filter
+    assignin('base', 'goodDataTrace', goodDataTrace);
+    badDataTrace = nan(size(goodDataTrace));
+    assignin('base', 'badDataTrace', badDataTrace);
+end
+
 %% Glenn notes
 % Add a function that allows to switch channels 
 % May be better to use 
