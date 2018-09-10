@@ -43,6 +43,8 @@ errorSigNdxs = find(errorSigVect);
 seqLength = size(positionTrlMtx,2);
 % Identify trial performance 
 trialPerfVect = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'Performance')));
+% Identify InSeq logical
+inSeqLog = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'InSeqLog')));
 
 %% Create Data input structures
 seqNum = cell(1,numTrials);
@@ -62,16 +64,26 @@ for trl = 1:numTrials
     curTrlOdor = find(odorTrlMtx(trialIndices(trl),:)==1);
     curTrlPos = find(positionTrlMtx(trialIndices(trl),:)==1);
     curTrlPerf = trialPerfVect(trialIndices(trl))==1;
+    curTrlInSeqLog = inSeqLog(trialIndices(trl))==1;
     
     trialOdor{trl} = curTrlOdor;
     trialPosition{trl} = curTrlPos;
     trialPerf{trl} = curTrlPerf;
-    trialTransDist{trl} = curTrlPos - curTrlOdor;
-    if curTrlPos==1
-        trialItmItmDist{trl} = 1;
+    % Increment the sequence counter as necessary
+    if curTrlPos==1                                                         % Increment if trial is in the first position
         seq = seq+1;
+    elseif trl==1 && curTrlPos ~= 1                                         % Also increment if it's the first trial in the session but the position is not 1 (happens when first trial is curated out)
+        seq = seq+1;
+    elseif curTrlPos <= trialPosition{trl-1}                                % Only gets here if the first trial in a sequence was curated out 
+        seq = seq+1;
+    end
+    % Identify temporal context feature
+    if curTrlInSeqLog
+        trialItmItmDist{trl} = 1;
+        trialTransDist{trl} = 0;
     else
-        trialItmItmDist{trl} = curTrlOdor - trialOdor{trl-1};
+        trialTransDist{trl} = curTrlPos - curTrlOdor;
+        trialItmItmDist{trl} = curTrlOdor - curTrlPos + 1;
     end
     seqNum{trl} = seq;
     
