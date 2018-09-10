@@ -522,7 +522,7 @@ for trl = 1:size(odorPresSsn,1)
         % Check to ensure the reward signal occurred AFTER the target
         % duration elapsed
         if ~((plxSession(trl).RewardSignalTime - plxSession(trl).OdorTrigPokeTime) > plxSession(trl).TargetDuration)
-            if plxSession(trl).TargetDuration - plxSession(trl).PokeDuration > 0.05
+            if isfield(ssnData(1).Settings, 'GracePeriodDur') && plxSession(trl).TargetDuration - plxSession(trl).PokeDuration > ssnData(1).Settings.GracePeriodDur
                 error('Trial #%i: Reward signal time occurred before target duration elapsed', trl);
             end
         end

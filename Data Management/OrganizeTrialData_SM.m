@@ -71,7 +71,13 @@ for trl = 1:numTrials
         trialItmItmDist{trl} = 1;
         seq = seq+1;
     else
-        trialItmItmDist{trl} = curTrlOdor - trialOdor{trl-1};
+        % Work around for instances where trials are curated out which may
+        % distort item-item distance
+        if trialTransDist{trl} == 0
+            trialItmItmDist{trl} = 1;
+        else
+            trialItmItmDist{trl} = curTrlOdor - trialOdor{trl-1};
+        end
     end
     seqNum{trl} = seq;
     

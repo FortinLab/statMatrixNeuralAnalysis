@@ -554,7 +554,7 @@ function CreateNeuralMatrixPLX(exp, data, rig, tsVect, summary, outputFileName, 
                 ensembleUnitSummaries{find(strcmp(curTet, tetsWithUnits), 1)} = unitSummary;
             end
 
-            save([outputFileName{1} '_' curTet '.mat'], 'statMatrix', 'statMatrixColIDs', 'unitSummary', '-v7.3');
+            save([outputFileName{1} '_' curTet '_SM.mat'], 'statMatrix', 'statMatrixColIDs', 'unitSummary', '-v7.3');
             fprintf('          %s saved!\n', curTet);
             fprintf(outfile, '     %s saved as %s\n\n', curTet, sprintf('%s_%s.mat', outputFileName{1}, curTet));
         end
