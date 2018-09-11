@@ -110,6 +110,8 @@ if sum(strcmp(varargin, 'lfpBand'))==1
         bandID = [bandID '])'];
     elseif strcmp(bandIDs, 'All')
         bandID = '([A-Z]*|[a-z]*)';
+    else
+        bandID = bandIDs;
     end
 else
     bandID = 'Raw';    
