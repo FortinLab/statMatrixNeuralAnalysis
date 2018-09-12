@@ -90,7 +90,7 @@ for t = 1:length(tetsWithUnits)
     %% Find the relevant statMatrix data file in order to grab the relevant
     % LFP data
     curTet = tetsWithUnits{t};
-    smFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, curTet))};
+    smFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, [curTet '_SM']))};
     load(smFile);
     
     curUnis = statMatrixColIDs(cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '-U([0-9]*)')));
