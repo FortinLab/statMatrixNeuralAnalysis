@@ -171,6 +171,21 @@ for t = 1:length(tetsWithUnits)
         
         % F-Ratio Analysis Odor vs Position
         curTetStatDiffTC(uni) = FratioAnalysis_SM(curUnit, tcByOdor, tcByPosition); %#ok<AGROW>
+        
+        %% Temporal Context X Performance PEH
+        % Overall InSeq v OutSeq Corr
+        tcCorrOverall = PlotTrialEventPEH_SM(curUnit,  behEventData, behEventDataIDs,...
+            tcCorrLogs, tcCorrLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
+        
+        
+        
+        % Overall InSeq v OutSeq InCorr
+        tcInCorrOverall = PlotTrialEventPEH_SM(curUnit,  behEventData, behEventDataIDs,...
+            tcInCorrLogs, tcInCorrLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
+        
+        
         %% Spike-Phase Relations
         % To be fleshed out between GE and JDL
         
