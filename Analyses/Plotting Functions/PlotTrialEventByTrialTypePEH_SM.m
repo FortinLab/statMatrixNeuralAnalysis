@@ -60,7 +60,7 @@ for eve = 1:size(behavMatrices,1)
             else
                 set(subplotIDs(eve,curTTsubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
             end
-            title(sprintf('%s %s: %s Trials', curTTid, curEventID, curGroupID));
+            title(sprintf('%s %s: %s Trials', curTTid, curEventID, curGroupID), 'interpreter', 'none');
             subplotData.(curEventID).(curGroupID).(curTTid) = curEventPEH;
         end
     end
