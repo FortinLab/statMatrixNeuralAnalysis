@@ -50,7 +50,7 @@ for eve = 1:length(behavMatrixIDs)
             end
             meanEventPEH = mean(cell2mat(curEventPEH),1);   
             semEventPEH = std(cell2mat(curEventPEH),0,1)./sqrt(length(curEventPEH)-1);
-            BarPlotErrorbars(meanEventPEH,semEventPEH, 'Color', 'Black', 'XTick', newBins(1:end-1)+(mode(diff(newBins))/2));
+            BarPlotErrorbars(meanEventPEH/pehBinSize,semEventPEH/pehBinSize, 'Color', 'Black', 'XTick', newBins(1:end-1)+(mode(diff(newBins))/2));
             axis tight
         else
             set(subplotIDs(curEveSubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
