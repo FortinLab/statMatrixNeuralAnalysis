@@ -12,7 +12,7 @@ else
 end
 dirContents = dir(fileDir);
 fileNames = {dirContents.name};
-tetFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, '_T([0-9]*).mat'));
+tetFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, '_T([0-9]*)_SM.mat'));
 tetFiles = fileNames(tetFileLog)';
 load(tetFiles{1}, 'statMatrixColIDs');
 % Identify LFP VOLTAGE columns, identified by the fact that they do not
@@ -44,7 +44,7 @@ windowSize = struct('Ripple', 0.008,...
 
 dirContents = dir(fileDir);
 fileNames = {dirContents.name};
-tetFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, '_T([0-9]*).mat'));
+tetFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, '_T([0-9]*)_SM.mat'));
 tetFiles = fileNames(tetFileLog)';
 saveYN = 1;
 %% Analyzesing
@@ -76,6 +76,7 @@ for tet = 1:length(tetFiles)
         for u = 1:numUnis
             curUniSpkLog = statMatrix(:,uniSpots(u))>0;
             figure('Name', statMatrixColIDs{uniSpots(u)});
+            annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s', statMatrixColIDs{uniSpots(u)}), 'linestyle', 'none', 'interpreter', 'none');
             for bnd = 1:length(bands)
                 curUniPhasePref = hilbTrace{bnd}(curUniSpkLog);
                 curUniPowerPref = rmsTrace{bnd}(curUniSpkLog);
