@@ -109,7 +109,7 @@ for u1 = 1:size(ensembleUniDta,2)
 %             curPairOAlag(isnan(curPairOAlag)) = [];
             oA = subplot(5,4,1:2);
 %             histogram(curPairOAlag, xCorrBins);
-            aLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(a)a{u1,u2}, spkTmDiffTrl(odorAlog & inSeqLog & perfLog), 'uniformoutput', 0), 'uniformoutput', 0)'));
+            aLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(a)a{u1,u2}, spkTmDiffTrl(odorAlog & inSeqLog & perfLog), 'uniformoutput', 0), 'uniformoutput', 0)'),1);
             bar(xCorrBins(2:end)-(mode(diff(xCorrBins))/2),aLagMean,1, 'k');
             if sum(aLagMean) == 0
                 aYmax = 0.000001;
@@ -122,7 +122,7 @@ for u1 = 1:size(ensembleUniDta,2)
 %             curPairOBlag(isnan(curPairOBlag)) = [];
             oB = subplot(5,4,5:6);
 %             histogram(curPairOBlag, xCorrBins);
-            bLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(b)b{u1,u2}, spkTmDiffTrl(odorBlog & inSeqLog & perfLog), 'uniformoutput', 0), 'uniformoutput', 0)'));
+            bLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(b)b{u1,u2}, spkTmDiffTrl(odorBlog & inSeqLog & perfLog), 'uniformoutput', 0), 'uniformoutput', 0)'),1);
             bar(xCorrBins(2:end)-(mode(diff(xCorrBins))/2),bLagMean,1, 'k');
             if sum(bLagMean) == 0
                 bYmax = 0.000001;
@@ -135,7 +135,7 @@ for u1 = 1:size(ensembleUniDta,2)
 %             curPairOClag(isnan(curPairOClag)) = [];
             oC = subplot(5,4,9:10);
 %             histogram(curPairOClag, xCorrBins);
-            cLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(c)c{u1,u2}, spkTmDiffTrl(odorClog & inSeqLog & perfLog), 'uniformoutput',0), 'uniformoutput', 0)'));
+            cLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(c)c{u1,u2}, spkTmDiffTrl(odorClog & inSeqLog & perfLog), 'uniformoutput',0), 'uniformoutput', 0)'),1);
             bar(xCorrBins(2:end)-(mode(diff(xCorrBins))/2),cLagMean,1, 'k');
             if sum(cLagMean) == 0
                 cYmax = 0.000001;
@@ -148,7 +148,7 @@ for u1 = 1:size(ensembleUniDta,2)
 %             curPairODlag(isnan(curPairODlag)) = [];
             oD = subplot(5,4,13:14);
 %             histogram(curPairODlag, xCorrBins);
-            dLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(d)d{u1,u2}, spkTmDiffTrl(odorDlog & inSeqLog & perfLog), 'uniformoutput',0), 'uniformoutput', 0)'));
+            dLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(d)d{u1,u2}, spkTmDiffTrl(odorDlog & inSeqLog & perfLog), 'uniformoutput',0), 'uniformoutput', 0)'),1);
             bar(xCorrBins(2:end)-(mode(diff(xCorrBins))/2),dLagMean,1, 'k');
             if sum(dLagMean) == 0
                 dYmax = 0.000001;
@@ -161,8 +161,11 @@ for u1 = 1:size(ensembleUniDta,2)
 %             curPairOElag(isnan(curPairOElag)) = [];
             oE = subplot(5,4,17:18);
 %             histogram(curPairOElag, xCorrBins);
-            eLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(e)e{u1,u2}, spkTmDiffTrl(odorElog & inSeqLog & perfLog), 'uniformoutput', 0), 'uniformoutput', 0)'));
-            bar(xCorrBins(2:end)-(mode(diff(xCorrBins))/2),eLagMean,1, 'k');
+            eLagMean = mean(cell2mat(cellfun(@(a)histcounts(a, xCorrBins), cellfun(@(e)e{u1,u2}, spkTmDiffTrl(odorElog & inSeqLog & perfLog), 'uniformoutput', 0), 'uniformoutput', 0)'),1);
+            if ~isempty(eLagMean)
+                bar(xCorrBins(2:end)-(mode(diff(xCorrBins))/2),eLagMean,1, 'k');
+            else
+            end
             if sum(eLagMean) == 0
                 eYmax = 0.000001;
             else
