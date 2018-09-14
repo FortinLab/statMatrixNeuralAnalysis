@@ -32,34 +32,82 @@ uniLog = cellfun(@(a)~isempty(a), strfind(statMatrixColIDs, '-U'));
 unitIDs = statMatrixColIDs(uniLog);
 unitCols = find(uniLog);
 
-%% Plot shit
-% Plot Trial Data by Band
-phaseOverTime = repmat({nan(length(trialTypeIDs), length(groupingLogIDs),length(lfpBands))}, [2,sum(uniLog)]);
-for uni = 1:sum(uniLog)
-    for bnd = 1:length(lfpBands)
-        figure;
-        annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s %s Phase Relations (%s vs %s)', unitIDs{uni}, lfpBands{bnd}, groupingLogIDs{1}, groupingLogIDs{2}), 'linestyle', 'none');
-        for tt = 1:length(trialTypeIDs)
-            for grp = 1:length(groupingLogIDs)
-                curTrls = behavMatrices(trialTypes(tt,:) & groupingLogs(grp,:));
-                tempPhaseVals = cell(length(curTrls),1);
-                tempTimeVals = cell(length(curTrls),1);
-                for trl = 1:length(curTrls)
-                    trlTSs = statMatrix(curTrls(trl).TrialLogVect,1);
-                    tempPhaseVals{trl} = statMatrix(curTrls(trl).TrialLogVect & statMatrix(:,unitCols(uni))>=1, phaseValCols(bnd));
-                    tempTimeVals{trl} = statMatrix(curTrls(trl).TrialLogVect & statMatrix(:,unitCols(uni))>=1, 1) - trlTSs(1) + trialWindows(1);
-                end
+%% Define Plotting Constants
+phaseBins = -pi:pi/8:pi;
+timeBins = trialWindows(1):0.1:trialWindows(2);
 
-                subplot(length(trialTypeIDs), length(groupingLogIDs), sub2ind([length(groupingLogIDs), length(trialTypeIDs)], grp, tt));
-                scatter(cell2mat(tempTimeVals), cell2mat(tempPhaseVals), '*k');
-                title([trialTypeIDs{tt} ' ' groupingLogIDs{grp}], 'interpreter', 'none');
-                set(gca, 'xlim', trialWindows, 'ylim', [-pi pi]);
-                drawnow;
+% %% Plot Trial Data by Band
+% phaseOverTime = repmat({nan(length(trialTypeIDs), length(groupingLogIDs),length(lfpBands))}, [2,sum(uniLog)]);
+% for uni = 1:sum(uniLog)
+%     for bnd = 1:length(lfpBands)
+%         figure;
+%         colPlots = nan([length(groupingLogIDs), length(trialTypeIDs)]);
+%         cLimVals = cell(length(lfpBands));
+%         annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s %s Phase Relations (%s vs %s)', unitIDs{uni}, lfpBands{bnd}, groupingLogIDs{1}, groupingLogIDs{2}), 'linestyle', 'none');
+%         for tt = 1:length(trialTypeIDs)
+%             for grp = 1:length(groupingLogIDs)
+%                 curTrls = behavMatrices(trialTypes(tt,:) & groupingLogs(grp,:));
+%                 tempPhaseVals = cell(length(curTrls),1);
+%                 tempTimeVals = cell(length(curTrls),1);
+%                 for trl = 1:length(curTrls)
+%                     trlTSs = statMatrix(curTrls(trl).TrialLogVect,1);
+%                     tempPhaseVals{trl} = statMatrix(curTrls(trl).TrialLogVect & statMatrix(:,unitCols(uni))>=1, phaseValCols(bnd));
+%                     tempTimeVals{trl} = statMatrix(curTrls(trl).TrialLogVect & statMatrix(:,unitCols(uni))>=1, 1) - trlTSs(1) + trialWindows(1);
+%                 end
+%                 sp = sub2ind([length(groupingLogIDs), length(trialTypeIDs)], grp, tt);
+%                 colPlots(sp) = subplot(length(trialTypeIDs), length(groupingLogIDs), sp);
+% %                 scatter(cell2mat(tempTimeVals), cell2mat(tempPhaseVals), '*k');
+% %                 set(gca, 'xlim', trialWindows, 'ylim', [-pi pi]);
+%                 contourf(timeBins(1:end-1), phaseBins(1:end-1),(histcounts2(cell2mat(tempTimeVals), cell2mat(tempPhaseVals), timeBins, phaseBins)')./length(curTrls),20, 'linestyle', 'none');
+% %                 imagesc(timeBins, phaseBins, flipud(histcounts2(cell2mat(tempTimeVals), cell2mat(tempPhaseVals), timeBins, phaseBins)'));
+%                 cLimVals{sp} = get(colPlots(sp), 'CLim');
+%                 title([trialTypeIDs{tt} ' ' groupingLogIDs{grp}], 'interpreter', 'none');
+% %                 drawnow;
+%             end
+%         end
+%         cLimMax = max(median(cell2mat(cLimVals(:))));
+%         for sp = 1:length(colPlots(:))
+%             set(colPlots(sp), 'clim', [0 cLimMax]);
+%         end
+%         colormap jet
+%         if saveYN==1
+%             set(gcf, 'PaperOrientation', 'landscape');
+%             print('-fillpage', gcf, '-dpdf', sprintf('%s %s Phase Relations (%s vs %s)', unitIDs{uni}, lfpBands{bnd}, groupingLogIDs{1}, groupingLogIDs{2}));
+%         end
+%     end
+% end
+
+%%
+for uni = 1:sum(uniLog)
+    figure
+    colPlots = nan(length(lfpBands));
+    cLimVals = cell(length(lfpBands));
+    annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s Session Spiking Inter-Band Phase Relations', unitIDs{uni}), 'linestyle', 'none');
+    curUniSpkLog = statMatrix(:,unitCols(uni))>=1;
+    for bnd1 = 1:length(lfpBands)
+        bnd1Phase = statMatrix(curUniSpkLog,phaseValCols(bnd1));
+        for bnd2 = 1:length(lfpBands)
+            bnd2Phase = statMatrix(curUniSpkLog,phaseValCols(bnd2));
+            sp = sub2ind([length(lfpBands),length(lfpBands)], bnd1, bnd2);
+            colPlots(sp) = subplot(length(lfpBands), length(lfpBands), sp); 
+            contourf(phaseBins(1:end-1),phaseBins(1:end-1),histcounts2(bnd1Phase, bnd2Phase, phaseBins, phaseBins)', 20, 'linestyle', 'none');
+            if bnd1~=bnd2
+                cLimVals{sp} = get(colPlots(sp), 'CLim');
             end
-        end
-        if saveYN==1
-            set(gcf, 'PaperOrientation', 'landscape');
-            print('-fillpage', gcf, '-dpdf', sprintf('%s %s Phase Relations (%s vs %s)', unitIDs{uni}, lfpBands{bnd}, groupingLogIDs{1}, groupingLogIDs{2}));
+            set(colPlots(sp), 'xticklabel', [], 'yticklabel', [], 'DataAspectRatio',[1 1 1],'Layer','top');
+            axis on;            
+            xlabel(sprintf('%s Phase', lfpBands{bnd1}));
+            ylabel(sprintf('%s Phase', lfpBands{bnd2}));
         end
     end
+    commonClims = [min(min(cell2mat(cLimVals(:)))), max(max(cell2mat(cLimVals(:))))*.75];
+    for sp = 1:length(lfpBands)^2
+        set(colPlots(sp), 'clim', commonClims);
+    end
+    colormap jet
+    if saveYN==1
+        set(gcf, 'PaperOrientation', 'landscape');
+        print('-fillpage', gcf, '-dpdf', sprintf('%s Spiking Inter-Band Phase Relations', unitIDs{uni}));
+    end
+    drawnow
 end
