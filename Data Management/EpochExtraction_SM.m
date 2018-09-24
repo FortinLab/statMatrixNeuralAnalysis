@@ -12,7 +12,7 @@ function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, tr
 %               1) 'Odor' : Timepoint of odor presentation
 %               2) 'PokeIn' : Timepoint triggering odor presentatino
 %               3) 'PokeOut' : Timepoint of port withdrawal
-%               4) 'FrontReward' : Timepoint of odor delivery 
+%               4) 'FrontReward' : Timepoint of reward delivery 
 %               5) 'RearReward' : Timepoint when reward was delivered at
 %                   the back of the maze after a successfully completed
 %                   sequence
