@@ -112,12 +112,17 @@ for fl = 1:length(smFiles)
     
     lfpEventData = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); %#ok<NODEF>
     
+    mptLogLFP = cellfun(@(a)isempty(a), lfpEventData);
+    lfpEventData(mptLogLFP) = {nan(sum(eventAlignedMatrix(1).TrialLogVect), sum(lfpCol))};
+    
     lfpEpochs{fl} = cell2mat(lfpEventData)';
     fprintf('LFP data collected......');
     numUnis = sum(unitCols);    
     fprintf('%i units found.....', numUnis);
     if numUnis >= 1
         uniEventData = ExtractTrialData_SM(eventAlignedMatrix,  statMatrix(:,unitCols));
+        mptLogUni = cellfun(@(a)isempty(a), uniEventData);
+        uniEventData(mptLogUni) = {nan(sum(eventAlignedMatrix(1).TrialLogVect), sum(unitCols))};
         tempUniData = nan(size(lfpEpochs{fl},1), size(lfpEpochs{fl},2), numUnis);
         for uni = 1:numUnis
             tempUniData(:,:,uni) = cell2mat(cellfun(@(a)a(:,uni), uniEventData, 'uniformoutput', 0))';
