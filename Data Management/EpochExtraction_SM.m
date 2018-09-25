@@ -90,7 +90,9 @@ trialInfo = [[eventAlignedMatrix.Performance];...
 eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], eventRef);
 trialTimeBins = ExtractTrialData_SM(eventAlignedMatrix, behavMatrix(:,1));
 eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
-eventTimeBins = trialTimeBins{1} - eventTimes{1};
+eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
+frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
+eventTimeBins = eventTimeBins{frstNonMptTrl};
 
 fprintf('Trial and event timebins extracted\n');
 
@@ -113,7 +115,7 @@ for fl = 1:length(smFiles)
     lfpEventData = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); %#ok<NODEF>
     
     mptLogLFP = cellfun(@(a)isempty(a), lfpEventData);
-    lfpEventData(mptLogLFP) = {nan(sum(eventAlignedMatrix(1).TrialLogVect), sum(lfpCol))};
+    lfpEventData(mptLogLFP) = {nan(size(eventTimeBins))};
     
     lfpEpochs{fl} = cell2mat(lfpEventData)';
     fprintf('LFP data collected......');
@@ -122,7 +124,7 @@ for fl = 1:length(smFiles)
     if numUnis >= 1
         uniEventData = ExtractTrialData_SM(eventAlignedMatrix,  statMatrix(:,unitCols));
         mptLogUni = cellfun(@(a)isempty(a), uniEventData);
-        uniEventData(mptLogUni) = {nan(sum(eventAlignedMatrix(1).TrialLogVect), sum(unitCols))};
+        uniEventData(mptLogUni) = {nan(size(eventTimeBins,1), sum(unitCols))};
         tempUniData = nan(size(lfpEpochs{fl},1), size(lfpEpochs{fl},2), numUnis);
         for uni = 1:numUnis
             tempUniData(:,:,uni) = cell2mat(cellfun(@(a)a(:,uni), uniEventData, 'uniformoutput', 0))';
