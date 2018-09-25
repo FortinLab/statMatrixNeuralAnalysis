@@ -107,7 +107,7 @@ for trl = 1:numTrials
             end
         case 'RearReward'
             curIndex = rearRwrdNdxs(find(rearRwrdNdxs>trialIndices(trl)==1,1,'first'));
-            if  trl==numTrials || curIndex<trialIndices(trl+1)
+            if  isempty(curIndex) || trl==numTrials || curIndex<trialIndices(trl+1)
             else
                 curIndex = nan;
             end
