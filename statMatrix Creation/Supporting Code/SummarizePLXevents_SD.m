@@ -38,12 +38,17 @@ plxSummary.PLXfile = [fileName '.plx'];
 %% Load Data
 % Load the ssnData file first
 load(matFile);
-if isfield(ssnData(1).Settings, 'ShortPokeBufferDur') %#ok<NODEF>
-    bufferPeriod = ssnData(1).Settings.ShortPokeBuffer;
-    bufferDuration = ssnData(1).Settings.ShortPokeBufferDur;
+if isempty(ssnData(2).Settings) %#ok<NODEF>
+    for trl = 2:length(ssnData)
+        ssnData(trl).Settings = ssnData(1).Settings;
+    end
+end
+if isfield(ssnData(1).Settings, 'ShortPokeBufferDur')
+    bufferPeriod = arrayfun(@(a)a.Settings.ShortPokeBuffer, ssnData);
+    bufferDuration = arrayfun(@(a)a.Settings.ShortPokeBufferDur, ssnData);
 else
-    bufferPeriod = ssnData(1).Settings.ShortPokeBuffer;
-    bufferDuration = ssnData(1).Settings.ShortPokeBuffer;
+     bufferPeriod = arrayfun(@(a)a.Settings.ShortPokeBuffer, ssnData);
+    bufferDuration = arrayfun(@(a)a.Settings.ShortPokeBufferDur, ssnData);
     % This also doesn't have a sequence number field, so we need to make
     % one.
     seqStarts = ([ssnData.Odor]==1 & [ssnData.TrialPosition]==1);
@@ -452,7 +457,7 @@ for trl = 1:size(odorPresSsn,1)
     elseif sum(trialPokesLog) > 1
         tempPokeDur = trialPokeDurations(1);
         tempPokeNum = 1;
-        while tempPokeDur<bufferPeriod
+        while tempPokeDur<bufferPeriod(trl)
             if trialInterPokeIntervals(tempPokeNum)>bufferDuration
                 if plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 0
                     break
@@ -522,7 +527,7 @@ for trl = 1:size(odorPresSsn,1)
         % Check to ensure the reward signal occurred AFTER the target
         % duration elapsed
         if ~((plxSession(trl).RewardSignalTime - plxSession(trl).OdorTrigPokeTime) > plxSession(trl).TargetDuration)
-            if isfield(ssnData(1).Settings, 'GracePeriodDur') && plxSession(trl).TargetDuration - plxSession(trl).PokeDuration > ssnData(1).Settings.GracePeriodDur
+            if isfield(ssnData(1).Settings, 'GracePeriodDur') && plxSession(trl).TargetDuration - plxSession(trl).PokeDuration > ssnData(trl).Settings.GracePeriodDur
                 error('Trial #%i: Reward signal time occurred before target duration elapsed', trl);
             end
         end
