@@ -47,6 +47,9 @@ fileNames = {dirContents.name};
 tetFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, '_T([0-9]*)_SM.mat'));
 tetFiles = fileNames(tetFileLog)';
 saveYN = 1;
+
+w = gausswin(21);
+w = w/sum(w);
 %% Analyzesing
 for tet = 1:length(tetFiles)
     load(tetFiles{tet});
@@ -62,15 +65,8 @@ for tet = 1:length(tetFiles)
             hlfWndo = windowNdxs/2;
             voltColLog = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs,{[sprintf('_%s',bands{bnd}) '$']}));
             hilbColLog = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs,{[sprintf('_%s',bands{bnd}) '_Hilb']}));
-            curVolt = statMatrix(:,voltColLog);
-            curHilb = statMatrix(:,hilbColLog);
-            hilbTrace{bnd} = curHilb;
-            paddedVolt = [nan(hlfWndo,1); curVolt; nan(hlfWndo,1)];
-            tempCurRMS = nan(size(curVolt));
-            parfor ndx = 1:length(curVolt)
-                tempCurRMS(ndx) = rms(paddedVolt(ndx:ndx+windowNdxs), 'omitnan'); %#ok<*PFBNS>
-            end
-            rmsTrace{bnd} = zscore(tempCurRMS);
+            hilbTrace{bnd} = statMatrix(:,hilbColLog);
+            rmsTrace{bnd} = zscore(conv(sqrt(conv(statMatrix(:,voltColLog).^2, ones(windowNdxs,1)/windowNdxs, 'same')), w, 'same'));
         end
         uniSpots = find(uniColLog);
         for u = 1:numUnis
