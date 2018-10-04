@@ -14,7 +14,7 @@ function manualArtifactRemoval
 %% Define Globals
 global goodDataTrace badDataTrace timeVals badIndx badIndxs statMatrix smFile...
     artifactRemovalFig figAxes goodDataPlot badDataPlot rmsPlot pokePlotHandles...
-    selectFilebtn smFileList storedIndices indicesListbtn
+    selectFilebtn smFileList storedIndices indicesListbtn smPath
 
 %#ok<*NASGU>
 %% Load smFile directory and select the desired smFile
@@ -27,7 +27,7 @@ fileNames = {files.name};
 behMatFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))};
 load([smPath behMatFile]);
 % Identify list of all statMatrix files
-smFileList = fileNames(cellfun(@(a)~isempty(a), regexp(fileNames, '_SM\>')))'; 
+smFileList = fileNames(cellfun(@(a)~isempty(a), regexp(fileNames, '_SM\>')))';
 
 %% Initialize variables
 pokePlotHandles = [];
@@ -78,11 +78,13 @@ selectFilebtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'l
     'Position', [0.0375,0.65,0.125,0.28],'Callback', @selectFile);
 changeCHbtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Change to Selected Channel',...
     'Position', [0.025,0.6,0.15,0.035],'Callback', @ChangeCH);
+Save2Filebtn = uicontrol(artifactRemovalFig, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Save Current Signal as File',...
+    'Position', [0.025,0.05,0.15,0.035],'Callback', @SaveFile);
 end
 
 %% UI callback functions
 function SaveAxisLimits(source,event) % Saves current x-axis limits based on what the user zooms into
-global badIndx figAxes 
+global badIndx figAxes
 currentXLimits = {get(figAxes,'xlim')};
 badIndx = vertcat(badIndx,currentXLimits);
 disp('X-axis limits storage updated')
@@ -170,7 +172,7 @@ if length(badIndx) >= selectedIndxPair
     badIndxs(initIndx:finIndx) = false;
     badIndx(selectedIndxPair) = [];
     storedIndices(selectedIndxPair) = [];
-    set(indicesListbtn,'Value',1); 
+    set(indicesListbtn,'Value',1);
     set(indicesListbtn,'String',storedIndices)
 end
 origDataTrace = statMatrix(:,2);
@@ -198,21 +200,32 @@ smListIndex = selectFilebtn.Value;
 end
 
 function ChangeCH(source,event)
-    global badIndxs goodDataTrace badDataTrace smFile...
-        smFileList smListIndex figAxes
-    title(figAxes,'Loading plot.....');
-    smFile = smFileList{smListIndex};
-    UpdateDataTrace;
-    badDataTrace(badIndxs) = goodDataTrace(badIndxs);
-    assignin('base', 'badDataTrace', badDataTrace);
+global badIndxs goodDataTrace badDataTrace smFile...
+    smFileList smListIndex figAxes
+title(figAxes,'Loading plot.....');
+smFile = smFileList{smListIndex};
+UpdateDataTrace;
+badDataTrace(badIndxs) = goodDataTrace(badIndxs);
+assignin('base', 'badDataTrace', badDataTrace);
 %     set (badDataPlot,'YData',badDataTrace);
 
-    goodDataTrace(badIndxs) = nan;
+goodDataTrace(badIndxs) = nan;
 %     set( dataPlot, 'YData', goodDataTrace );
-    assignin('base', 'goodDataTrace', goodDataTrace);
-    title(figAxes, smFile, 'Interpreter', 'none');
-    refreshdata
-    drawnow
+assignin('base', 'goodDataTrace', goodDataTrace);
+title(figAxes, smFile, 'Interpreter', 'none');
+refreshdata
+drawnow
+end
+
+function SaveFile(source,event)
+global statMatrix smFile badIndxs
+
+statMatrix_edited = statMatrix;
+statMatrix_edited(badIndxs,:) = nan;
+outputfilename = strcat('Edited_',smFile);
+uisave('statMatrix_edited',outputfilename);
+
+
 end
 
 %% Plotting Functions
@@ -231,22 +244,22 @@ end
 end
 
 function UpdateDataTrace
-    global smFile goodDataTrace badDataTrace statMatrix
-    if isequal(smFile,0)
-        disp('User selected Cancel');
-    else
-        disp(['User selected ', smFile]);
-        disp('Loading plot.....')
-    end
-    load(smFile,'statMatrix')
-    
-    goodDataTrace = statMatrix(:,2);
-    % Enable the following to filter the data
-    [b1, a1] = butter(2, [59/500 61/500], 'stop');                      %% Remove 60hz Harmonic (noise)
-    goodDataTrace = filtfilt(b1, a1, goodDataTrace);                    %% Apply Filter
-    assignin('base', 'goodDataTrace', goodDataTrace);
-    badDataTrace = nan(size(goodDataTrace));
-    assignin('base', 'badDataTrace', badDataTrace);
+global smFile goodDataTrace badDataTrace statMatrix
+if isequal(smFile,0)
+    disp('User selected Cancel');
+else
+    disp(['User selected ', smFile]);
+    disp('Loading plot.....')
+end
+load(smFile,'statMatrix')
+
+goodDataTrace = statMatrix(:,2);
+% Enable the following to filter the data
+[b1, a1] = butter(2, [59/500 61/500], 'stop');                      %% Remove 60hz Harmonic (noise)
+goodDataTrace = filtfilt(b1, a1, goodDataTrace);                    %% Apply Filter
+assignin('base', 'goodDataTrace', goodDataTrace);
+badDataTrace = nan(size(goodDataTrace));
+assignin('base', 'badDataTrace', badDataTrace);
 end
 
 %% Glenn notes
