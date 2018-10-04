@@ -40,6 +40,11 @@ function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, tr
 %                   2) 'lfpData': Default = voltage values
 %                               : 'Phase' - Hilbert values
 %                               : 'Both' - voltage and Hilbert values
+%                   3) 'org'    : Default = 'TrTiU'
+%                               : 'TrTiU' - Organizes the unit/lfp epoc 
+%                                   data in a Trial X Time X Unit matrix
+%                               : 'TiUTr' - Organizes the unit/lfp epoc
+%                                   data in a Time X Unit X Trial matrix
 %
 %   Outputs:
 %       'unitEpoch' : Extracted epoch with binary indicator for when a unit
@@ -127,40 +132,81 @@ if sum(strcmp(varargin, 'lfpData'))==1
 else
     lfpColRegXprsnString = ['_LFP_' bandID '\>'];
 end
+if sum(strcmp(varargin, 'org'))==1
+    orgDataSpot = find(strcmp(varargin, 'org'));
+    dataOrgID = varargin{orgDataSpot+1};
+    if strcmp(dataOrgID, 'TrTiU')
+        org = 1;
+    elseif strcmp(dataOrgID, 'TiUTr')
+        org = 2;
+    end
+else
+    org = 1;
+end
 %% Extract data from the statMatrix files
 % Initialize the unit and LFP matrices
-unitEpochs = cell(1,1,length(smFiles));
-lfpEpochs = cell(1,1,length(smFiles));
-unitIDs = [];
-lfpIDs = [];
-
-% Step through each file and extract the relevant data
-for fl = 1:length(smFiles)
-    load(smFiles{fl});
-    fprintf('%s Loaded....', smFiles{fl});
-    unitCols = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '-U([0-9]*)'));
-    unitIDs = [unitIDs, statMatrixColIDs(unitCols)]; %#ok<AGROW>
-    lfpCol = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, lfpColRegXprsnString));
-    lfpIDs = [lfpIDs, statMatrixColIDs(lfpCol)]; %#ok<AGROW>
+if org == 1
+    unitEpochs = cell(1,1,length(smFiles));
+    lfpEpochs = cell(1,1,length(smFiles));
+    unitIDs = [];
+    lfpIDs = [];
     
-    lfpEventData = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); %#ok<NODEF>
-    lfpEventData = cellfun(@(a)reshape(a, [1, size(a,1), size(a,2)]), lfpEventData, 'uniformoutput',0);
-    
-    lfpEpochs{1,1,fl} = cell2mat(lfpEventData');
-    fprintf('LFP data collected......');
-    numUnis = sum(unitCols);    
-    fprintf('%i units found.....', numUnis);
-    if numUnis >= 1
-        uniEventData = ExtractTrialData_SM(eventAlignedMatrix,  statMatrix(:,unitCols));
-        tempUniData = nan(size(lfpEpochs{fl},1), size(lfpEpochs{fl},2), numUnis);
-        for uni = 1:numUnis
-            tempUniData(:,:,uni) = cell2mat(cellfun(@(a)a(:,uni), uniEventData, 'uniformoutput', 0))';
+    % Step through each file and extract the relevant data
+    for fl = 1:length(smFiles)
+        load(smFiles{fl});
+        fprintf('%s Loaded....', smFiles{fl});
+        unitCols = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '-U([0-9]*)'));
+        unitIDs = [unitIDs, statMatrixColIDs(unitCols)]; %#ok<AGROW>
+        lfpCol = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, lfpColRegXprsnString));
+        lfpIDs = [lfpIDs, statMatrixColIDs(lfpCol)]; %#ok<AGROW>
+        
+        lfpEventData = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); %#ok<NODEF>
+        lfpEventData = cellfun(@(a)reshape(a, [1, size(a,1), size(a,2)]), lfpEventData, 'uniformoutput',0);
+        
+        lfpEpochs{1,1,fl} = cell2mat(lfpEventData');
+        fprintf('LFP data collected......');
+        numUnis = sum(unitCols);
+        fprintf('%i units found.....', numUnis);
+        if numUnis >= 1
+            uniEventData = ExtractTrialData_SM(eventAlignedMatrix,  statMatrix(:,unitCols));
+            tempUniData = nan(size(lfpEpochs{fl},1), size(lfpEpochs{fl},2), numUnis);
+            for uni = 1:numUnis
+                tempUniData(:,:,uni) = cell2mat(cellfun(@(a)a(:,uni), uniEventData, 'uniformoutput', 0))';
+            end
+            unitEpochs{1,1,fl} = tempUniData;
+            fprintf('Unit data collected... File complete\n');
+        else
+            fprintf('File complete\n');
         end
-        unitEpochs{1,1,fl} = tempUniData;
-        fprintf('Unit data collected... File complete\n');
-    else
-        fprintf('File complete\n');
     end
+elseif org == 2
+    unitEpochs = cell(1,length(smFiles),length(eventAlignedMatrix));
+    lfpEpochs = cell(1,length(smFiles),length(eventAlignedMatrix));
+    unitIDs = [];
+    lfpIDs = [];
+    
+    % Step through each file and extract the relevant data
+    for fl = 1:length(smFiles)
+        load(smFiles{fl});
+        fprintf('%s Loaded....', smFiles{fl});
+        unitCols = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '-U([0-9]*)'));
+        unitIDs = [unitIDs, statMatrixColIDs(unitCols)]; %#ok<AGROW>
+        lfpCol = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, lfpColRegXprsnString));
+        lfpIDs = [lfpIDs, statMatrixColIDs(lfpCol)]; %#ok<AGROW>
+        
+        lfpEpochs(:,fl,:) = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); %#ok<NODEF>
+        fprintf('LFP data collected......');
+        
+        numUnis = sum(unitCols);
+        fprintf('%i units found.....', numUnis);
+        if numUnis >= 1
+            unitEpochs(:,fl,:) = ExtractTrialData_SM(eventAlignedMatrix,  statMatrix(:,unitCols));
+            fprintf('Unit data collected... File complete\n');
+        else
+            fprintf('File complete\n');
+        end
+    end
+    unitEpochs(:,cellfun(@(a)isempty(a),unitEpochs(1,:,1)),:) = [];
 end
 %%
 unitEpoch = cell2mat(unitEpochs);
