@@ -40,7 +40,8 @@ windowSize = struct('Ripple', 0.008,...
     'LowGamma', 0.026,...
     'Beta', 0.042,...
     'LowBeta', 0.1,...
-    'Theta', 0.16);
+    'Alpha', 0.127,... 
+    'Theta', 0.22);
 
 dirContents = dir(fileDir);
 fileNames = {dirContents.name};
@@ -76,7 +77,7 @@ for tet = 1:length(tetFiles)
             for bnd = 1:length(bands)
                 curUniPhasePref = hilbTrace{bnd}(curUniSpkLog);
                 curUniPowerPref = rmsTrace{bnd}(curUniSpkLog);
-                [sppPlot,Xedges,Yedges] = histcounts2(curUniPhasePref,curUniPowerPref,-pi:0.1:pi,0:0.5:10);
+                [sppPlot,Xedges,Yedges] = histcounts2(curUniPhasePref,curUniPowerPref,linspace(-pi,pi,13),0:0.5:10);
                 subplot(1,length(bands),bnd)
                 imagesc(-pi:0.1:(pi-0.1), 0:0.5:9.5, flipud(sppPlot'));
                 set(gca, 'ytick', 0.5:1:9.5, 'yticklabel', 9:-1:0);

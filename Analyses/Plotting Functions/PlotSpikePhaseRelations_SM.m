@@ -33,7 +33,7 @@ unitIDs = statMatrixColIDs(uniLog);
 unitCols = find(uniLog);
 
 %% Define Plotting Constants
-phaseBins = -pi:pi/8:pi;
+phaseBins = linspace(-pi,pi,13);
 timeBins = trialWindows(1):0.1:trialWindows(2);
 
 %% Plot Trial Data by Band
