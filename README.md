@@ -4,28 +4,22 @@
 **************************************************************
 The statMatrix data structure is a standard data matrix structure used by the Fortin Lab. It was designed to provide a standard organization for both neural and behavioral data derived from experimental sessions. Each file contains two workspace variables, 1) the main data structure and 2) column identifiers for the main data structure. The main data structure consists of an NxM double matrix consisting of N rows, determined by the sample rate of the LFP signal for the recording session (standard = 1kHz), and M columnns corresponding to different information sources. For each recording session a separate statMatrix file is produced for each recording source, i.e. tetrode as well as a separate file with containing the behavior data from the session.
 
-Data Source (statMatrix & statMatrixColIDs) Column Order:
-(Note: index value may vary across files/experiments, numbers here reflect general order, not necessarily the corresponding index in the matrix):
-1) Timebin: Timestamps pulled from the LFP trace
-2) LFP Data: Multiple columns consisting of the Raw LFP trace as well as bandpass filtered traces for band-specific analysis. Each frequency range contains two columns, one indicating the voltage value for that trace e.g. "_RAW" or "_Theta" as well as a column of phase values appended with *"_HilbVals," e.g. "_RAW_HilbVals"* or *"_Theta_HilbVals."* 
-3) Unit Data: Logical vector (there shouldn't be any 2s...) indicating individual unit spiking activity. 1s indicate if the unit spiked during that time bin. 
+For data stored from each recording source, i.e. tetrode, the workspace variables saved in those files are the 'statMatrix' (main data matrix) and the 'statMatrixColIDs' (column identifiers), whereas behavioral data contains the 'behavMatrix' (main data matrix) and the 'behavMatrixColIDs' (column identifiers).
 
-Behavior Events (behavMatrix & behavMatrixColIDs) Column Order: (*Also see [below](https://github.com/FortinLab/statMatrixNeuralAnalysis/blob/master/README.md#statmatrix-behavior-columns-organization)*)
-1) Timebin: Identical to the timebin column in the data source
-2) Odor 
-***********************************************************
-# Creating the statMatrix
-***********************************************************
-The statMatrix is made in Matlab using custom made m-files. Unique .m conversion files are used for constructing the statMatrix depending on the configuration used to acquire the behavioral and neurophysiological data. Though the neural data organization for .plx (Plexon) or .spikes/.continuous (OpenEphys) are standardized by file type, the behavioral timestamps associated with them (events channels for .plx and ADC .continuous channels) are not always so standardized. Therefore, to properly extract behavioral timestamps you need to be sure you are using the correct behavioral analysis code for the data based on the rig it was collected on. I will probably make an index of these associates at some point but for now there's too much to flesh out here.
-
-As mentioned above the statMatrix is organized with rows indexed to the LFP sampleRate. This makes it easy to associate spiking activity and behavioral events to LFP signals with minimal loss of precision. As the LFP data is either collected directly at 1kHz/s or downsampled to that frequency, the loss of precision, i.e. associating a spike/event to one ms or another, is trivial, especially since most analysis is done on time aggregated measures (spk/s).
+The statMatrix is organized with rows indexed to the LFP sampleRate. This makes it easy to associate spiking activity and behavioral events to LFP signals with minimal loss of precision. As the LFP data is either collected directly at 1kHz/s or downsampled to that frequency, the loss of precision, i.e. associating a spike/event to one ms or another, is trivial, especially since most analysis is done using time aggregated spiking (spk/s).
 
 ***************************************************************
 # Working with the statMatrix
 ***************************************************************
-Storage of data in statMatrix is advantageous... increased flexability... plug and play use... enables development of analysis/visualization tools that can be applied to any data set stored in that format... blah blah blah
 ____________________________________________
-### statMatrix Behavior Columns Organization
+### statMatrix Columns Organization
+____________________________________________
+**Sequence Task**
+* **Timebin:** Timestamps pulled from the LFP trace
+* **LFP Data:** Multiple columns consisting of the Raw LFP trace as well as bandpass filtered traces for band-specific analysis. Each frequency range contains two columns, one indicating the voltage value for that trace e.g. "_RAW" or "_Theta" as well as a column of phase values appended with *"_HilbVals," e.g. "_RAW_HilbVals"* or *"_Theta_HilbVals."* 
+* **Unit Data:** Logical vector (there shouldn't be any 2s...) indicating individual unit spiking activity. 1s indicate if the unit spiked during that time bin. 
+____________________________________________
+### behavMatrix Columns Organization
 ____________________________________________
 **Sequence Task**
 * **'Odor\[1-X]'**: Columns with logical 1 indicating when odor was delivered (no flag or indicator when odor presentation was terminated, assume it was at port withdrawal or trial feedback, whichever came first)
