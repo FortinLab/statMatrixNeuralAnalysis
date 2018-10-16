@@ -7,10 +7,10 @@ The statMatrix data structure is a standard data matrix structure used by the Fo
 Data Source (statMatrix & statMatrixColIDs) Column Order:
 (Note: index value may vary across files/experiments, numbers here reflect general order, not necessarily the corresponding index in the matrix):
 1) Timebin: Timestamps pulled from the LFP trace
-2) LFP Data: Multiple columns consisting of the Raw LFP trace as well as bandpass filtered traces for band-specific analysis. Each frequency range contains two columns, one indicating the voltage value for that trace e.g. "_RAW" or "_Theta" as well as a column of phase values appended with *"_HilbVals," e.g. "_RAW_HilbVals"* or *"_Theta_HilbVals."* (*See [below](https://github.com/FortinLab/statMatrixNeuralAnalysis/blob/master/README.md#statmatrix-behavior-columns-organization)*)
+2) LFP Data: Multiple columns consisting of the Raw LFP trace as well as bandpass filtered traces for band-specific analysis. Each frequency range contains two columns, one indicating the voltage value for that trace e.g. "_RAW" or "_Theta" as well as a column of phase values appended with *"_HilbVals," e.g. "_RAW_HilbVals"* or *"_Theta_HilbVals."* 
 3) Unit Data: Logical vector (there shouldn't be any 2s...) indicating individual unit spiking activity. 1s indicate if the unit spiked during that time bin. 
 
-Behavior Events (behavMatrix & behavMatrixColIDs) Column Order:
+Behavior Events (behavMatrix & behavMatrixColIDs) Column Order: (*Also see [below](https://github.com/FortinLab/statMatrixNeuralAnalysis/blob/master/README.md#statmatrix-behavior-columns-organization)*)
 1) Timebin: Identical to the timebin column in the data source
 2) Odor 
 ***********************************************************
