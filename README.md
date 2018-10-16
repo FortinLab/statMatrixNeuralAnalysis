@@ -33,30 +33,21 @@ ____________________________________________
 * **'YvalRatMazePosition'**: Column indexing the rat's position within the maze along the short axis of the maze. **NOTE** The motion capture system sample rate is lower than the time bins used to organize the statMatrix (~30Hz vs 1kHz), all non-zero positions are actual position values, position \[0,0] is out of the maze and the rat never went there.
 
 ****************************************************************
-# List of statMatrix Functions
+# Select list of statMatrix Functions
 ****************************************************************
 NOTE Any modifications made to tailor code to processing a different file structure or data set should be saved as a new file and apppropriately named and commented to reflect that.
 
 ____________________________________________
-### statMatrix Creation Functions
+### statMatrix Creation
 ____________________________________________
-The following functions create statMatrix data files for each tetrode recorded from during the training session. Note that not all tetrodes will have units but they will all have LFP data recorded from them. Currently these functions create the traditional per-tetrode statMatrix files (i.e. timestamp, LFP, Unit, Behavior sections) but they also output a separate file with the behavioral section of the statMatrix saved separately. This behavMatrix file is identical to the Behavior section of the statMatrix and is saved with a corresponding behavMatrixColIDs variable for column based indexing.
-
-* **CreateStatMatrixFromPLX2.m**:
-The initial statMatrix creation function. Designed to extract data from a plexon (.plx) session data file. Originally created for use with the .plx files recorded by NJF in Boston. The main difference between this code and other versions is the behavioral analysis code associated with it (SummarizePLXabbr_BOS.m). The rest of the code should be identical to other variants. NOTE: This code is currently legacy as the integration of MountainSort into the pre-processing stages necessitated creation of new compilation code.
-
-* **CreateStatMatrixFromPLX2irvine.m**:
-Variation of the original statMatrix creation function CreateStatMatrixFromPLX2.m designed to extract data from .plx session data files recorded at UCI. NOTE: This code is currently legacy following integration of MountainSort as a pre-processing stage.
-
-* **CreateStatMatrixFromPLX_MS.m**:
-Variation of the original statMatrix creation function designed to extract data from .plx files produced following MountainSort pre-processing. NOTE: This code is currently tailored for use with the Boston data (i.e. it's currently coded to work with SummarizePLXabbr_BOS). To convert it to working with UCI files it should be as simple as swapping out the Behavioral analysis function that needs to be tested before being done and will necessitate creation of a new file and validation before inclusion into the code set.
+* **StatMatrixCreator.m**
+This is currently the standard function used to create the statMatrix files. It consists of a series of prompts to determine how the data was collected, where it was collected and what experiment the data is from and then organizes the data into the statMatrix format.
 
 ____________________________________________
 ### statMatrix Organization Functions
 ____________________________________________
-
-* **EnsembleCompilation_SM.m**:
-Code to extract all the unit data from all the individual per-tetrode statMatrix files and concatenate them together to create a single matrix. The data retains its original statMatrix organization in the variable called 'ensembleMatrix' and is paired with a column ID vector containing the corresponding unit names 'ensembleMatrixColIDs' for logical indexing to select or remove units.
+* **EpochExtraction.m**:
+This function provides an easy way to compile the data from a single session. It uses the OrganizeTrialData_SM and ExtractTrialData_SM functions listed below to extract and organize all the spiking activity and LFP data (currently only from the raw LFP signal column, an updated version is in the works) from a session. **Recommended method for most purposes/collaborators use**
 
 * **OrganizeTrialData_SM.m**:
 Code to organize the behavior data into a 1xN structure variable where each index corresponds to a session trial. Compiles information about each trial as subfields at each index and creates a logical vector for that trial period that can be used to extract neural data that occurred during that trial. **Needs to be commented**.
@@ -64,13 +55,10 @@ Code to organize the behavior data into a 1xN structure variable where each inde
 * **ExtractTrialData_SM.m**:
 Code to use the trial period logical vector created in OrganizeTrialData_SM.m to extract neural data stored in matrices.
 
-* **OrganizeStatMatrixByTrial.m**:
-Obsolete! Feel free to review for example code. Will be removed... eventually.
-
 ************************************************************************
-# List of Required Functions/Toolboxes
+# List of Suggested Functions/Toolboxes
 ************************************************************************
 * *Plexon Offline Files SDK*: 
-Toolbox created by Plexon to analyze .plx files in Matlab. Link [here](https://plexon.com/wp-content/uploads/2017/08/OmniPlex-and-MAP-Offline-SDK-Bundle_0.zip)
+Toolbox created by Plexon to analyze .plx files in Matlab. Used in the statMatrix creation. Link [here](https://plexon.com/wp-content/uploads/2017/08/OmniPlex-and-MAP-Offline-SDK-Bundle_0.zip)
 * *Circular Statistics Toolbox*:
-Toolbox from the matlab file exchange to perform circular (directional) statistics. Link [here](https://www.mathworks.com/matlabcentral/fileexchange/10676-circular-statistics-toolbox--directional-statistics-)
+Toolbox from the matlab file exchange to perform circular (directional) statistics. Used in some statMatrix related analyses. Link [here](https://www.mathworks.com/matlabcentral/fileexchange/10676-circular-statistics-toolbox--directional-statistics-)
