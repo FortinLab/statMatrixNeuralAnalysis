@@ -2,15 +2,17 @@
 **************************************************************
 # Overview of the statMatrix
 **************************************************************
-The statMatrix data structure is a standard data matrix structure developed in the Fortin Lab. It was designed to contain the neural and behavioral data from an experimental session. Each file contains two workspace variables. The statMatrix data structure, an NxM double matrix consisting of N rows corresponding to each LFP time sample and M columnns corresponding to different information sources. The second variable is the statMatrixColIDs which is a 1xM cell vector containing strings indicating the identity of each column. The columns of the statMatrix is generally organized as follows:
+The statMatrix data structure is a standard data matrix structure used by the Fortin Lab. It was designed to provide a standard organization for both neural and behavioral data derived from experimental sessions. Each file contains two workspace variables, 1) the main data structure and 2) column identifiers for the main data structure. The main data structure consists of an NxM double matrix consisting of N rows, determined by the sample rate of the LFP signal for the recording session (standard = 1kHz), and M columnns corresponding to different information sources. For each recording session a separate statMatrix file is produced for each recording source, i.e. tetrode as well as a separate file with containing the behavior data from the session.
 
-Column Order 
+Data Source (statMatrix & statMatrixColIDs) Column Order:
 (Note: index value may vary across files/experiments, numbers here reflect general order, not necessarily the corresponding index in the matrix):
 1) Timebin: Timestamps pulled from the LFP trace
 2) LFP Data: Multiple columns consisting of the Raw LFP trace as well as bandpass filtered traces for band-specific analysis. Each frequency range contains two columns, one indicating the voltage value for that trace e.g. "_RAW" or "_Theta" as well as a column of phase values appended with *"_HilbVals," e.g. "_RAW_HilbVals"* or *"_Theta_HilbVals."* (*See [below](https://github.com/FortinLab/statMatrixNeuralAnalysis/blob/master/README.md#statmatrix-behavior-columns-organization)*)
-3) Unit Data: Logical column vector (there shouldn't be any 2s...) indicating individual unit spiking activity. 1s indicate if the unit spiked during that time bin. 
-4) Behavior Data: Mostly logical vectors indicating when behavioral events occurred during the session. (*Specifics for different experimental conditions should be added below*)
+3) Unit Data: Logical vector (there shouldn't be any 2s...) indicating individual unit spiking activity. 1s indicate if the unit spiked during that time bin. 
 
+Behavior Events (behavMatrix & behavMatrixColIDs) Column Order:
+1) Timebin: Identical to the timebin column in the data source
+2) Odor 
 ***********************************************************
 # Creating the statMatrix
 ***********************************************************
