@@ -9,7 +9,7 @@ For data stored from each recording source, i.e. tetrode, the workspace variable
 The statMatrix is organized with rows indexed to the LFP sampleRate. This makes it easy to associate spiking activity and behavioral events to LFP signals with minimal loss of precision. As the LFP data is either collected directly at 1kHz/s or downsampled to that frequency, the loss of precision, i.e. associating a spike/event to one ms or another, is trivial, especially since most analysis is done using time aggregated spiking (spk/s).
 
 ***************************************************************
-# Working with the statMatrix
+# Main Data Structure Organization
 ***************************************************************
 ____________________________________________
 ### statMatrix Columns Organization
