@@ -116,7 +116,7 @@ if sum(strcmp(varargin, 'lfpBand'))==1
         end
         bandID = [bandID '])'];
     elseif strcmp(bandIDs, 'All')
-        bandID = '([A-Z]*|[a-z]*)';
+        bandID = '([A-Z | a-z]*)';
     else
         bandID = bandIDs;
     end
@@ -129,7 +129,7 @@ if sum(strcmp(varargin, 'lfpData'))==1
     if strcmp(dataID, 'Both')
         lfpColRegXprsnString = ['_LFP_' bandID];
     elseif strcmp(dataID, 'Phase')
-        lfpColRegXprsnString = ['_LFP_' bandID '_HilbVals\>'];
+        lfpColRegXprsnString = ['_LFP_' bandID '_HilbVals'];
     end
 else
     lfpColRegXprsnString = ['_LFP_' bandID '\>'];
