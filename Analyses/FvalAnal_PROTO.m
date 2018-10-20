@@ -136,14 +136,14 @@ title('Information Bias: Trial After OutSeq Only');
 ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values = Previous Odor Bias'});
 xlabel(sprintf('Time relative to %s(s)', alignment));
 
-% figure
-% subplot(3,1,1);
-% plot(binnedTimeBins, unitPosFvals);
-% subplot(3,1,2);
-% plot(binnedTimeBins, unitOdrFvals);
-% subplot(3,1,3);
-% plot(binnedTimeBins, unitPosFvals-unitOdrFvals);
-% legend(unitIDs)
+figure
+subplot(3,1,1);
+plot(binnedTimeBins, unitPosFvals);
+subplot(3,1,2);
+plot(binnedTimeBins, unitOdrFvals);
+subplot(3,1,3);
+plot(binnedTimeBins, unitPosFvals-unitOdrFvals);
+legend(unitIDs)
 %% Analysis #2 (Current Odor Vs. Current Position)
 perfLog = trialInfo(:,1)==1;
 aLog = (trialInfo(:,3)==1 | trialInfo(:,4)==1);
