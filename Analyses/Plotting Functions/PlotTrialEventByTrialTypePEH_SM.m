@@ -35,7 +35,8 @@ for eve = 1:size(behavMatrices,1)
     curEvent = behavMatrices(eve,:);
     curEventID = behavMatrixIDs{eve};
     figIDs(eve) = figure('Name', sprintf('%s %s (%s vs %s)', unitID, curEventID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'NumberTitle', 'off');
-    annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s %s (%s vs %s)', unitID, curEventID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'linestyle', 'none');
+    annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s %s (%s vs %s)', unitID, curEventID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'linestyle', 'none', 'interpreter', 'none');
+    annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
     for tt = 1:length(trialTypeIDs)
         curTTLog = trialTypes(tt,:);
         curTTid = trialTypeIDs{tt};

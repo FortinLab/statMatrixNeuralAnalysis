@@ -167,6 +167,7 @@ text(17,0.8, ['\fontsize{8}' sprintf('(p=%.02f)', curUnitSummary.Spike_Phase_Rel
 
 title({'Session Wide','Spike Phase Relationship'})
 
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 if saveYN==1
     set(figID, 'PaperOrientation', 'landscape');
     print('-fillpage', figID, '-dpdf', [curUnitSummary.UnitName '_Unit_Feature_Summary.pdf']);

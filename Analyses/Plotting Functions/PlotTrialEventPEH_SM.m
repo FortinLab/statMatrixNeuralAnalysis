@@ -13,7 +13,8 @@ function [subplotData] = PlotTrialEventPEH_SM(unitID, behavMatrices, behavMatrix
 %
 %% 
 figure('Name', sprintf('%s (%s vs %s)', unitID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'NumberTitle', 'off');
-annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s (%s vs %s)', unitID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'linestyle', 'none');
+annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s (%s vs %s)', unitID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 
 %% 
 if isstruct(groupingLogs)
