@@ -1,4 +1,4 @@
-function [freqPower] = MorletAG(lfp, sampleRate, minFreq, maxFreq)
+function [freqPower] = MorletAG2(lfp, sampleRate, minFreq, maxFreq)
 %% MorletAG
 %   Functionalized version of Analysis_Morlet_Wavelet.m created by Aaron
 %   Gudmundson. 
@@ -30,12 +30,11 @@ bsData = filtfilt(b1, a1, lfp);
 % bsData = lfp;
 freqPower = nan(length(freq),length(time));                         %% Create the data matrix
 dataX = fft(bsData', length(time)*2-1);                             %% Fast Fourier Transform of Data (correct length)
-half = floor(length(time)/2)+1;                               %% Used when matching analytic signal length
+half = floor((length(time)*2-1)/2)+1;                               %% Used when matching analytic signal length
 s = arrayfun(@(a)7/(2*pi*a),freq);                                  %% Standard Dev/ Num Cycles for Gaussian
 
 for fi = 1:length(freq)                                             %% Create Complex Wave w/Variable Frequency
     sin_wave = exp(1i*2*pi*freq(fi).*time);                         %% Complex Sine Wave
-%     s = log(freq(fi))+1/(2*pi*freq(fi));                                          %% Standard Dev/ Num Cycles for Gaussian
     gaus = exp((-time.^2) ./ (2*s(fi)^2));                          %% Complex Gaussian
     morlet = sin_wave .* gaus;                                      %% multiply Sine and Gaussian
     
