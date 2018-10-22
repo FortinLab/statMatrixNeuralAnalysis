@@ -1,4 +1,4 @@
-function FvalAnalSlide_PROTO
+function FvalAnalSlideWshfl_PROTO
 origDir = cd;
 [fileDir] = uigetdir(origDir);
 if fileDir==0
@@ -24,6 +24,7 @@ windowEnd = 0.6;
 
 %% Define Parameters
 dataBinSize = 200;
+numPerms = 500;
 timePeriod = eventTimeBins(1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2));
 
 %% Analysis #1 (Previous trial Odor Vs. Upcoming Trial Position)
@@ -61,12 +62,12 @@ ftrOStrlPosFvals = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs));
 ftrOStrlOdrFvals = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs));
 transInFvalDiff = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs));
 
-unitPosFvalsRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),100);
-unitOdrFvalsRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),100);
-allFvalDiffRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),100);
-ftrOStrlPosFvalsRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),100);
-ftrOStrlOdrFvalsRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),100);
-transInFvalDiffRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),100);
+unitPosFvalsRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),numPerms);
+unitOdrFvalsRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),numPerms);
+allFvalDiffRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),numPerms);
+ftrOStrlPosFvalsRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),numPerms);
+ftrOStrlOdrFvalsRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),numPerms);
+transInFvalDiffRND = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs),numPerms);
 
 unitPosFvalsZ = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs));
 unitOdrFvalsZ = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs));
@@ -79,7 +80,7 @@ transInFvalDiffZ = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs));
 for u = 1:length(unitIDs)
     tic
     fprintf('Running %s...', unitIDs{u});
-    for t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+    parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
         timeMask = false(length(eventTimeBins),1);
         timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
         [~,tablePos,~] = anova1(reshape(sum(corrTrlEnsmbl(timeMask,u,:)), [size(corrTrlEnsmbl,3),1]), corrTrlPos, 'off');
@@ -117,9 +118,8 @@ for u = 1:length(unitIDs)
     
     allFvalDiff(:,u) = unitPosFvals(:,u) - unitOdrFvals(:,u);
     transInFvalDiff(:,u) = ftrOStrlPosFvals(:,u) - ftrOStrlOdrFvals(:,u);
-    for r = 1:100
+    for r = 1:numPerms
         z = randperm(floor(sum(clock))); %#ok<NASGU>
-        clear z
         curCorrTrlPosShflVect = randperm(length(corrTrlPos));
         curCorrTrlPosShfl = corrTrlPos(curCorrTrlPosShflVect);
         curIsFtrOStrlPosShflVect = randperm(length(isFtrOStrlPos));
@@ -128,7 +128,7 @@ for u = 1:length(unitIDs)
         curCorrTrlOdrShfl = corrTrlOdr(curCorrTrlOdrShflVect);
         curIsFtrOStrlOdrShflVect = randperm(length(isFtrOStrlOdr));
         curIsFtrOStrlOdrShfl = isFtrOStrlOdr(curIsFtrOStrlOdrShflVect);
-        for t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+        parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
             timeMask = false(length(eventTimeBins),1);
             timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
             [~,tablePos,~] = anova1(reshape(sum(corrTrlEnsmbl(timeMask,u,:)), [size(corrTrlEnsmbl,3),1]), curCorrTrlPosShfl, 'off');
@@ -164,10 +164,14 @@ for u = 1:length(unitIDs)
         unitOdrFvalsRND(isnan(unitOdrFvalsRND(:,u,r)),u,r) = 1;
         ftrOStrlOdrFvalsRND(isnan(ftrOStrlOdrFvalsRND(:,u,r)),u,r) = 1;
         
-        allFvalDiffRND(:,u) = unitPosFvalsRND(:,u) - unitOdrFvalsRND(:,u);
-        transInFvalDiffRND(:,u) = ftrOStrlPosFvalsRND(:,u) - ftrOStrlOdrFvalsRND(:,u);
+        allFvalDiffRND(:,u,r) = unitPosFvalsRND(:,u,r) - unitOdrFvalsRND(:,u,r);
+        transInFvalDiffRND(:,u,r) = ftrOStrlPosFvalsRND(:,u,r) - ftrOStrlOdrFvalsRND(:,u,r);
+%         fprintf('%i\n', r);
     end
-    for t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+    figure; plot(mean(unitPosFvalsRND(:,u,:),3));
+    hold on; 
+    plot(mean(unitOdrFvalsRND(:,u,:),3));
+    parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
         zUnitPosVect = zscore([unitPosFvals(t,u), reshape(unitPosFvalsRND(t,u,:), [1 size(unitPosFvalsRND,3)])]);
         unitPosFvalsZ(t,u) = zUnitPosVect(1);
         zIsFtrOStrlPosVect = zscore([ftrOStrlPosFvals(t,u), reshape(ftrOStrlPosFvalsRND(t,u,:), [1 size(ftrOStrlPosFvalsRND,3)])]);
@@ -189,6 +193,7 @@ for u = 1:length(unitIDs)
     plot(timePeriod,unitOdrFvals(dataBinSize/2+1:end,u), 'color', 'r', 'linestyle','--');
     plot(timePeriod, ftrOStrlPosFvals(dataBinSize/2+1:end,u), 'color', 'k');
     plot(timePeriod, ftrOStrlOdrFvals(dataBinSize/2+1:end,u), 'color', 'k', 'linestyle', '--');
+    grid on;
     legend('Pos (all)', 'Odor (all)', 'Pos (TransIn)', 'Odr (TransIn)');
     title('Observed F-ratio Values');
     ylabel('F-Ratio');
@@ -199,6 +204,8 @@ for u = 1:length(unitIDs)
     plot(timePeriod, unitOdrFvalsZ(dataBinSize/2+1:end,u), 'color', 'r', 'linestyle','--');
     plot(timePeriod, ftrOStrlPosFvalsZ(dataBinSize/2+1:end,u), 'color', 'k');
     plot(timePeriod, ftrOStrlOdrFvalsZ(dataBinSize/2+1:end,u), 'color', 'k', 'linestyle', '--');
+    grid on;
+    legend('Pos (all)', 'Odor (all)', 'Pos (TransIn)', 'Odr (TransIn)');
     title('Z-Normalized to Trial Shuffled Values')
     ylabel('Z-Score');
     xlabel(sprintf('Time relative to %s(s)', alignment));
@@ -206,14 +213,21 @@ for u = 1:length(unitIDs)
     plot(timePeriod, unitPosFvals(dataBinSize/2+1:end,u) - unitOdrFvals(dataBinSize/2+1:end,u), 'color', 'r');
     hold on;
     plot(timePeriod, ftrOStrlPosFvals(dataBinSize/2+1:end,u) - ftrOStrlOdrFvals(dataBinSize/2+1:end,u), 'color', 'k');
+    grid on;
+    title('Observed Difference Values (Position - Odor)');
+    legend('All', 'TransIn');
     zDiffFvalPlot = subplot(2,2,4);
     plot(timePeriod, unitPosFvalsZ(dataBinSize/2+1:end,u) - unitOdrFvalsZ(dataBinSize/2+1:end,u), 'color', 'r');
     hold on;
-    plot(timePeriod, allFvalDiffZ(dataBinSize/2+1:end,u), 'color', 'r', '-.')
+    plot(timePeriod, allFvalDiffZ(dataBinSize/2+1:end,u), 'color', 'r', 'linestyle', '-.')
     plot(timePeriod, ftrOStrlPosFvalsZ(dataBinSize/2+1:end,u) - ftrOStrlOdrFvalsZ(dataBinSize/2+1:end,u), 'color', 'k');
-    plot(timePeriod, transInFvalDiffZ(dataBinSize/2+1:end,u), 'color', 'k', '-.');
+    plot(timePeriod, transInFvalDiffZ(dataBinSize/2+1:end,u), 'color', 'k', 'linestyle', '-.');
     legend('Diff(Z(All))', 'Z(Diff(All))', 'Diff(Z(TransIn))', 'Z(Diff(TransIn))');   
-    annotation(uniFvalFig,'textbox', [0.01 0.01 0.96 0.03], 'FitBoxToText','off', 'string', cd, 'interpreter', 'none', 'linestyle', 'none');
+    title('Z-Normalized Difference Values');
+    grid on;
+    annotation(uniFvalFig,'textbox', [0.01 0.01 0.96 0.03], 'FitBoxToText','off', 'string', sprintf('%s: %s', unitIDs{u}, cd), 'interpreter', 'none', 'linestyle', 'none');
+    orient(uniFvalFig, 'tall');
+    orient(uniFvalFig, 'landscape');
     toc
 end
 % Clean up the data (remove blank entries at start & replace nans with 1s)
@@ -230,16 +244,16 @@ ftrOStrlOdrFvals(1:dataBinSize/2,:) = [];
 ftrOStrlOdrFvals(isnan(ftrOStrlOdrFvals)) = 1;
 
 unitPosFvalsZ(1:dataBinSize/2,:) = [];
-unitPosFvalsZ(isnan(unitPosFvals)) = 1;
+unitPosFvalsZ(isnan(unitPosFvalsZ)) = 1;
 
 ftrOStrlPosFvalsZ(1:dataBinSize/2,:) = [];
-ftrOStrlPosFvalsZ(isnan(ftrOStrlPosFvals)) = 1;
+ftrOStrlPosFvalsZ(isnan(ftrOStrlPosFvalsZ)) = 1;
 
 unitOdrFvalsZ(1:dataBinSize/2,:) = [];
-unitOdrFvalsZ(isnan(unitOdrFvals)) = 1;
+unitOdrFvalsZ(isnan(unitOdrFvalsZ)) = 1;
 
 ftrOStrlOdrFvalsZ(1:dataBinSize/2,:) = [];
-ftrOStrlOdrFvalsZ(isnan(ftrOStrlOdrFvals)) = 1;
+ftrOStrlOdrFvalsZ(isnan(ftrOStrlOdrFvalsZ)) = 1;
 
 
 % Plot Everything
@@ -268,6 +282,8 @@ title('Information Bias: Trial After OutSeq Only');
 ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values = Previous Odor Bias'});
 xlabel(sprintf('Time relative to %s(s)', alignment));
 drawnow
+annotation(gcf,'textbox', [0.01 0.01 0.96 0.03], 'FitBoxToText','off', 'string', cd, 'interpreter', 'none', 'linestyle', 'none');
+
  
 % figure
 % subplot(3,1,1);
