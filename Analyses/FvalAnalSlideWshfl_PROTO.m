@@ -98,31 +98,37 @@ transInFvalDiffZ = nan(length(eventTimeBins)-(dataBinSize/2), length(unitIDs));
 for u = 1:length(unitIDs)
     tic
     fprintf('Running %s...', unitIDs{u});
+    curUniCorrTrlEnsmblBinned = nan(size(corrTrlEnsmbl,1), size(corrTrlEnsmbl,3));
+    for trl = 1:size(corrTrlEnsmbl,3)
+        curUniCorrTrlEnsmblBinned(:,trl) = conv(corrTrlEnsmbl(:,u,trl)', ones(1,dataBinSize+1), 'same');
+    end
+    curUniFtrOStrlEnsmblBinned = nan(size(ftrOStrlEnsmbl,1), size(ftrOStrlEnsmbl,3));
+    for trl = 1:size(ftrOStrlEnsmbl,3)
+        curUniFtrOStrlEnsmblBinned(:,trl) = conv(ftrOStrlEnsmbl(:,u,trl)', ones(1,dataBinSize+1), 'same');
+    end
     parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
-        timeMask = false(length(eventTimeBins),1);
-        timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
-        [~,tablePos,~] = anova1(reshape(sum(corrTrlEnsmbl(timeMask,u,:)), [size(corrTrlEnsmbl,3),1]), corrTrlPos, 'off');
+        [~,tablePos,~] = anova1(curUniCorrTrlEnsmblBinned(t,:)', corrTrlPos, 'off');
         if ~isempty(tablePos{2,5})
             unitPosFvals(t,u) = tablePos{2,5};
         else
             unitPosFvals(t,u) = 1;
         end
         
-        [~,ftrOSpos,~] = anova1(reshape(sum(ftrOStrlEnsmbl(timeMask,u,:)), [size(ftrOStrlEnsmbl,3),1]), isFtrOStrlPos, 'off');
+        [~,ftrOSpos,~] = anova1(curUniFtrOStrlEnsmblBinned(t,:)', isFtrOStrlPos, 'off');
         if ~isempty(ftrOSpos{2,5})
             ftrOStrlPosFvals(t,u) = ftrOSpos{2,5};
         else
             ftrOStrlPosFvals(t,u) = 1;
         end
         
-        [~,tableOdr,~] = anova1(reshape(sum(corrTrlEnsmbl(timeMask,u,:)), [size(corrTrlEnsmbl,3),1]), corrTrlOdr, 'off');
+        [~,tableOdr,~] = anova1(curUniCorrTrlEnsmblBinned(t,:)', corrTrlOdr, 'off');
         if ~isempty(tableOdr{2,5})
             unitOdrFvals(t,u) = tableOdr{2,5};
         else
             unitOdrFvals(t,u) = 1;
         end
         
-        [~,ftrOSodr,~] = anova1(reshape(sum(ftrOStrlEnsmbl(timeMask,u,:)), [size(ftrOStrlEnsmbl,3),1]), isFtrOStrlOdr, 'off');
+        [~,ftrOSodr,~] = anova1(curUniFtrOStrlEnsmblBinned(t,:)', isFtrOStrlOdr, 'off');
         if ~isempty(ftrOSodr{2,5})
             ftrOStrlOdrFvals(t,u) = ftrOSodr{2,5};
         else
@@ -147,31 +153,29 @@ for u = 1:length(unitIDs)
         curCorrTrlOdrShfl = corrTrlOdr(curCorrTrlOdrShflVect);
         curIsFtrOStrlOdrShflVect = randperm(length(isFtrOStrlOdr));
         curIsFtrOStrlOdrShfl = isFtrOStrlOdr(curIsFtrOStrlOdrShflVect);
-        parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
-            timeMask = false(length(eventTimeBins),1);
-            timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
-            [~,tablePos,~] = anova1(reshape(sum(corrTrlEnsmbl(timeMask,u,:)), [size(corrTrlEnsmbl,3),1]), curCorrTrlPosShfl, 'off'); %#ok<*PFBNS>
+        parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2) %#ok<*PFUIX>
+            [~,tablePos,~] = anova1(curUniCorrTrlEnsmblBinned(t,:)', curCorrTrlPosShfl, 'off'); %#ok<*PFBNS>
             if ~isempty(tablePos{2,5})
                 unitPosFvalsRND(t,u,r) = tablePos{2,5};
             else
                 unitPosFvalsRND(t,u,r) = 1;
             end
             
-            [~,ftrOSpos,~] = anova1(reshape(sum(ftrOStrlEnsmbl(timeMask,u,:)), [size(ftrOStrlEnsmbl,3),1]), curIsFtsOStrlPosShfl, 'off');
+            [~,ftrOSpos,~] = anova1(curUniFtrOStrlEnsmblBinned(t,:)', curIsFtsOStrlPosShfl, 'off');
             if ~isempty(ftrOSpos{2,5})
                 ftrOStrlPosFvalsRND(t,u,r) = ftrOSpos{2,5};
             else
                 ftrOStrlPosFvalsRND(t,u,r) = 1;
             end
             
-            [~,tableOdr,~] = anova1(reshape(sum(corrTrlEnsmbl(timeMask,u,:)), [size(corrTrlEnsmbl,3),1]), curCorrTrlOdrShfl, 'off');
+            [~,tableOdr,~] = anova1(curUniCorrTrlEnsmblBinned(t,:)', curCorrTrlOdrShfl, 'off');
             if ~isempty(tableOdr{2,5})
                 unitOdrFvalsRND(t,u,r) = tableOdr{2,5};
             else
                 unitOdrFvalsRND(t,u,r) = 1;
             end
             
-            [~,ftrOSodr,~] = anova1(reshape(sum(ftrOStrlEnsmbl(timeMask,u,:)), [size(ftrOStrlEnsmbl,3),1]), curIsFtrOStrlOdrShfl, 'off');
+            [~,ftrOSodr,~] = anova1(curUniFtrOStrlEnsmblBinned(t,:)', curIsFtrOStrlOdrShfl, 'off');
             if ~isempty(ftrOSodr{2,5})
                 ftrOStrlOdrFvalsRND(t,u,r) = ftrOSodr{2,5};
             else
@@ -192,17 +196,17 @@ for u = 1:length(unitIDs)
 %     plot(mean(unitOdrFvalsRND(:,u,:),3));
     for t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
         zUnitPosVect = zscore([unitPosFvals(t,u), reshape(unitPosFvalsRND(t,u,:), [1 size(unitPosFvalsRND,3)])]);
-        unitPosFvalsZ(t,u) = zUnitPosVect(1);
-        zIsFtrOStrlPosVect = zscore([ftrOStrlPosFvals(t,u), reshape(ftrOStrlPosFvalsRND(t,u,:), [1 size(ftrOStrlPosFvalsRND,3)])]);
-        ftrOStrlPosFvalsZ(t,u) = zIsFtrOStrlPosVect(1);
-        zUnitOdrVect = zscore([unitOdrFvals(t,u), reshape(unitOdrFvalsRND(t,u,:), [1 size(unitOdrFvalsRND,3)])]);
-        unitOdrFvalsZ(t,u) = zUnitOdrVect(1);
-        zIsFtrOStrlOdrVect = zscore([ftrOStrlOdrFvals(t,u), reshape(ftrOStrlOdrFvalsRND(t,u,:), [1 size(ftrOStrlOdrFvalsRND,3)])]);
-        ftrOStrlOdrFvalsZ(t,u) = zIsFtrOStrlOdrVect(1);
-        zAllFvalDiffVect = zscore([allFvalDiff(t,u), reshape(allFvalDiffRND(t,u,:), [1 size(allFvalDiffRND,3)])]);
-        allFvalDiffZ(t,u) = zAllFvalDiffVect(1);
-        zTransInFvalDiffVect = zscore([transInFvalDiff(t,u), reshape(transInFvalDiffRND(t,u,:), [1 size(transInFvalDiffRND,3)])]);
-        transInFvalDiffZ(t,u) = zTransInFvalDiffVect(1);        
+%         unitPosFvalsZ(t,u) = zUnitPosVect(1);
+%         zIsFtrOStrlPosVect = zscore([ftrOStrlPosFvals(t,u), reshape(ftrOStrlPosFvalsRND(t,u,:), [1 size(ftrOStrlPosFvalsRND,3)])]);
+%         ftrOStrlPosFvalsZ(t,u) = zIsFtrOStrlPosVect(1);
+%         zUnitOdrVect = zscore([unitOdrFvals(t,u), reshape(unitOdrFvalsRND(t,u,:), [1 size(unitOdrFvalsRND,3)])]);
+%         unitOdrFvalsZ(t,u) = zUnitOdrVect(1);
+%         zIsFtrOStrlOdrVect = zscore([ftrOStrlOdrFvals(t,u), reshape(ftrOStrlOdrFvalsRND(t,u,:), [1 size(ftrOStrlOdrFvalsRND,3)])]);
+%         ftrOStrlOdrFvalsZ(t,u) = zIsFtrOStrlOdrVect(1);
+%         zAllFvalDiffVect = zscore([allFvalDiff(t,u), reshape(allFvalDiffRND(t,u,:), [1 size(allFvalDiffRND,3)])]);
+%         allFvalDiffZ(t,u) = zAllFvalDiffVect(1);
+%         zTransInFvalDiffVect = zscore([transInFvalDiff(t,u), reshape(transInFvalDiffRND(t,u,:), [1 size(transInFvalDiffRND,3)])]);
+%         transInFvalDiffZ(t,u) = zTransInFvalDiffVect(1);        
     end
     uniFvalFig = figure;
     rawFvalPlot = subplot(2,2,1);
@@ -489,6 +493,8 @@ for u = 1:length(unitIDs)
     fprintf('Running %s...', unitIDs{u});
     curUnitPosFvals = nan(length(eventTimeBins)-dataBinSize, length(phaseBins)-1, length(bands));
     curUnitOdrFvals = nan(length(eventTimeBins)-dataBinSize, length(phaseBins)-1, length(bands));
+    %%%%%% NEED TO DETERMINE BEST WAY TO INTEGRATE CONV INTO THIS
+    %%%%%% INSTANCE FOR INCREASED EFFICIENCY
     for b = 1:length(bands)
         curLFPcol = strcmp(bands{b}, lfpIDparts(2,:)) & strcmp(curTetParts{1}, lfpIDparts(1,:));
         for p = 1:length(phaseBins)-1
@@ -609,20 +615,23 @@ c3FvalsZ = nan(length(eventTimeBins)-dataBinSize, length(unitIDs));
 d4Fvals = nan(length(eventTimeBins)-dataBinSize, length(unitIDs));
 d4FvalsPerms = nan(length(eventTimeBins)-dataBinSize, length(unitIDs),numPerms);
 d4FvalsZ = nan(length(eventTimeBins)-dataBinSize, length(unitIDs));
+
 for u = 1:length(unitIDs)
     tic
     fprintf('Running %s...', unitIDs{u});
+    curUniEnsmblBinned = nan(size(curUniEnsmbl,1), size(curUniEnsmbl,3));
+    for trl = 1:size(curUniEnsmbl,3)
+        curUniEnsmblBinned(:,t) = conv(c3TrlEnsmbl(:,u,trl)', ones(1,dataBinSize), 'same');
+    end
     parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
-        timeMask = false(length(eventTimeBins),1);
-        timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
-        [~,c3Tbl,~] = anova1(reshape(sum(c3TrlEnsmbl(timeMask,u,:)), [size(c3TrlEnsmbl,3),1]), c3PrevOdrIDs, 'off'); %#ok<*PFBNS>
+        [~,c3Tbl,~] = anova1(curUniEnsmblBinned(t,:)', c3PrevOdrIDs, 'off'); %#ok<*PFBNS>
         if ~isempty(c3Tbl{2,5})
             c3Fvals(t,u) = c3Tbl{2,5};
         else
             c3Fvals(t,u) = 1;
         end
         
-        [~,d4Tbl,~] = anova1(reshape(sum(d4TrlEnsmbl(timeMask,u,:)), [size(d4TrlEnsmbl,3),1]), d4PrevOdrIDs, 'off');
+        [~,d4Tbl,~] = anova1(curUniEnsmblBinned(t,:)', d4PrevOdrIDs, 'off');
         if ~isempty(d4Tbl{2,5})
             d4Fvals(t,u) = d4Tbl{2,5};
         else
@@ -638,16 +647,14 @@ for u = 1:length(unitIDs)
         d4PrevOdrIDsShflVect = randperm(length(d4PrevOdrIDs));
         d4PrevOdrIDsShfl = d4PrevOdrIDs(d4PrevOdrIDsShflVect);
         parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
-            timeMask = false(length(eventTimeBins),1);
-            timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
-            [~,c3TblShfl,~] = anova1(reshape(sum(c3TrlEnsmbl(timeMask,u,:)), [size(c3TrlEnsmbl,3),1]), c3PrevOdrIDsShfl, 'off'); %#ok<*PFBNS>
+            [~,c3TblShfl,~] = anova1(curUniEnsmblBinned(t,:)', c3PrevOdrIDsShfl, 'off'); %#ok<*PFBNS>
             if ~isempty(c3TblShfl{2,5})
                 c3FvalsPerms(t,u,r) = c3TblShfl{2,5};
             else
                 c3FvalsPerms(t,u,r) = 1;
             end
             
-            [~,d4TblShfl,~] = anova1(reshape(sum(d4TrlEnsmbl(timeMask,u,:)), [size(d4TrlEnsmbl,3),1]), d4PrevOdrIDsShfl, 'off');
+            [~,d4TblShfl,~] = anova1(curUniEnsmblBinned(t,:)', d4PrevOdrIDsShfl, 'off');
             if ~isempty(d4TblShfl{2,5})
                 d4FvalsPerms(t,u,r) = d4TblShfl{2,5};
             else
