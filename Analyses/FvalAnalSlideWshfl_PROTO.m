@@ -24,7 +24,7 @@ windowStart = -0.9;
 windowEnd = 0.6;
 [unitEpoch, unitIDs, lfpEpoch, lfpIDs, ~, eventTimeBins, trialInfo] = EpochExtraction_SM(alignment, windowStart, windowEnd, 'org', 'TiUTr', 'lfpBand', 'All', 'lfpData', 'Phase');
 
-%% Select units based on mean firing rate
+%% Select units based on mean firing rate (OPTIONAL)
 load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'EnsembleMatrix'))});
 unitNames = {ensembleUnitSummaries.UnitName};
 unitFR = [ensembleUnitSummaries.Mean_SpikeRate];
@@ -585,7 +585,7 @@ for u = 1:length(unitIDs)
     orient(f, 'tall');
 %     print(f)
 end
-%% Analysis #3: Specific TransIn Contrasts
+%% Analysis #4: Specific TransIn Contrasts
 c3PrevOdrLog = false(size(trialInfo,1),1);
 c3PosLog = false(size(trialInfo,1),1);
 d4PrevOdrLog = false(size(trialInfo,1),1);
