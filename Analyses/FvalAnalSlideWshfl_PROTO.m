@@ -364,7 +364,7 @@ for u = 1:length(unitIDs)
         timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
         [~,skipPos,~] = anova1(reshape(sum(skipTrlEnsmbl(timeMask,u,:)), [size(skipTrlEnsmbl,3),1]), skipTrlPos, 'off');
         if ~isempty(skipPos{2,5})
-            skipPosFvals(t,u) = skipPos{2,5};
+            skipPosFvals(t,u) = skipPos{2,5}; %#ok<*PFOUS>
         else
             skipPosFvals(t,u) = 1;
         end
@@ -492,7 +492,7 @@ for u = 1:length(unitIDs)
     for b = 1:length(bands)
         curLFPcol = strcmp(bands{b}, lfpIDparts(2,:)) & strcmp(curTetParts{1}, lfpIDparts(1,:));
         for p = 1:length(phaseBins)-1
-            for t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+            parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
                 timeMask = false(length(eventTimeBins),1);
                 timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
                 
@@ -579,3 +579,110 @@ for u = 1:length(unitIDs)
     orient(f, 'tall');
 %     print(f)
 end
+%% Analysis #3: Specific TransIn Contrasts
+c3PrevOdrLog = false(size(trialInfo,1),1);
+c3PosLog = false(size(trialInfo,1),1);
+d4PrevOdrLog = false(size(trialInfo,1),1);
+d4PosLog = false(size(trialInfo,1),1);
+
+for trl = 2:size(trialInfo,1)
+    if trialInfo(trl,1)==1
+        if trialInfo(trl,3)==3 && trialInfo(trl,4)==3
+            c3PrevOdrLog(trl-1) = true;
+            c3PosLog(trl) = true;
+        elseif trialInfo(trl,3)==4 && trialInfo(trl,4)==4
+            d4PrevOdrLog(trl-1) = true;
+            d4PosLog(trl) = true;
+        end
+    end
+end
+
+c3TrlEnsmbl = unitEpoch(:,:,c3PosLog);
+c3PrevOdrIDs = trialInfo(c3PrevOdrLog,4);
+
+d4TrlEnsmbl = unitEpoch(:,:,d4PosLog);
+d4PrevOdrIDs = trialInfo(d4PrevOdrLog,4);
+
+c3Fvals = nan(length(eventTimeBins)-dataBinSize, length(unitIDs));
+c3FvalsPerms = nan(length(eventTimeBins)-dataBinSize, length(unitIDs),numPerms);
+c3FvalsZ = nan(length(eventTimeBins)-dataBinSize, length(unitIDs));
+d4Fvals = nan(length(eventTimeBins)-dataBinSize, length(unitIDs));
+d4FvalsPerms = nan(length(eventTimeBins)-dataBinSize, length(unitIDs),numPerms);
+d4FvalsZ = nan(length(eventTimeBins)-dataBinSize, length(unitIDs));
+for u = 1:length(unitIDs)
+    tic
+    fprintf('Running %s...', unitIDs{u});
+    parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+        timeMask = false(length(eventTimeBins),1);
+        timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
+        [~,c3Tbl,~] = anova1(reshape(sum(c3TrlEnsmbl(timeMask,u,:)), [size(c3TrlEnsmbl,3),1]), c3PrevOdrIDs, 'off'); %#ok<*PFBNS>
+        if ~isempty(c3Tbl{2,5})
+            c3Fvals(t,u) = c3Tbl{2,5};
+        else
+            c3Fvals(t,u) = 1;
+        end
+        
+        [~,d4Tbl,~] = anova1(reshape(sum(d4TrlEnsmbl(timeMask,u,:)), [size(d4TrlEnsmbl,3),1]), d4PrevOdrIDs, 'off');
+        if ~isempty(d4Tbl{2,5})
+            d4Fvals(t,u) = d4Tbl{2,5};
+        else
+            d4Fvals(t,u) = 1;
+        end
+    end
+    c3Fvals(isnan(c3Fvals(:,u)),u) = 1;
+    d4Fvals(isnan(d4Fvals(:,u)),u) = 1;
+    for r = 1:numPerms
+        z = randperm(floor(sum(clock))); %#ok<NASGU>
+        c3PrevOdrIDsShflVect = randperm(length(c3PrevOdrIDs));
+        c3PrevOdrIDsShfl = c3PrevOdrIDs(c3PrevOdrIDsShflVect);
+        d4PrevOdrIDsShflVect = randperm(length(d4PrevOdrIDs));
+        d4PrevOdrIDsShfl = d4PrevOdrIDs(d4PrevOdrIDsShflVect);
+        parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+            timeMask = false(length(eventTimeBins),1);
+            timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
+            [~,c3TblShfl,~] = anova1(reshape(sum(c3TrlEnsmbl(timeMask,u,:)), [size(c3TrlEnsmbl,3),1]), c3PrevOdrIDsShfl, 'off'); %#ok<*PFBNS>
+            if ~isempty(c3TblShfl{2,5})
+                c3FvalsPerms(t,u,r) = c3TblShfl{2,5};
+            else
+                c3FvalsPerms(t,u,r) = 1;
+            end
+            
+            [~,d4TblShfl,~] = anova1(reshape(sum(d4TrlEnsmbl(timeMask,u,:)), [size(d4TrlEnsmbl,3),1]), d4PrevOdrIDsShfl, 'off');
+            if ~isempty(d4TblShfl{2,5})
+                d4FvalsPerms(t,u,r) = d4TblShfl{2,5};
+            else
+                d4FvalsPerms(t,u,r) = 1;
+            end
+        end
+        c3FvalsPerms(isnan(c3FvalsPerms(:,u,r)),u,r) = 1;
+        d4FvalsPerms(isnan(d4FvalsPerms(:,u,r)),u,r) = 1;
+        fprintf('%i\n', r);
+    end
+    parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+        zC3Vect = zscore([c3Fvals(t,u), reshape(c3FvalsPerms(t,u,:), [1 size(c3FvalsPerms,3)])]);
+        c3FvalsZ(t,u) = zC3Vect(1);
+        zD4Vect = zscore([d4Fvals(t,u), reshape(d4FvalsPerms(t,u,:), [1 size(d4FvalsPerms,3)])]);
+        d4FvalsZ(t,u) = zD4Vect(1);
+    end
+    figure; 
+    subplot(2,1,1)
+    plot(timePeriod, c3Fvals(dataBinSize/2+1:end,u), 'color', 'k');
+    hold on;
+    plot(timePeriod, d4Fvals(dataBinSize/2+1:end,u), 'color', 'r');
+    legend('C3', 'D4');
+    title('Raw F-Ratios')
+    subplot(2,1,2)
+    plot(timePeriod, c3FvalsZ(dataBinSize/2+1:end,u), 'color', 'k');
+    hold on;
+    plot(timePeriod, d4FvalsZ(dataBinSize/2+1:end,u), 'color', 'r');
+    legend('C3', 'D4');
+    title('Z-Normalized F-Ratios')
+    toc
+    orient(gcf, 'tall');
+    orient(gcf, 'landscape');
+    annotation(uniFvalFig,'textbox', [0.01 0.01 0.96 0.03], 'FitBoxToText','off', 'string', sprintf('%s: %s', unitIDs{u}, cd), 'interpreter', 'none', 'linestyle', 'none');
+    drawnow
+end
+
+
+
