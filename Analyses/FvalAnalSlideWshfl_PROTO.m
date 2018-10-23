@@ -7,6 +7,8 @@ if fileDir==0
 else
     cd(fileDir)
 end
+dirContents = dir(fileDir);
+fileNames = {dirContents.name};
 
 %% Load Relevant Data
 % 'trialInfo' : Matrix containing information about the identity and
@@ -22,9 +24,25 @@ windowStart = -0.9;
 windowEnd = 0.6;
 [unitEpoch, unitIDs, lfpEpoch, lfpIDs, ~, eventTimeBins, trialInfo] = EpochExtraction_SM(alignment, windowStart, windowEnd, 'org', 'TiUTr', 'lfpBand', 'All', 'lfpData', 'Phase');
 
+%% Select units based on mean firing rate
+load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'EnsembleMatrix'))});
+unitNames = {ensembleUnitSummaries.UnitName};
+unitFR = [ensembleUnitSummaries.Mean_SpikeRate];
+
+frLog = unitFR>1;
+uni2remove = unitNames(~frLog);
+uni2rmvLog = false(size(unitIDs));
+for u = 1:length(uni2remove)
+    curUni2RmvLog = cellfun(@(a)~isempty(a), strfind(unitIDs, uni2remove{u}));
+    uni2rmvLog = logical(uni2rmvLog + curUni2RmvLog);
+end
+
+unitIDs(uni2rmvLog) = [];
+unitEpoch(:,uni2rmvLog,:) = [];
+
 %% Define Parameters
 dataBinSize = 200;
-numPerms = 500;
+numPerms = 100;
 timePeriod = eventTimeBins(1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2));
 
 %% Analysis #1 (Previous trial Odor Vs. Upcoming Trial Position)
@@ -111,6 +129,7 @@ for u = 1:length(unitIDs)
             ftrOStrlOdrFvals(t,u) = 1;
         end
     end
+%     toc
     unitPosFvals(isnan(unitPosFvals(:,u)),u) = 1;
     ftrOStrlPosFvals(isnan(ftrOStrlPosFvals(:,u)),u) = 1;
     unitOdrFvals(isnan(unitOdrFvals(:,u)),u) = 1;
@@ -131,7 +150,7 @@ for u = 1:length(unitIDs)
         parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
             timeMask = false(length(eventTimeBins),1);
             timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
-            [~,tablePos,~] = anova1(reshape(sum(corrTrlEnsmbl(timeMask,u,:)), [size(corrTrlEnsmbl,3),1]), curCorrTrlPosShfl, 'off');
+            [~,tablePos,~] = anova1(reshape(sum(corrTrlEnsmbl(timeMask,u,:)), [size(corrTrlEnsmbl,3),1]), curCorrTrlPosShfl, 'off'); %#ok<*PFBNS>
             if ~isempty(tablePos{2,5})
                 unitPosFvalsRND(t,u,r) = tablePos{2,5};
             else
@@ -168,10 +187,10 @@ for u = 1:length(unitIDs)
         transInFvalDiffRND(:,u,r) = ftrOStrlPosFvalsRND(:,u,r) - ftrOStrlOdrFvalsRND(:,u,r);
 %         fprintf('%i\n', r);
     end
-    figure; plot(mean(unitPosFvalsRND(:,u,:),3));
-    hold on; 
-    plot(mean(unitOdrFvalsRND(:,u,:),3));
-    parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+%     figure; plot(mean(unitPosFvalsRND(:,u,:),3));
+%     hold on; 
+%     plot(mean(unitOdrFvalsRND(:,u,:),3));
+    for t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
         zUnitPosVect = zscore([unitPosFvals(t,u), reshape(unitPosFvalsRND(t,u,:), [1 size(unitPosFvalsRND,3)])]);
         unitPosFvalsZ(t,u) = zUnitPosVect(1);
         zIsFtrOStrlPosVect = zscore([ftrOStrlPosFvals(t,u), reshape(ftrOStrlPosFvalsRND(t,u,:), [1 size(ftrOStrlPosFvalsRND,3)])]);
@@ -185,7 +204,6 @@ for u = 1:length(unitIDs)
         zTransInFvalDiffVect = zscore([transInFvalDiff(t,u), reshape(transInFvalDiffRND(t,u,:), [1 size(transInFvalDiffRND,3)])]);
         transInFvalDiffZ(t,u) = zTransInFvalDiffVect(1);        
     end
-%     fprintf('Completed in ');
     uniFvalFig = figure;
     rawFvalPlot = subplot(2,2,1);
     plot(timePeriod,unitPosFvals(dataBinSize/2+1:end,u), 'color', 'r');
@@ -233,15 +251,23 @@ end
 % Clean up the data (remove blank entries at start & replace nans with 1s)
 unitPosFvals(1:dataBinSize/2,:) = [];
 unitPosFvals(isnan(unitPosFvals)) = 1;
+% unitPosFvals(unitPosFvals>10000000000000000) = 1;
+% unitPosFvals(unitPosFvals<1/10000000000000000) = 1;
 
 ftrOStrlPosFvals(1:dataBinSize/2,:) = [];
 ftrOStrlPosFvals(isnan(ftrOStrlPosFvals)) = 1;
+% ftrOStrlPosFvals(ftrOStrlPosFvals>10000000000000000) = 1;
+% ftrOStrlPosFvals(ftrOStrlPosFvals<1/10000000000000000) = 1;
 
 unitOdrFvals(1:dataBinSize/2,:) = [];
 unitOdrFvals(isnan(unitOdrFvals)) = 1;
+% unitOdrFvals(unitOdrFvals>10000000000000000) = 1;
+% unitOdrFvals(unitOdrFvals<1/10000000000000000) = 1;
 
 ftrOStrlOdrFvals(1:dataBinSize/2,:) = [];
 ftrOStrlOdrFvals(isnan(ftrOStrlOdrFvals)) = 1;
+% ftrOStrlOdrFvals(ftrOStrlOdrFvals>10000000000000000) = 1;
+% ftrOStrlOdrFvals(ftrOStrlOdrFvals<1/10000000000000000) = 1;
 
 unitPosFvalsZ(1:dataBinSize/2,:) = [];
 unitPosFvalsZ(isnan(unitPosFvalsZ)) = 1;
@@ -259,10 +285,10 @@ ftrOStrlOdrFvalsZ(isnan(ftrOStrlOdrFvalsZ)) = 1;
 % Plot Everything
 figure
 subplot(2,1,1)
-plot(timePeriod, median(unitPosFvalsZ - unitOdrFvalsZ,2), 'color', 'k');
+plot(timePeriod, mean(unitPosFvalsZ - unitOdrFvalsZ,2), 'color', 'k');
 hold on
-plot(timePeriod, ((std(unitPosFvalsZ - unitOdrFvalsZ,1,2)./(length(unitIDs)-1))+median(unitPosFvalsZ - unitOdrFvalsZ,2)), 'linestyle', ':', 'color', 'black');
-plot(timePeriod, median(unitPosFvalsZ - unitOdrFvalsZ,2)-(std(unitPosFvalsZ - unitOdrFvalsZ,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, ((std(unitPosFvalsZ - unitOdrFvalsZ,1,2)./(length(unitIDs)-1))+mean(unitPosFvalsZ - unitOdrFvalsZ,2)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, mean(unitPosFvalsZ - unitOdrFvalsZ,2)-(std(unitPosFvalsZ - unitOdrFvalsZ,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
 line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
 set(gca, 'ylim', [-2 2]);
 grid on;
@@ -271,10 +297,10 @@ ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values =
 xlabel(sprintf('Time relative to %s(s)', alignment));
 
 subplot(2,1,2)
-plot(timePeriod, median(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,2), 'color', 'k');
+plot(timePeriod, mean(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,2), 'color', 'k');
 hold on;
-plot(timePeriod, ((std(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,1,2)./(length(unitIDs)-1))+median(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,2)), 'linestyle', ':', 'color', 'black');
-plot(timePeriod, median(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,2)-(std(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, ((std(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,1,2)./(length(unitIDs)-1))+mean(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,2)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, mean(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,2)-(std(ftrOStrlPosFvalsZ - ftrOStrlOdrFvalsZ,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
 line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
 set(gca, 'ylim', [-2 2]);
 grid on;
@@ -282,6 +308,8 @@ title('Information Bias: Trial After OutSeq Only');
 ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values = Previous Odor Bias'});
 xlabel(sprintf('Time relative to %s(s)', alignment));
 drawnow
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
 annotation(gcf,'textbox', [0.01 0.01 0.96 0.03], 'FitBoxToText','off', 'string', cd, 'interpreter', 'none', 'linestyle', 'none');
 
  
@@ -331,7 +359,7 @@ repOdrFvals = nan(length(eventTimeBins)-dataBinSize, length(unitIDs));
 for u = 1:length(unitIDs)
     tic
     fprintf('Running %s...', unitIDs{u});
-    for t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+    parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
         timeMask = false(length(eventTimeBins),1);
         timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
         [~,skipPos,~] = anova1(reshape(sum(skipTrlEnsmbl(timeMask,u,:)), [size(skipTrlEnsmbl,3),1]), skipTrlPos, 'off');
@@ -368,23 +396,31 @@ end
 % Clean up the data (remove blank entries at start & replace nans with 1s)
 skipPosFvals(1:dataBinSize/2,:) = [];
 skipPosFvals(isnan(skipPosFvals)) = 1;
+skipPosFvals(skipPosFvals>10000000000000000) = 1;
+skipPosFvals(skipPosFvals<1/10000000000000000) = 1;
 
 skipOdrFvals(1:dataBinSize/2,:) = [];
 skipOdrFvals(isnan(skipOdrFvals)) = 1;
+skipOdrFvals(skipOdrFvals>10000000000000000) = 1;
+skipOdrFvals(skipOdrFvals<1/10000000000000000) = 1;
 
 repPosFvals(1:dataBinSize/2,:) = [];
 repPosFvals(isnan(repPosFvals)) = 1;
+repPosFvals(repPosFvals>10000000000000000) = 1;
+repPosFvals(repPosFvals<1/10000000000000000) = 1;
 
 repOdrFvals(1:dataBinSize/2,:) = [];
 repOdrFvals(isnan(repOdrFvals)) = 1;
+repOdrFvals(repOdrFvals>10000000000000000) = 1;
+repOdrFvals(repOdrFvals<1/10000000000000000) = 1;
 
 % Plot Everything
 figure
 subplot(2,1,1)
-plot(timePeriod, median(skipPosFvals - skipOdrFvals,2), 'color', 'k');
+plot(timePeriod, mean(skipPosFvals - skipOdrFvals,2), 'color', 'k');
 hold on
-plot(timePeriod, ((std(skipPosFvals - skipOdrFvals,1,2)./(length(unitIDs)-1))+median(skipPosFvals - skipOdrFvals,2)), 'linestyle', ':', 'color', 'black');
-plot(timePeriod, median(skipPosFvals - skipOdrFvals,2)-(std(skipPosFvals - skipOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, ((std(skipPosFvals - skipOdrFvals,1,2)./(length(unitIDs)-1))+mean(skipPosFvals - skipOdrFvals,2)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, mean(skipPosFvals - skipOdrFvals,2)-(std(skipPosFvals - skipOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
 line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
 set(gca, 'ylim', [-2 2]);
 grid on;
@@ -393,16 +429,19 @@ ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values =
 xlabel(sprintf('Time relative to %s(s)', alignment));
 
 subplot(2,1,2)
-plot(timePeriod, median(repPosFvals - repOdrFvals,2), 'color', 'k');
+plot(timePeriod, mean(repPosFvals - repOdrFvals,2), 'color', 'k');
 hold on;
-plot(timePeriod, ((std(repPosFvals - repOdrFvals,1,2)./(length(unitIDs)-1))+median(repPosFvals - repOdrFvals,2)), 'linestyle', ':', 'color', 'black');
-plot(timePeriod, median(repPosFvals - repOdrFvals,2)-(std(repPosFvals - repOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, ((std(repPosFvals - repOdrFvals,1,2)./(length(unitIDs)-1))+mean(repPosFvals - repOdrFvals,2)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, mean(repPosFvals - repOdrFvals,2)-(std(repPosFvals - repOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
 line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
 set(gca, 'ylim', [-2 2]);
 grid on;
 title('Information Bias: Current Position vs Previous Odor (Repeats Only)');
 ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values = Previous Odor Bias'});
 xlabel(sprintf('Time relative to %s(s)', alignment));
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
+annotation(gcf,'textbox', [0.01 0.01 0.96 0.03], 'FitBoxToText','off', 'string', cd, 'interpreter', 'none', 'linestyle', 'none');
 drawnow
  
 % figure
@@ -498,9 +537,9 @@ for b = 1:length(bands)
         curOdrVals = cell2mat(cellfun(@(a)a(:,p,b), unitOdrFvals, 'uniformoutput', 0));
         curPosVals = cell2mat(cellfun(@(a)a(:,p,b), unitPosFvals, 'uniformoutput', 0));
         
-        means(p) = plot(timePeriod, median(curPosVals - curOdrVals,2), 'color', phaseColors{p});
-        plot(timePeriod, ((std(curPosVals - curOdrVals,1,2)./(length(unitIDs)-1))+median(curPosVals - curOdrVals,2)), 'linestyle', ':', 'color', phaseColors{p});
-        plot(timePeriod, median(curPosVals - curOdrVals,2)-(std(curPosVals - curOdrVals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', phaseColors{p});
+        means(p) = plot(timePeriod, mean(curPosVals - curOdrVals,2), 'color', phaseColors{p});
+        plot(timePeriod, ((std(curPosVals - curOdrVals,1,2)./(length(unitIDs)-1))+mean(curPosVals - curOdrVals,2)), 'linestyle', ':', 'color', phaseColors{p});
+        plot(timePeriod, mean(curPosVals - curOdrVals,2)-(std(curPosVals - curOdrVals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', phaseColors{p});
     end
     title(sprintf('Information Bias: Current Position vs Previous Odor (%s) (%ims window)', bands{b},dataBinSize), 'interpreter', 'none')
     line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
