@@ -61,7 +61,7 @@ ftrOStrlOdrFvals = nan(length(eventTimeBins)-dataBinSize, length(unitIDs));
 for u = 1:length(unitIDs)
     tic
     fprintf('Running %s...', unitIDs{u});
-    for t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
+    parfor t = 1+dataBinSize/2:length(eventTimeBins)-(dataBinSize/2)
         timeMask = false(length(eventTimeBins),1);
         timeMask(t-(dataBinSize/2):t+dataBinSize/2) = true;
         [~,tablePos,~] = anova1(reshape(sum(corrTrlEnsmbl(timeMask,u,:)), [size(corrTrlEnsmbl,3),1]), corrTrlPos, 'off');
@@ -111,10 +111,10 @@ ftrOStrlOdrFvals(isnan(ftrOStrlOdrFvals)) = 1;
 % Plot Everything
 figure
 subplot(2,1,1)
-plot(timePeriod, median(unitPosFvals - unitOdrFvals,2), 'color', 'k');
+plot(timePeriod, mean(unitPosFvals - unitOdrFvals,2), 'color', 'k');
 hold on
-plot(timePeriod, ((std(unitPosFvals - unitOdrFvals,1,2)./(length(unitIDs)-1))+median(unitPosFvals - unitOdrFvals,2)), 'linestyle', ':', 'color', 'black');
-plot(timePeriod, median(unitPosFvals - unitOdrFvals,2)-(std(unitPosFvals - unitOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, ((std(unitPosFvals - unitOdrFvals,1,2)./(length(unitIDs)-1))+mean(unitPosFvals - unitOdrFvals,2)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, mean(unitPosFvals - unitOdrFvals,2)-(std(unitPosFvals - unitOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
 line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
 set(gca, 'ylim', [-2 2]);
 grid on;
@@ -123,16 +123,19 @@ ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values =
 xlabel(sprintf('Time relative to %s(s)', alignment));
 
 subplot(2,1,2)
-plot(timePeriod, median(ftrOStrlPosFvals - ftrOStrlOdrFvals,2), 'color', 'k');
+plot(timePeriod, mean(ftrOStrlPosFvals - ftrOStrlOdrFvals,2), 'color', 'k');
 hold on;
-plot(timePeriod, ((std(ftrOStrlPosFvals - ftrOStrlOdrFvals,1,2)./(length(unitIDs)-1))+median(ftrOStrlPosFvals - ftrOStrlOdrFvals,2)), 'linestyle', ':', 'color', 'black');
-plot(timePeriod, median(ftrOStrlPosFvals - ftrOStrlOdrFvals,2)-(std(ftrOStrlPosFvals - ftrOStrlOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, ((std(ftrOStrlPosFvals - ftrOStrlOdrFvals,1,2)./(length(unitIDs)-1))+mean(ftrOStrlPosFvals - ftrOStrlOdrFvals,2)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, mean(ftrOStrlPosFvals - ftrOStrlOdrFvals,2)-(std(ftrOStrlPosFvals - ftrOStrlOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
 line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
 set(gca, 'ylim', [-2 2]);
 grid on;
 title('Information Bias: Trial After OutSeq Only');
 ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values = Previous Odor Bias'});
 xlabel(sprintf('Time relative to %s(s)', alignment));
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
+annotation(gcf,'textbox', [0.01 0.01 0.96 0.03], 'FitBoxToText','off', 'string', cd, 'interpreter', 'none', 'linestyle', 'none');
 drawnow
  
 % figure
@@ -231,10 +234,10 @@ repOdrFvals(isnan(repOdrFvals)) = 1;
 % Plot Everything
 figure
 subplot(2,1,1)
-plot(timePeriod, median(skipPosFvals - skipOdrFvals,2), 'color', 'k');
+plot(timePeriod, mean(skipPosFvals - skipOdrFvals,2), 'color', 'k');
 hold on
-plot(timePeriod, ((std(skipPosFvals - skipOdrFvals,1,2)./(length(unitIDs)-1))+median(skipPosFvals - skipOdrFvals,2)), 'linestyle', ':', 'color', 'black');
-plot(timePeriod, median(skipPosFvals - skipOdrFvals,2)-(std(skipPosFvals - skipOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, ((std(skipPosFvals - skipOdrFvals,1,2)./(length(unitIDs)-1))+mean(skipPosFvals - skipOdrFvals,2)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, mean(skipPosFvals - skipOdrFvals,2)-(std(skipPosFvals - skipOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
 line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
 set(gca, 'ylim', [-2 2]);
 grid on;
@@ -243,16 +246,19 @@ ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values =
 xlabel(sprintf('Time relative to %s(s)', alignment));
 
 subplot(2,1,2)
-plot(timePeriod, median(repPosFvals - repOdrFvals,2), 'color', 'k');
+plot(timePeriod, mean(repPosFvals - repOdrFvals,2), 'color', 'k');
 hold on;
-plot(timePeriod, ((std(repPosFvals - repOdrFvals,1,2)./(length(unitIDs)-1))+median(repPosFvals - repOdrFvals,2)), 'linestyle', ':', 'color', 'black');
-plot(timePeriod, median(repPosFvals - repOdrFvals,2)-(std(repPosFvals - repOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, ((std(repPosFvals - repOdrFvals,1,2)./(length(unitIDs)-1))+mean(repPosFvals - repOdrFvals,2)), 'linestyle', ':', 'color', 'black');
+plot(timePeriod, mean(repPosFvals - repOdrFvals,2)-(std(repPosFvals - repOdrFvals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', 'black');
 line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
 set(gca, 'ylim', [-2 2]);
 grid on;
 title('Information Bias: Current Position vs Previous Odor (Repeats Only)');
 ylabel({'Fval Difference'; 'Positive Values = Position Bias'; 'Negative Values = Previous Odor Bias'});
 xlabel(sprintf('Time relative to %s(s)', alignment));
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
+annotation(gcf,'textbox', [0.01 0.01 0.96 0.03], 'FitBoxToText','off', 'string', cd, 'interpreter', 'none', 'linestyle', 'none');
 drawnow
  
 % figure
@@ -348,9 +354,9 @@ for b = 1:length(bands)
         curOdrVals = cell2mat(cellfun(@(a)a(:,p,b), unitOdrFvals, 'uniformoutput', 0));
         curPosVals = cell2mat(cellfun(@(a)a(:,p,b), unitPosFvals, 'uniformoutput', 0));
         
-        means(p) = plot(timePeriod, median(curPosVals - curOdrVals,2), 'color', phaseColors{p});
-        plot(timePeriod, ((std(curPosVals - curOdrVals,1,2)./(length(unitIDs)-1))+median(curPosVals - curOdrVals,2)), 'linestyle', ':', 'color', phaseColors{p});
-        plot(timePeriod, median(curPosVals - curOdrVals,2)-(std(curPosVals - curOdrVals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', phaseColors{p});
+        means(p) = plot(timePeriod, mean(curPosVals - curOdrVals,2), 'color', phaseColors{p});
+        plot(timePeriod, ((std(curPosVals - curOdrVals,1,2)./(length(unitIDs)-1))+mean(curPosVals - curOdrVals,2)), 'linestyle', ':', 'color', phaseColors{p});
+        plot(timePeriod, mean(curPosVals - curOdrVals,2)-(std(curPosVals - curOdrVals,1,2)./(length(unitIDs)-1)), 'linestyle', ':', 'color', phaseColors{p});
     end
     title(sprintf('Information Bias: Current Position vs Previous Odor (%s) (%ims window)', bands{b},dataBinSize), 'interpreter', 'none')
     line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linewidth', 1);
