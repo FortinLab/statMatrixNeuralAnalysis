@@ -14,6 +14,20 @@ expType = questdlg('What type of experiment are you compiling data from?',...
 switch expType
     case 'Single-site Ensemble'
         exp = 1;
+        recLoc = questdlg('What region is the ensemble recorded in?',...
+            'Identify Recording Location',...
+            'PFC',...
+            'HC',...
+            'Misc',...
+            'PFC');
+        switch recLoc
+            case 'PFC'
+                loc = 1;
+            case 'HC'
+                loc = 2;
+            case 'Misc'
+                loc = 3;
+        end
     case 'Multi-site LFP'
         exp = 2;
     case 'ss Ensemble & ms LFP'
@@ -145,6 +159,9 @@ elseif rig==3 || rig==4 || rig==5
     fprintf(outfile, '     OpenEphys Channel Map File Used = %s\n', chanMapFile);
 end
 fprintf(outfile, 'Experiment Type = %s\n', expType);
+if exp==1
+    fprintf(outfile, 'Recording Location = %s\n', recLoc);
+end
 fprintf(outfile, '     Data Source = %s\n', dataSource);
 if rig==1 || rig==2
     fprintf(outfile, '     Rig = %s\n', plexonType);
@@ -195,7 +212,7 @@ end
 clc
 %% Create statMatrix
 if rig == 1 || rig == 2
-    CreateNeuralMatrixPLX(exp, data, rig, behavMatrix(:,1), summary, outputFileName, outfile)
+    CreateNeuralMatrixPLX(exp, data, rig, loc, behavMatrix(:,1), summary, outputFileName, outfile)
 else
     CreateNeuralMatrixOE(exp, data, rig, behavMatrix(:,1), chanMapStruct, outputFileName, outfile);
 end
@@ -339,7 +356,7 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behavio
 end
 
 % Neural Matrix
-function CreateNeuralMatrixPLX(exp, data, rig, tsVect, summary, outputFileName, outfile)
+function CreateNeuralMatrixPLX(exp, data, rig, loc, tsVect, summary, outputFileName, outfile)
     tsVect(end+1) = tsVect(end)+(mode(diff(tsVect)));
     % Identify the source for the lfp Files
     if rig == 1 || rig == 2
@@ -408,16 +425,22 @@ function CreateNeuralMatrixPLX(exp, data, rig, tsVect, summary, outputFileName, 
             fprintf(outfile, '     LFP data taken from %s\n', curADchan);
 
             [samp, ~, ~, ~, tetV] = plx_ad_v(plxFile, curADchan);
-
-            [tetRawHilb, tetRawLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1));
-            [tetThetaHilb, tetThetaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),4,8);
-            [tetAlphaHilb, tetAlphaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),9,12);
-            [tetLowBetaHilb, tetLowBetaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),13,19);
-            [tetBetaHilb, tetBetaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),20,40);
-            [tetLowGammaHilb, tetLowGammaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),41,59);
-            [tetHighGammaHilb, tetHighGammaLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),61,80);
-            [tetRipHilb, tetRipLFP] = PhaseFreqDetectAbbr(tetV,tsVect(1:end-1),150,250);
-
+            
+            if loc == 1
+                bands = {'Raw', 'Theta', 'Alpha', 'Beta', 'LowGamma', 'HighGamma', 'Ripple'};
+                bandLims = [[nan nan]; [4,8]; [9,12]; [16,32]; [35,55]; [61,80]; [150, 250]];
+            elseif loc == 2 || loc == 3
+                bands = {'Raw', 'Theta', 'LowBeta', 'Beta', 'LowGamma', 'HighGamma', 'Ripple'};
+                bandLims = [[nan nan]; [4,12]; [13,19]; [20,40]; [40,59]; [61,80]; [150, 250]];
+            end
+            
+            tetHilbVals = cell(1,length(bands));
+            tetLFPvals = cell(1,length(bands));
+            [tetHilbVals{1}, tetLFPvals{1}] = PhaseFreqDetectAbbr(tetV, tsVect(1:end-1));
+            
+            for b = 2:length(bands)
+                [tetHilbVals{b}, tetLFPvals{b}] = PhaseFreqDetectAbbr(tetV, tsVect(1:end-1), bandLims(b,1), bandLims(b,2));
+            end
 
             if ~isempty(find(strcmp(curTet, tetsWithUnits), 1))
                 if data == 2 || data == 3
@@ -449,9 +472,11 @@ function CreateNeuralMatrixPLX(exp, data, rig, tsVect, summary, outputFileName, 
             spkWdth = cell(1,curNumUnis);
             phaseVals = struct('Mean', nan, 'Median', nan, 'R_Length', nan,...
                 'AngDev', nan, 'CircStDev', nan, 'R_Test', [nan, nan]);
-            phaseInfo = repmat({struct('Theta', phaseVals, 'Alpha', phaseVals, 'LowBeta', phaseVals,...
-                'Beta', phaseVals, 'LowGamma', phaseVals, 'HighGamma', phaseVals,...
-                'Ripple', phaseVals)}, [1,curNumUnis]);
+            phaseInfo = [];
+            for b = 2:length(bands)
+                phaseInfo.(bands{b}) = phaseVals;
+            end
+            phaseInfo = repmat({phaseInfo}, [1,curNumUnis]);
             for uni = 1:curNumUnis
                 tetUnitIDs{uni} = [curTet '-U' num2str(uni)];
                 fprintf('     Compiling unit %s\n', tetUnitIDs{uni});
@@ -485,77 +510,35 @@ function CreateNeuralMatrixPLX(exp, data, rig, tsVect, summary, outputFileName, 
                 meanSpkRt{uni} = length(tempTSs)/(size(tetUnitTSs{uni},1)/samp);
 
                 % Now pull out summary phase values
-                % Theta
-                thetaUniPhase = tetThetaHilb(tetUnitTSs{uni}==1);
-                phaseInfo{uni}.Theta.Mean = circ_mean(thetaUniPhase);
-                %         phaseInfo{uni}.Theta.Median = circ_median(thetaUniPhase);
-                phaseInfo{uni}.Theta.R_Length = circ_r(thetaUniPhase);
-                [phaseInfo{uni}.Theta.AngDev, phaseInfo{uni}.Theta.CircStDev] = circ_std(thetaUniPhase);
-                [phaseInfo{uni}.Theta.R_Test(1), phaseInfo{uni}.Theta.R_Test(2)] = circ_rtest(thetaUniPhase);
-                % Alpha
-                alphaUniPhase = tetAlphaHilb(tetUnitTSs{uni}==1);
-                phaseInfo{uni}.Alpha.Mean = circ_mean(alphaUniPhase);
-                %         phaseInfo{uni}.Alpha.Median = circ_median(alphaUniPhase);
-                phaseInfo{uni}.Alpha.R_Length = circ_r(alphaUniPhase);
-                [phaseInfo{uni}.Alpha.AngDev, phaseInfo{uni}.Alpha.CircStDev] = circ_std(alphaUniPhase);
-                [phaseInfo{uni}.Alpha.R_Test(1), phaseInfo{uni}.Alpha.R_Test(2)] = circ_rtest(alphaUniPhase);                
-                % Low Beta
-                lowBetaUniPhase = tetLowBetaHilb(tetUnitTSs{uni}==1);
-                phaseInfo{uni}.LowBeta.Mean = circ_mean(lowBetaUniPhase);
-                %         phaseInfo{uni}.LowBeta.Median = circ_median(lowBetaUniPhase);
-                phaseInfo{uni}.LowBeta.R_Length = circ_r(lowBetaUniPhase);
-                [phaseInfo{uni}.LowBeta.AngDev, phaseInfo{uni}.LowBeta.CircStDev] = circ_std(lowBetaUniPhase);
-                [phaseInfo{uni}.LowBeta.R_Test(1), phaseInfo{uni}.LowBeta.R_Test(2)] = circ_rtest(lowBetaUniPhase);
-                % Beta
-                betaUniPhase = tetBetaHilb(tetUnitTSs{uni}==1);
-                phaseInfo{uni}.Beta.Mean = circ_mean(betaUniPhase);
-                %         phaseInfo{uni}.Beta.Median = circ_median(betaUniPhase);
-                phaseInfo{uni}.Beta.R_Length = circ_r(betaUniPhase);
-                [phaseInfo{uni}.Beta.AngDev, phaseInfo{uni}.Beta.CircStDev] = circ_std(betaUniPhase);
-                [phaseInfo{uni}.Beta.R_Test(1), phaseInfo{uni}.Beta.R_Test(2)] = circ_rtest(betaUniPhase);
-                % Low Gamma
-                lowGammaUniPhase = tetLowGammaHilb(tetUnitTSs{uni}==1);
-                phaseInfo{uni}.LowGamma.Mean = circ_mean(lowGammaUniPhase);
-                %         phaseInfo{uni}.LowGamma.Median = circ_median(lowGammaUniPhase);
-                phaseInfo{uni}.LowGamma.R_Length = circ_r(lowGammaUniPhase);
-                [phaseInfo{uni}.LowGamma.AngDev, phaseInfo{uni}.LowGamma.CircStDev] = circ_std(lowGammaUniPhase);
-                [phaseInfo{uni}.LowGamma.R_Test(1), phaseInfo{uni}.LowGamma.R_Test(2)] = circ_rtest(lowGammaUniPhase);
-                % High Gamma
-                highGammaUniPhase = tetHighGammaHilb(tetUnitTSs{uni}==1);
-                phaseInfo{uni}.HighGamma.Mean = circ_mean(highGammaUniPhase);
-                %         phaseInfo{uni}.HighGamma.Median = circ_median(highGammaUniPhase);
-                phaseInfo{uni}.HighGamma.R_Length = circ_r(highGammaUniPhase);
-                [phaseInfo{uni}.HighGamma.AngDev, phaseInfo{uni}.HighGamma.CircStDev] = circ_std(highGammaUniPhase);
-                [phaseInfo{uni}.HighGamma.R_Test(1), phaseInfo{uni}.HighGamma.R_Test(2)] = circ_rtest(highGammaUniPhase);
-                % Ripple
-                rippleUniPhase = tetRipHilb(tetUnitTSs{uni}==1);
-                phaseInfo{uni}.Ripple.Mean = circ_mean(rippleUniPhase);
-                %         phaseInfo{uni}.Ripple.Median = circ_median(rippleUniPhase);
-                phaseInfo{uni}.Ripple.R_Length = circ_r(rippleUniPhase);
-                [phaseInfo{uni}.Ripple.AngDev, phaseInfo{uni}.Ripple.CircStDev] = circ_std(rippleUniPhase);
-                [phaseInfo{uni}.Ripple.R_Test(1), phaseInfo{uni}.Ripple.R_Test(2)] = circ_rtest(rippleUniPhase);
+                for b = 2:length(bands)
+                    curUniPhase = tetHilbVals{b}(logical(tetUnitTSs{uni}));
+                    phaseInfo{uni}.(bands{b}).Mean = circ_mean(curUniPhase);
+%                     phaseInfo{uni}.(bands{b}).Median = circ_median(curUniPhase);
+                    phaseInfo{uni}.(bands{b}).R_Length = circ_r(curUniPhase);
+                    [phaseInfo{uni}.(bands{b}).AngDev, phaseInfo{uni}.(bands{b}).CircStDev] = circ_std(curUniPhase);
+                    [phaseInfo{uni}.(bands{b}).R_Test(1), phaseInfo{uni}.(bands{b}).R_Test(2)] = circ_rtest(curUniPhase);
+                end
             end
             unitSummary = struct('UnitName', tetUnitIDs, 'Spike_Features', meanTemplateValues,...
                 'TemplateMean', meanTemplates, 'TemplateStDev', stdTemplates,...
                 'Mean_SpikeRate', meanSpkRt, 'Spike_Width', spkWdth,...
-                'Spike_Phase_Relations', phaseInfo);
-            statMatrix = [tsVect(1:end-1),tetRawLFP, tetRawHilb,...
-                tetThetaLFP, tetThetaHilb,...
-                tetAlphaLFP, tetAlphaHilb,...
-                tetLowBetaLFP, tetLowBetaHilb,...
-                tetBetaLFP, tetBetaHilb,...
-                tetLowGammaLFP, tetLowGammaHilb,...
-                tetHighGammaLFP, tetHighGammaHilb,...
-                tetRipLFP, tetRipHilb,...
+                'LFPlimits', bandLims, 'Spike_Phase_Relations', phaseInfo);
+            smBandMatrix = nan(length(tetLFPvals{1}), length(bands)*2);
+            lfpColIDs = cell(1,length(bands)*2);
+            bandNum = 0;
+            for b = 1:2:length(bands)*2
+                bandNum = bandNum+1;
+                smBandMatrix(:,b) = tetLFPvals{bandNum};
+                lfpColIDs{b} = sprintf('%s_LFP_%s', curTet, bands{bandNum});
+                smBandMatrix(:,b+1) = tetHilbVals{bandNum};
+                lfpColIDs{b+1} = sprintf('%s_LFP_%s_HilbVals', curTet, bands{bandNum});
+            end
+                
+            statMatrix = [tsVect(1:end-1),...
+                smBandMatrix...
                 cell2mat(tetUnitTSs)]; %#ok<NASGU>
-            statMatrixColIDs = [{'TimeBin'}, {[curTet '_LFP_Raw']}, {[curTet '_LFP_Raw_HilbVals']},...
-                {[curTet '_LFP_Theta']}, {[curTet '_LFP_Theta_HilbVals']},...
-                {[curTet '_LFP_Alpha']}, {[curTet '_LFP_Alpha_HilbVals']},...
-                {[curTet '_LFP_LowBeta']}, {[curTet '_LFP_LowBeta_HilbVals']},...
-                {[curTet '_LFP_Beta']}, {[curTet '_LFP_Beta_HilbVals']},...
-                {[curTet '_LFP_LowGamma']}, {[curTet '_LFP_LowGamma_HilbVals']},...
-                {[curTet '_LFP_HighGamma']}, {[curTet '_LFP_HighGamma_HilbVals']},...
-                {[curTet '_LFP_Ripple']}, {[curTet '_LFP_Ripple_HilbVals']},...
+            statMatrixColIDs = [{'TimeBin'},...
+                lfpColIDs,...
                 tetUnitIDs]; %#ok<NASGU>
 
             if curNumUnis >= 1
