@@ -36,13 +36,37 @@ for u = 1:length(unitInfo)
     unitInfo(u).Directory = cd;
 end
 
-instFRgauss = gausswin(200);
+% Window size for sliding window analyses
+slideWindowSize = 200;
+
+% Gaussian used for calculating instantaneous firing rate
+instFRgauss = gausswin(slideWindowSize);
 instFRgauss = instFRgauss/(length(instFRgauss)*mode(diff(behavMatrix(:,1))));
+
+% Phase bins used for LFP phase analysis
+phaseBins = linspace(-pi,pi,4);
+phaseBinLabels = cell(1,length(phaseBins)-1);
+for p = 1:length(phaseBins)-1
+    if phaseBins(p)<0
+        lowBin = sprintf('neg%1.0g', abs(phaseBins(p)));
+    else
+        lowBin = sprintf('%1.0g', phaseBins(p));
+    end
+    if phaseBins(p+1)<0
+        highBin = sprintf('neg%1.0g', abs(phaseBins(p+1)));
+    else
+        highBin = sprintf('%1.0g', phaseBins(p+1));
+    end
+    phaseBinLabels{p} = sprintf('From_%s_to_%s', lowBin, highBin);
+end
+
+% Number of permutations for chance distribution estimation
+numPerms = 100;
 
 %% Analysis #1: Examine Average Evoked activity during trial periods
 fprintf('Starting Analysis #1....');
 preTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.5 0], 'PokeIn');
-preTrialEnsemble = ExtractTrialData_SM(preTrialBehavMatrix, ensembleMatrix(:,2:end)); %#ok<IDISVAR,*NODEF>
+preTrialEnsemble = ExtractTrialData_SM(preTrialBehavMatrix, ensembleMatrix(:,2:end)); %#ok<*NODEF>
 
 earlyTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0.5], 'PokeIn');
 earlyTrialEnsemble = ExtractTrialData_SM(earlyTrialBehavMatrix, ensembleMatrix(:,2:end)); 
@@ -189,14 +213,14 @@ fprintf('Starting Analysis 2....');
 preEarlyTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 0.6], 'PokeIn');
 preEarlyTrialEnsemble = cell2mat(reshape(ExtractTrialData_SM(preEarlyTrialBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(preEarlyTrialBehavMatrix)])); 
 
-[posFvalsEarlyTrial, ~, posFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), curPosVect(prevOdrLog), 200, 500);
-[odrFvalsEarlyTrial, ~, odrFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), prevOdrVect(prevOdrLog), 200, 500);
+[posFvalsEarlyTrial, ~, posFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), curPosVect(prevOdrLog), slideWindowSize, numPerms);
+[odrFvalsEarlyTrial, ~, odrFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), prevOdrVect(prevOdrLog), slideWindowSize, numPerms);
 
 latePostTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.6 0.6], 'PokeOut');
 latePostTrialEnsemble = cell2mat(reshape(ExtractTrialData_SM(latePostTrialBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(latePostTrialBehavMatrix)])); 
 
-[posFvalsLateTrial, ~, posFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), nextPosVect(nextPosLog), 200, 500);
-[odrFvalsLateTrial, ~, odrFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), curOdrVect(nextPosLog), 200, 500);
+[posFvalsLateTrial, ~, posFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), nextPosVect(nextPosLog), slideWindowSize, numPerms);
+[odrFvalsLateTrial, ~, odrFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), curOdrVect(nextPosLog), slideWindowSize, numPerms);
 
 for u = 1:length(unitIDs)
     unitInfo(u).InformationContent.EarlyTrial.CurrPosRaw = posFvalsEarlyTrial(:,u);
@@ -214,7 +238,46 @@ fprintf('Completed\n');
 %% Analysis #3: Examine Information content by LFP Phase
 % This is best done using the epoch extraction script since it give lfp
 % phase values.
+[earlyUnitEpoch, earlyUnitIDs, earlyLfpEpoch, earlyLfpIDs, ~, ~, earlyTrialInfo] = EpochExtraction_SM('PokeIn', -0.9, 0.6, 'org', 'TiUTr', 'lfpBand', 'All', 'lfpData', 'Phase');
 
+currPos = nan(size(earlyTrialInfo,1),1);
+prevOdr = nan(size(earlyTrialInfo,1),1);
+for trl = 2:size(earlyTrialInfo,1)
+    if earlyTrialInfo(trl,1)==1 && (earlyTrialInfo(trl,3) - earlyTrialInfo(trl-1,3) == 1)
+        currPos(trl) = earlyTrialInfo(trl,3);
+        prevOdr(trl) = earlyTrialInfo(trl-1,4);
+    end
+end
+earlyEpochEnsmbl = earlyUnitEpoch(:,:,~isnan(currPos));
+earlyEpochLFP = earlyLfpEpoch(:,:,~isnan(currPos));
+currPos = currPos(~isnan(currPos));
+prevOdr = prevOdr(~isnan(prevOdr));     
+
+lfpIDparts = cellfun(@(b)[b(1);b(3)], cellfun(@(a)strsplit(a, '_'), earlyLfpIDs, 'uniformoutput', 0), 'uniformoutput', 0);
+lfpIDparts = [lfpIDparts{:}];
+bands = unique(lfpIDparts(2,:));
+bands(strcmp(bands, 'Raw')) = [];
+
+for uni = 1:length(earlyUnitIDs)
+    curUniInfoSpot = strcmp(earlyUnitIDs{uni}, {unitInfo.UnitName});
+    curTet = earlyUnitIDs{uni}(1:regexp(earlyUnitIDs{uni}, '-')-1);
+    curTetEpochLog = logical(earlyEpochEnsmbl(:,uni,:));
+    for band = 1:length(bands)
+        curTetLFPepoch = earlyEpochLFP(:,strcmp(bands{band},lfpIDparts(2,:)) & strcmp(curTet,lfpIDparts(1,:)),:);
+        curTetSpikePhaseVals = nan(size(curTetEpochLog));
+        curTetSpikePhaseVals(curTetEpochLog) = curTetLFPepoch(curTetEpochLog);
+        for phase = 1:length(phaseBins)-1
+            curTetCurBandPhaseBinSpikes = double(curTetSpikePhaseVals>=phaseBins(phase) & curTetSpikePhaseVals<phaseBins(phase+1));
+            [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosRaw, ~,...
+                unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosZ] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, currPos, slideWindowSize, numPerms);
+            
+            [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorRaw, ~,...
+                unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorZ] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, prevOdr, slideWindowSize, numPerms);
+        end
+    end
+end          
+   
+%%%%%%%%% Add in late trial stuff here when there's the luxury of time.
 %% Analysis #4: Create Aligned BehavMatrix for the whole trial
 fprintf('Starting Analysis 4....');
 wholeTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 2], 'PokeIn');
@@ -242,7 +305,7 @@ fprintf('Completed\n');
 %% Save Analyses
 for u = 1:length(unitIDs)
     fprintf('Saving %s UniSum', unitInfo(u).UnitName);
-    uniSum = unitInfo(u);
+    uniSum = unitInfo(u); %#ok<NASGU>
     save(sprintf('%s_UniSum.mat', unitInfo(u).UnitName), 'uniSum');
     fprintf('... SAVED!\n');
 end
