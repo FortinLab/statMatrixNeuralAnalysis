@@ -205,6 +205,69 @@ for u = 1:length(unitIDs)
     unitInfo(u).TrialEpochStats.LateTrial.NxtPos = [frLateTrialNxtPosTable{2,5}, frLateTrialNxtPosTable{2,6}];
     [~,frPostTrialNxtPosTable,~] = anova1(curUniPstTrlActivity(nextPosLog), nextPosVect(nextPosLog), 'off');
     unitInfo(u).TrialEpochStats.PostTrial.NxtPos = [frPostTrialNxtPosTable{2,5}, frPostTrialNxtPosTable{2,6}];  
+    
+    % Evaluate Unit Epoch Correlations
+    curEpochCorrTable = nan(6);
+    curEpochSigTable = nan(6);
+    %   Pre-Trial lead
+    [peR, peS] = corrcoef(curUniPreTrialActivity(correctTrialLog), curUniErlyTrialActivity(correctTrialLog));
+    curEpochCorrTable(1,2) = peR(2);
+    curEpochSigTable(1,2) = peS(2);
+    [plR, plS] = corrcoef(curUniPreTrialActivity(correctTrialLog), curUniLtTrialActivity(correctTrialLog));
+    curEpochCorrTable(1,3) = plR(2);
+    curEpochSigTable(1,3) = plS(2);
+    [ppR, ppS] = corrcoef(curUniPreTrialActivity(correctTrialLog), curUniPstTrlActivity(correctTrialLog));
+    curEpochCorrTable(1,4) = ppR(2);
+    curEpochSigTable(1,4) = ppS(2);
+    [prR, prS] = corrcoef(curUniPreTrialActivity(correctTrialLog), curUniRwdTrlActivity(correctTrialLog));
+    curEpochCorrTable(1,5) = prR(2);
+    curEpochSigTable(1,5) = prS(2);
+    [peR, peS] = corrcoef(curUniPreTrialActivity(~correctTrialLog), curUniErrTrlActivity(~correctTrialLog));
+    curEpochCorrTable(1,6) = peR(2);
+    curEpochSigTable(1,6) = peS(2);
+    %   Early-Trial lead
+    [elR, elS] = corrcoef(curUniErlyTrialActivity(correctTrialLog), curUniLtTrialActivity(correctTrialLog));
+    curEpochCorrTable(2,3) = elR(2);
+    curEpochSigTable(2,3) = elS(2);
+    [epR, epS] = corrcoef(curUniErlyTrialActivity(correctTrialLog), curUniPstTrlActivity(correctTrialLog));
+    curEpochCorrTable(2,4) = epR(2);
+    curEpochSigTable(2,4) = epS(2);
+    [erR, erS] = corrcoef(curUniErlyTrialActivity(correctTrialLog), curUniRwdTrlActivity(correctTrialLog));
+    curEpochCorrTable(2,5) = erR(2);
+    curEpochSigTable(2,5) = erS(2);
+    [eeR, eeS] = corrcoef(curUniErlyTrialActivity(~correctTrialLog), curUniErrTrlActivity(~correctTrialLog));
+    curEpochCorrTable(2,6) = eeR(2);
+    curEpochSigTable(2,6) = eeS(2);
+    %   Late-Trial lead
+    [lpR, lpS] = corrcoef(curUniLtTrialActivity(correctTrialLog), curUniPstTrlActivity(correctTrialLog));  
+    curEpochCorrTable(3,4) = lpR(2);
+    curEpochSigTable(3,4) = lpS(2);
+    [lrR, lrS] = corrcoef(curUniLtTrialActivity(correctTrialLog), curUniRwdTrlActivity(correctTrialLog));
+    curEpochCorrTable(3,5) = lrR(2);
+    curEpochSigTable(3,5) = lrS(2);
+    [leR, leS] = corrcoef(curUniLtTrialActivity(~correctTrialLog), curUniErrTrlActivity(~correctTrialLog));
+    curEpochCorrTable(3,6) = leR(2);
+    curEpochSigTable(3,6) = leS(2);
+    %   Post-Trial lead
+    [prR, prS] = corrcoef(curUniPstTrlActivity(correctTrialLog), curUniRwdTrlActivity(correctTrialLog));
+    curEpochCorrTable(4,5) = prR(2);
+    curEpochSigTable(4,5) = prS(2);
+    [peR, peS] = corrcoef(curUniPstTrlActivity(~correctTrialLog), curUniErrTrlActivity(~correctTrialLog));
+    curEpochCorrTable(4,6) = peR(2);
+    curEpochSigTable(4,6) = peS(2);
+    
+    unitInfo(u).TrialEpochStats.EpochCorrelations.R = curEpochCorrTable;
+    unitInfo(u).TrialEpochStats.EpochCorrelations.P = curEpochSigTable;
+    figure; imagesc(curEpochCorrTable, [-1 1]);
+    set(gca, 'xticklabels', {'Pre-Trial', 'Early-Trial', 'Late-Trial', 'Post-Trial', 'Reward', 'Error'}, 'XTickLabelRotation', 45,...
+        'yticklabels', {'Pre-Trial', 'Early-Trial', 'Late-Trial', 'Post-Trial', 'Reward', 'Error'});
+    hold on;
+    [col,row] = ind2sub([6 6],find(curEpochSigTable<0.0001));
+    for roW = 1:length(row)
+        text(row, col, '*', 'horizontalalignment', 'center', 'fontweight', 'bold', 'fontsize', 50, 'color', 'white')
+    end
+    colormap jet
+    drawnow
 end   
 
 fprintf('Completed\n');
