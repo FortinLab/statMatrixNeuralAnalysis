@@ -63,9 +63,9 @@ for uni = 1:size(unitSMmatrix,2)
     curUniEnsmblBinned = nan(size(unitSMmatrix,1), size(unitSMmatrix,3));
     for trl = 1:size(unitSMmatrix,3)                                                                        % Data is binned on a per trial basis
         if mod(dataBinSize,2)==0
-            curUniEnsmblBinned(:,trl) = conv(unitSMmatrix(:,u,trl)', ones(1,dataBinSize+1), 'same');        % I like to convolve with an odd number
+            curUniEnsmblBinned(:,trl) = conv(unitSMmatrix(:,uni,trl)', ones(1,dataBinSize+1), 'same');        % I like to convolve with an odd number
         else
-            curUniEnsmblBinned(:,trl) = conv(unitSMmatrix(:,u,trl)', ones(1,dataBinSize), 'same');        
+            curUniEnsmblBinned(:,trl) = conv(unitSMmatrix(:,uni,trl)', ones(1,dataBinSize), 'same');        
         end
     end
     curUniEnsmblBinned(timeTrimmingMask,:) = [];
@@ -92,8 +92,8 @@ for uni = 1:size(unitSMmatrix,2)
         chanceFvals(isnan(chanceFvals(:,uni,r)),uni,r) = 1;                                                 % Replace any NaN values with 1 (chance F-ratio value)
     end
     for t = 1:size(curUniEnsmblBinned,1)
-        zUnifFvect = zscore([rawFvals(t,u), reshape(chanceFvals(t,u,:), [1 size(chanceFvals,3)])]);
-        zNormFvals(t,u) = zUnifFvect(1);
+        zUnifFvect = zscore([rawFvals(t,uni), reshape(chanceFvals(t,uni,:), [1 size(chanceFvals,3)])]);
+        zNormFvals(t,uni) = zUnifFvect(1);
     end
     toc
 end
