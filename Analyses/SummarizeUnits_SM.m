@@ -40,8 +40,9 @@ instFRgauss = gausswin(200);
 instFRgauss = instFRgauss/(length(instFRgauss)*mode(diff(behavMatrix(:,1))));
 
 %% Analysis #1: Examine Average Evoked activity during trial periods
+fprintf('Starting Analysis #1....');
 preTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.5 0], 'PokeIn');
-preTrialEnsemble = ExtractTrialData_SM(preTrialBehavMatrix, ensembleMatrix(:,2:end)); %#ok<*NODEF>
+preTrialEnsemble = ExtractTrialData_SM(preTrialBehavMatrix, ensembleMatrix(:,2:end)); %#ok<IDISVAR,*NODEF>
 
 earlyTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0.5], 'PokeIn');
 earlyTrialEnsemble = ExtractTrialData_SM(earlyTrialBehavMatrix, ensembleMatrix(:,2:end)); 
@@ -68,8 +69,10 @@ trialPosition = [preTrialBehavMatrix.Position];
 transInLog = false(size(correctTrialLog));
 prevOdrLog = false(size(correctTrialLog));
 prevOdrVect = nan(size(correctTrialLog));
+curPosVect = nan(size(correctTrialLog));
 nextPosLog = false(size(correctTrialLog));
 nextPosVect = nan(size(correctTrialLog));
+curOdrVect = nan(size(correctTrialLog));
 for trl = 2:length(transInLog)
     if ~inSeqTrialLog(trl-1) && trialPosition(trl)-trialPosition(trl-1)==1
         transInLog(trl) = true;
@@ -78,10 +81,12 @@ for trl = 2:length(transInLog)
         if trialPosition(trl)-trialPosition(trl-1)==1
             prevOdrLog(trl) = true;
             prevOdrVect(trl) = trialOdor(trl-1);
+            curPosVect(trl) = trialPosition(trl);
         end
         if trl+1<length(transInLog) && correctTrialLog(trl+1) && trialPosition(trl+1)-trialPosition(trl)==1
             nextPosLog(trl) = true;
             nextPosVect(trl) = trialPosition(trl+1);
+            curOdrVect(trl) = trialOdor(trl);
         end
     end
 end
@@ -178,34 +183,40 @@ for u = 1:length(unitIDs)
     unitInfo(u).TrialEpochStats.PostTrial.NxtPos = [frPostTrialNxtPosTable{2,5}, frPostTrialNxtPosTable{2,6}];  
 end   
 
+fprintf('Completed\n');
 %% Analysis #2: F-Ratio over time... position vs odor during different periods
+fprintf('Starting Analysis 2....');
 preEarlyTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 0.6], 'PokeIn');
 preEarlyTrialEnsemble = cell2mat(reshape(ExtractTrialData_SM(preEarlyTrialBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(preEarlyTrialBehavMatrix)])); 
 
-[posFvalsEarlyTrial, ~, posFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,correctTrialLog), trialPosition(correctTrialLog), 200, 500);
-[odrFvalsEarlyTrial, ~, odrFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,correctTrialLog), trialOdor(correctTrialLog), 200, 500);
+[posFvalsEarlyTrial, ~, posFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), curPosVect(prevOdrLog), 200, 500);
+[odrFvalsEarlyTrial, ~, odrFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), prevOdrVect(prevOdrLog), 200, 500);
 
 latePostTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.6 0.6], 'PokeOut');
 latePostTrialEnsemble = cell2mat(reshape(ExtractTrialData_SM(latePostTrialBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(latePostTrialBehavMatrix)])); 
 
-[posFvalsLateTrial, ~, posFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,correctTrialLog), trialPosition(correctTrialLog), 200, 500);
-[odrFvalsLateTrial, ~, odrFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,correctTrialLog), trialOdor(correctTrialLog), 200, 500);
+[posFvalsLateTrial, ~, posFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), nextPosVect(nextPosLog), 200, 500);
+[odrFvalsLateTrial, ~, odrFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), curOdrVect(nextPosLog), 200, 500);
 
 for u = 1:length(unitIDs)
-    unitInfo(u).InformationContent.EarlyTrial.PositionRaw = posFvalsEarlyTrial(:,u);
-    unitInfo(u).InformationContent.EarlyTrial.PositionZ = posFvalsEarlyTrialZ(:,u);
-    unitInfo(u).InformationContent.EarlyTrial.OdorRaw = odrFvalsEarlyTrial(:,u);
-    unitInfo(u).InformationContent.EarlyTrial.OdorZ = odrFvalsEarlyTrialZ(:,u);
+    unitInfo(u).InformationContent.EarlyTrial.CurrPosRaw = posFvalsEarlyTrial(:,u);
+    unitInfo(u).InformationContent.EarlyTrial.CurrPosZ = posFvalsEarlyTrialZ(:,u);
+    unitInfo(u).InformationContent.EarlyTrial.PrevOdorRaw = odrFvalsEarlyTrial(:,u);
+    unitInfo(u).InformationContent.EarlyTrial.PrevOdorZ = odrFvalsEarlyTrialZ(:,u);
     
-    unitInfo(u).InformationContent.LateTrial.PositionRaw = posFvalsLateTrial(:,u);
-    unitInfo(u).InformationContent.LateTrial.PositionZ = posFvalsLateTrialZ(:,u);
-    unitInfo(u).InformationContent.LateTrial.OdorRaw = odrFvalsLateTrial(:,u);
-    unitInfo(u).InformationContent.LateTrial.OdorZ = odrFvalsLateTrialZ(:,u);
+    unitInfo(u).InformationContent.LateTrial.NextPosRaw = posFvalsLateTrial(:,u);
+    unitInfo(u).InformationContent.LateTrial.NextPosZ = posFvalsLateTrialZ(:,u);
+    unitInfo(u).InformationContent.LateTrial.CurOdorRaw = odrFvalsLateTrial(:,u);
+    unitInfo(u).InformationContent.LateTrial.CurOdorZ = odrFvalsLateTrialZ(:,u);
 end
 
+fprintf('Completed\n');
 %% Analysis #3: Examine Information content by LFP Phase
+% This is best done using the epoch extraction script since it give lfp
+% phase values.
 
 %% Analysis #4: Create Aligned BehavMatrix for the whole trial
+fprintf('Starting Analysis 4....');
 wholeTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 2], 'PokeIn');
 wholeTrialEnsemble = cell2mat(reshape(ExtractTrialData_SM(wholeTrialBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(wholeTrialBehavMatrix)])); 
 
@@ -227,9 +238,11 @@ for u = 1:length(unitIDs)
     unitInfo(u).WholeTrial.FiringRate = curUniTrlFR;
     unitInfo(u).WholeTrial.Rasters = curUniTrlRstr;
 end
-
+fprintf('Completed\n');
 %% Save Analyses
 for u = 1:length(unitIDs)
-    uniSummary = unitInfo(u);
-    save(sprintf('%s_UniSum.mat', unitInfo(u).UnitName), 'uniSummary');
+    fprintf('Saving %s UniSum', unitInfo(u).UnitName);
+    uniSum = unitInfo(u);
+    save(sprintf('%s_UniSum.mat', unitInfo(u).UnitName), 'uniSum');
+    fprintf('... SAVED!\n');
 end
