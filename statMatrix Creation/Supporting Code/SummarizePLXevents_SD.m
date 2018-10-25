@@ -458,7 +458,7 @@ for trl = 1:size(odorPresSsn,1)
         tempPokeDur = trialPokeDurations(1);
         tempPokeNum = 1;
         while tempPokeDur<bufferPeriod(trl)
-            if trialInterPokeIntervals(tempPokeNum)>bufferDuration
+            if trialInterPokeIntervals(tempPokeNum)>bufferDuration(trl)
                 if plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 0
                     break
                 elseif plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 1
