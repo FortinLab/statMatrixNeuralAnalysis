@@ -58,7 +58,7 @@ zNormFvals = nan(size(unitSMmatrix,1)-(dataBinSize), size(unitSMmatrix,2));
 
 %% Run things
 for uni = 1:size(unitSMmatrix,2)
-    tic
+%     tic
     % First bin the spike counts to speed up calculations below
     curUniEnsmblBinned = nan(size(unitSMmatrix,1), size(unitSMmatrix,3));
     for trl = 1:size(unitSMmatrix,3)                                                                        % Data is binned on a per trial basis
@@ -95,7 +95,7 @@ for uni = 1:size(unitSMmatrix,2)
         zUnifFvect = zscore([rawFvals(t,uni), reshape(chanceFvals(t,uni,:), [1 size(chanceFvals,3)])]);
         zNormFvals(t,uni) = zUnifFvect(1);
     end
-    toc
+%     toc
 end
 
     
