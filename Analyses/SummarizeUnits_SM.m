@@ -276,21 +276,37 @@ fprintf('Starting Analysis 2....');
 preEarlyTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 0.6], 'PokeIn');
 preEarlyTrialEnsemble = cell2mat(reshape(ExtractTrialData_SM(preEarlyTrialBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(preEarlyTrialBehavMatrix)])); 
 
-[posFvalsEarlyTrial, ~, posFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), curPosVect(prevOdrLog), slideWindowSize, numPerms);
-[odrFvalsEarlyTrial, ~, odrFvalsEarlyTrialZ] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), prevOdrVect(prevOdrLog), slideWindowSize, numPerms);
+eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
+trialTimeBins = ExtractTrialData_SM(preEarlyTrialBehavMatrix, behavMatrix(:,1));
+eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
+eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
+frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
+earlyTimeBins = eventTimeBins{frstNonMptTrl};
+
+[posFvalsEarlyTrial, ~, posFvalsEarlyTrialZ, earlyTimeBins] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), curPosVect(prevOdrLog), slideWindowSize, numPerms, earlyTimeBins);
+[odrFvalsEarlyTrial, ~, odrFvalsEarlyTrialZ,~] = UnitFvalCalcPERM_SM(preEarlyTrialEnsemble(:,:,prevOdrLog), prevOdrVect(prevOdrLog), slideWindowSize, numPerms, earlyTimeBins);
 
 latePostTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.6 0.6], 'PokeOut');
 latePostTrialEnsemble = cell2mat(reshape(ExtractTrialData_SM(latePostTrialBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(latePostTrialBehavMatrix)])); 
 
-[posFvalsLateTrial, ~, posFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), nextPosVect(nextPosLog), slideWindowSize, numPerms);
-[odrFvalsLateTrial, ~, odrFvalsLateTrialZ] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), curOdrVect(nextPosLog), slideWindowSize, numPerms);
+eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeOut');
+trialTimeBins = ExtractTrialData_SM(latePostTrialBehavMatrix, behavMatrix(:,1));
+eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
+eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
+frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
+lateTimeBins = eventTimeBins{frstNonMptTrl};
+
+[posFvalsLateTrial, ~, posFvalsLateTrialZ, lateTimeBins] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), nextPosVect(nextPosLog), slideWindowSize, numPerms, lateTimeBins);
+[odrFvalsLateTrial, ~, odrFvalsLateTrialZ,~] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), curOdrVect(nextPosLog), slideWindowSize, numPerms, lateTimeBins);
 
 for u = 1:length(unitIDs)
+    unitInfo(u).InformationContent.EarlyTrial.TimeBins = earlyTimeBins;
     unitInfo(u).InformationContent.EarlyTrial.CurrPosRaw = posFvalsEarlyTrial(:,u);
     unitInfo(u).InformationContent.EarlyTrial.CurrPosZ = posFvalsEarlyTrialZ(:,u);
     unitInfo(u).InformationContent.EarlyTrial.PrevOdorRaw = odrFvalsEarlyTrial(:,u);
     unitInfo(u).InformationContent.EarlyTrial.PrevOdorZ = odrFvalsEarlyTrialZ(:,u);
     
+    unitInfo(u).InformationContent.LateTrial.TimeBins = lateTimeBins;
     unitInfo(u).InformationContent.LateTrial.NextPosRaw = posFvalsLateTrial(:,u);
     unitInfo(u).InformationContent.LateTrial.NextPosZ = posFvalsLateTrialZ(:,u);
     unitInfo(u).InformationContent.LateTrial.CurOdorRaw = odrFvalsLateTrial(:,u);
