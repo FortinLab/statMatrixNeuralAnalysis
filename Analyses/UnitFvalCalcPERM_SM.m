@@ -1,4 +1,4 @@
-function [rawFvals, chanceFvals, zNormFvals] = UnitFvalCalcPERM_SM(unitSMmatrix, idVect, dataBinSize, numPerms)
+function [rawFvals, chanceFvals, zNormFvals, trimmedTimeBins] = UnitFvalCalcPERM_SM(unitSMmatrix, idVect, dataBinSize, numPerms, timeBins)
 %% UnitFvalCalcPERM
 %   Uses a sliding window analysis to evaluate how well the activity for
 %   each unit is accounted for by the identity of the trial it was recorded
@@ -51,6 +51,7 @@ else
     timeTrimmingMask(size(unitSMmatrix,1)-(halfBin):end) = true;
 end
 timeTrimmingMask(1:halfBin) = true;
+trimmedTimeBins = timeBins(timeTrimmingMask);
 %% Set up outputs
 rawFvals = nan(size(unitSMmatrix,1)-(dataBinSize), size(unitSMmatrix,2));
 chanceFvals = nan(size(unitSMmatrix,1)-(dataBinSize), size(unitSMmatrix,2), numPerms);
