@@ -327,16 +327,16 @@ ltTimeBins = eventTimeBins{frstNonMptTrl};
 
 for u = 1:length(unitIDs)
     unitInfo(u).InformationContent.TrialPokeIn.TimeBins = trialPokeInTimeBins;
-    unitInfo(u).InformationContent.TrialPokeIn.CurrPosRaw = posFvalsPokeInTrial(:,u);
-    unitInfo(u).InformationContent.TrialPokeIn.CurrPosZ = posFvalsPokeInTrialZ(:,u);
-    unitInfo(u).InformationContent.TrialPokeIn.PrevOdorRaw = odrFvalsPokeInTrial(:,u);
-    unitInfo(u).InformationContent.TrialPokeIn.PrevOdorZ = odrFvalsPokeInTrialZ(:,u);
+    unitInfo(u).InformationContent.TrialPokeIn.PosRaw = posFvalsPokeInTrial(:,u);
+    unitInfo(u).InformationContent.TrialPokeIn.PosZ = posFvalsPokeInTrialZ(:,u);
+    unitInfo(u).InformationContent.TrialPokeIn.OdorRaw = odrFvalsPokeInTrial(:,u);
+    unitInfo(u).InformationContent.TrialPokeIn.OdorZ = odrFvalsPokeInTrialZ(:,u);
     
     unitInfo(u).InformationContent.TrialPokeOut.TimeBins = trialPokeOutTimeBins;
-    unitInfo(u).InformationContent.TrialPokeOut.CurrPosRaw = posFvalsPokeOutTrial(:,u);
-    unitInfo(u).InformationContent.TrialPokeOut.CurrPosZ = posFvalsPokeOutTrialZ(:,u);
-    unitInfo(u).InformationContent.TrialPokeOut.PrevOdorRaw = odrFvalsPokeOutTrial(:,u);
-    unitInfo(u).InformationContent.TrialPokeOut.PrevOdorZ = odrFvalsPokeOutTrialZ(:,u);
+    unitInfo(u).InformationContent.TrialPokeOut.PosRaw = posFvalsPokeOutTrial(:,u);
+    unitInfo(u).InformationContent.TrialPokeOut.PosZ = posFvalsPokeOutTrialZ(:,u);
+    unitInfo(u).InformationContent.TrialPokeOut.OdorRaw = odrFvalsPokeOutTrial(:,u);
+    unitInfo(u).InformationContent.TrialPokeOut.OdorZ = odrFvalsPokeOutTrialZ(:,u);
     
     unitInfo(u).InformationContent.EarlyTrial.TimeBins = earlyTimeBins;
     unitInfo(u).InformationContent.EarlyTrial.CurrPosRaw = posFvalsEarlyTrial(:,u);
