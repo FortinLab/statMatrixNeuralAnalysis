@@ -61,7 +61,7 @@ for p = 1:length(phaseBins)-1
 end
 
 % Number of permutations for chance distribution estimation
-numPerms = 10;
+numPerms = 100;
 
 %% Analysis #1: Examine Average Evoked activity during trial periods
 fprintf('Starting Analysis #1....');
@@ -355,46 +355,46 @@ fprintf('Completed\n');
 %% Analysis #3: Examine Information content by LFP Phase
 % This is best done using the epoch extraction script since it give lfp
 % phase values.
-% [earlyUnitEpoch, earlyUnitIDs, earlyLfpEpoch, earlyLfpIDs, ~, rlyTimeBins, earlyTrialInfo] = EpochExtraction_SM('PokeIn', -0.9, 0.6, 'org', 'TiUTr', 'lfpBand', 'All', 'lfpData', 'Phase');
-% 
-% currPos = nan(size(earlyTrialInfo,1),1);
-% prevOdr = nan(size(earlyTrialInfo,1),1);
-% for trl = 2:size(earlyTrialInfo,1)
-%     if earlyTrialInfo(trl,1)==1 && (earlyTrialInfo(trl,3) - earlyTrialInfo(trl-1,3) == 1)
-%         currPos(trl) = earlyTrialInfo(trl,3);
-%         prevOdr(trl) = earlyTrialInfo(trl-1,4);
-%     end
-% end
-% earlyEpochEnsmbl = earlyUnitEpoch(:,:,~isnan(currPos));
-% earlyEpochLFP = earlyLfpEpoch(:,:,~isnan(currPos));
-% currPos = currPos(~isnan(currPos));
-% prevOdr = prevOdr(~isnan(prevOdr));     
-% 
-% lfpIDparts = cellfun(@(b)[b(1);b(3)], cellfun(@(a)strsplit(a, '_'), earlyLfpIDs, 'uniformoutput', 0), 'uniformoutput', 0);
-% lfpIDparts = [lfpIDparts{:}];
-% bands = unique(lfpIDparts(2,:));
-% bands(strcmp(bands, 'Raw')) = [];
-% 
-% for uni = 1:length(earlyUnitIDs)
-%     curUniInfoSpot = strcmp(earlyUnitIDs{uni}, {unitInfo.UnitName});
-%     curTet = earlyUnitIDs{uni}(1:regexp(earlyUnitIDs{uni}, '-')-1);
-%     curTetEpochLog = logical(earlyEpochEnsmbl(:,uni,:));
-%     for band = 1:length(bands)
-%         curTetLFPepoch = earlyEpochLFP(:,strcmp(bands{band},lfpIDparts(2,:)) & strcmp(curTet,lfpIDparts(1,:)),:);
-%         curTetSpikePhaseVals = nan(size(curTetEpochLog));
-%         curTetSpikePhaseVals(curTetEpochLog) = curTetLFPepoch(curTetEpochLog);
-%         for phase = 1:length(phaseBins)-1
-%             curTetCurBandPhaseBinSpikes = double(curTetSpikePhaseVals>=phaseBins(phase) & curTetSpikePhaseVals<phaseBins(phase+1));
-%             [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosRaw, ~,...
-%                 unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosZ,earlyTimeBins] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, currPos, slideWindowSize, numPerms, rlyTimeBins);
-%             
-%             [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorRaw, ~,...
-%                 unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorZ,~] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, prevOdr, slideWindowSize, numPerms, rlyTimeBins);
-%             unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.TimeBins = earlyTimeBins;
-%         end
-%     end
-% end          
-%    
+[earlyUnitEpoch, earlyUnitIDs, earlyLfpEpoch, earlyLfpIDs, ~, rlyTimeBins, earlyTrialInfo] = EpochExtraction_SM('PokeIn', -0.9, 0.6, 'org', 'TiUTr', 'lfpBand', 'All', 'lfpData', 'Phase');
+
+currPos = nan(size(earlyTrialInfo,1),1);
+prevOdr = nan(size(earlyTrialInfo,1),1);
+for trl = 2:size(earlyTrialInfo,1)
+    if earlyTrialInfo(trl,1)==1 && (earlyTrialInfo(trl,3) - earlyTrialInfo(trl-1,3) == 1)
+        currPos(trl) = earlyTrialInfo(trl,3);
+        prevOdr(trl) = earlyTrialInfo(trl-1,4);
+    end
+end
+earlyEpochEnsmbl = earlyUnitEpoch(:,:,~isnan(currPos));
+earlyEpochLFP = earlyLfpEpoch(:,:,~isnan(currPos));
+currPos = currPos(~isnan(currPos));
+prevOdr = prevOdr(~isnan(prevOdr));     
+
+lfpIDparts = cellfun(@(b)[b(1);b(3)], cellfun(@(a)strsplit(a, '_'), earlyLfpIDs, 'uniformoutput', 0), 'uniformoutput', 0);
+lfpIDparts = [lfpIDparts{:}];
+bands = unique(lfpIDparts(2,:));
+bands(strcmp(bands, 'Raw')) = [];
+
+for uni = 1:length(earlyUnitIDs)
+    curUniInfoSpot = strcmp(earlyUnitIDs{uni}, {unitInfo.UnitName});
+    curTet = earlyUnitIDs{uni}(1:regexp(earlyUnitIDs{uni}, '-')-1);
+    curTetEpochLog = logical(earlyEpochEnsmbl(:,uni,:));
+    for band = 1:length(bands)
+        curTetLFPepoch = earlyEpochLFP(:,strcmp(bands{band},lfpIDparts(2,:)) & strcmp(curTet,lfpIDparts(1,:)),:);
+        curTetSpikePhaseVals = nan(size(curTetEpochLog));
+        curTetSpikePhaseVals(curTetEpochLog) = curTetLFPepoch(curTetEpochLog);
+        for phase = 1:length(phaseBins)-1
+            curTetCurBandPhaseBinSpikes = double(curTetSpikePhaseVals>=phaseBins(phase) & curTetSpikePhaseVals<phaseBins(phase+1));
+            [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosRaw, ~,...
+                unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosZ,earlyTimeBins] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, currPos, slideWindowSize, numPerms, rlyTimeBins);
+            
+            [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorRaw, ~,...
+                unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorZ,~] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, prevOdr, slideWindowSize, numPerms, rlyTimeBins);
+            unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.TimeBins = earlyTimeBins;
+        end
+    end
+end          
+   
 %%%%%%%%% Add in late trial stuff here when there's the luxury of time.
 %% Analysis #4: Create Aligned BehavMatrix for the whole trial
 fprintf('Starting Analysis 4....');
