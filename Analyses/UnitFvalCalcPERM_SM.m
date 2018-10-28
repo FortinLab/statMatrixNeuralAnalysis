@@ -51,7 +51,7 @@ else
     timeTrimmingMask(size(unitSMmatrix,1)-(halfBin):end) = true;
 end
 timeTrimmingMask(1:halfBin) = true;
-trimmedTimeBins = timeBins(timeTrimmingMask);
+trimmedTimeBins = timeBins(~timeTrimmingMask);
 %% Set up outputs
 rawFvals = nan(size(unitSMmatrix,1)-(dataBinSize), size(unitSMmatrix,2));
 chanceFvals = nan(size(unitSMmatrix,1)-(dataBinSize), size(unitSMmatrix,2), numPerms);
