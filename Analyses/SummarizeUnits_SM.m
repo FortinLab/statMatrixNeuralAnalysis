@@ -61,7 +61,7 @@ for p = 1:length(phaseBins)-1
 end
 
 % Number of permutations for chance distribution estimation
-numPerms = 100;
+numPerms = 10;
 
 %% Analysis #1: Examine Average Evoked activity during trial periods
 fprintf('Starting Analysis #1....');
@@ -273,6 +273,32 @@ end
 fprintf('Completed\n');
 %% Analysis #2: F-Ratio over time... position vs odor during different periods
 fprintf('Starting Analysis 2....');
+trialPokeInBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 2.1], 'PokeIn');
+trialPokeInEnsemble = cell2mat(reshape(ExtractTrialData_SM(trialPokeInBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(trialPokeInBehavMatrix)])); 
+
+eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
+trialTimeBins = ExtractTrialData_SM(trialPokeInBehavMatrix, behavMatrix(:,1));
+eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
+eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
+frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
+trlPokeInTimeBins = eventTimeBins{frstNonMptTrl};
+
+[posFvalsPokeInTrial, ~, posFvalsPokeInTrialZ, trialPokeInTimeBins] = UnitFvalCalcPERM_SM(trialPokeInEnsemble(:,:,correctTrialLog), trialPosition(correctTrialLog), slideWindowSize, numPerms, trlPokeInTimeBins);
+[odrFvalsPokeInTrial, ~, odrFvalsPokeInTrialZ,~] = UnitFvalCalcPERM_SM(trialPokeInEnsemble(:,:,correctTrialLog), trialOdor(correctTrialLog), slideWindowSize, numPerms, trlPokeInTimeBins);
+
+trialPokeOutBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-1.9 1.1], 'PokeOut');
+trialPokeOutEnsemble = cell2mat(reshape(ExtractTrialData_SM(trialPokeOutBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(trialPokeOutBehavMatrix)])); 
+
+eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeOut');
+trialTimeBins = ExtractTrialData_SM(trialPokeOutBehavMatrix, behavMatrix(:,1));
+eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
+eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
+frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
+trlPokeOutTimeBins = eventTimeBins{frstNonMptTrl};
+
+[posFvalsPokeOutTrial, ~, posFvalsPokeOutTrialZ, trialPokeOutTimeBins] = UnitFvalCalcPERM_SM(trialPokeOutEnsemble(:,:,correctTrialLog), trialPosition(correctTrialLog), slideWindowSize, numPerms, trlPokeOutTimeBins);
+[odrFvalsPokeOutTrial, ~, odrFvalsPokeOutTrialZ,~] = UnitFvalCalcPERM_SM(trialPokeOutEnsemble(:,:,correctTrialLog), trialOdor(correctTrialLog), slideWindowSize, numPerms, trlPokeOutTimeBins);
+
 preEarlyTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 0.6], 'PokeIn');
 preEarlyTrialEnsemble = cell2mat(reshape(ExtractTrialData_SM(preEarlyTrialBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(preEarlyTrialBehavMatrix)])); 
 
@@ -300,6 +326,18 @@ ltTimeBins = eventTimeBins{frstNonMptTrl};
 [odrFvalsLateTrial, ~, odrFvalsLateTrialZ,~] = UnitFvalCalcPERM_SM(latePostTrialEnsemble(:,:,nextPosLog), curOdrVect(nextPosLog), slideWindowSize, numPerms, ltTimeBins);
 
 for u = 1:length(unitIDs)
+    unitInfo(u).InformationContent.TrialPokeIn.TimeBins = trialPokeInTimeBins;
+    unitInfo(u).InformationContent.TrialPokeIn.CurrPosRaw = posFvalsPokeInTrial(:,u);
+    unitInfo(u).InformationContent.TrialPokeIn.CurrPosZ = posFvalsPokeInTrialZ(:,u);
+    unitInfo(u).InformationContent.TrialPokeIn.PrevOdorRaw = odrFvalsPokeInTrial(:,u);
+    unitInfo(u).InformationContent.TrialPokeIn.PrevOdorZ = odrFvalsPokeInTrialZ(:,u);
+    
+    unitInfo(u).InformationContent.TrialPokeOut.TimeBins = trialPokeOutTimeBins;
+    unitInfo(u).InformationContent.TrialPokeOut.CurrPosRaw = posFvalsPokeOutTrial(:,u);
+    unitInfo(u).InformationContent.TrialPokeOut.CurrPosZ = posFvalsPokeOutTrialZ(:,u);
+    unitInfo(u).InformationContent.TrialPokeOut.PrevOdorRaw = odrFvalsPokeOutTrial(:,u);
+    unitInfo(u).InformationContent.TrialPokeOut.PrevOdorZ = odrFvalsPokeOutTrialZ(:,u);
+    
     unitInfo(u).InformationContent.EarlyTrial.TimeBins = earlyTimeBins;
     unitInfo(u).InformationContent.EarlyTrial.CurrPosRaw = posFvalsEarlyTrial(:,u);
     unitInfo(u).InformationContent.EarlyTrial.CurrPosZ = posFvalsEarlyTrialZ(:,u);
@@ -317,69 +355,91 @@ fprintf('Completed\n');
 %% Analysis #3: Examine Information content by LFP Phase
 % This is best done using the epoch extraction script since it give lfp
 % phase values.
-[earlyUnitEpoch, earlyUnitIDs, earlyLfpEpoch, earlyLfpIDs, ~, rlyTimeBins, earlyTrialInfo] = EpochExtraction_SM('PokeIn', -0.9, 0.6, 'org', 'TiUTr', 'lfpBand', 'All', 'lfpData', 'Phase');
-
-currPos = nan(size(earlyTrialInfo,1),1);
-prevOdr = nan(size(earlyTrialInfo,1),1);
-for trl = 2:size(earlyTrialInfo,1)
-    if earlyTrialInfo(trl,1)==1 && (earlyTrialInfo(trl,3) - earlyTrialInfo(trl-1,3) == 1)
-        currPos(trl) = earlyTrialInfo(trl,3);
-        prevOdr(trl) = earlyTrialInfo(trl-1,4);
-    end
-end
-earlyEpochEnsmbl = earlyUnitEpoch(:,:,~isnan(currPos));
-earlyEpochLFP = earlyLfpEpoch(:,:,~isnan(currPos));
-currPos = currPos(~isnan(currPos));
-prevOdr = prevOdr(~isnan(prevOdr));     
-
-lfpIDparts = cellfun(@(b)[b(1);b(3)], cellfun(@(a)strsplit(a, '_'), earlyLfpIDs, 'uniformoutput', 0), 'uniformoutput', 0);
-lfpIDparts = [lfpIDparts{:}];
-bands = unique(lfpIDparts(2,:));
-bands(strcmp(bands, 'Raw')) = [];
-
-for uni = 1:length(earlyUnitIDs)
-    curUniInfoSpot = strcmp(earlyUnitIDs{uni}, {unitInfo.UnitName});
-    curTet = earlyUnitIDs{uni}(1:regexp(earlyUnitIDs{uni}, '-')-1);
-    curTetEpochLog = logical(earlyEpochEnsmbl(:,uni,:));
-    for band = 1:length(bands)
-        curTetLFPepoch = earlyEpochLFP(:,strcmp(bands{band},lfpIDparts(2,:)) & strcmp(curTet,lfpIDparts(1,:)),:);
-        curTetSpikePhaseVals = nan(size(curTetEpochLog));
-        curTetSpikePhaseVals(curTetEpochLog) = curTetLFPepoch(curTetEpochLog);
-        for phase = 1:length(phaseBins)-1
-            curTetCurBandPhaseBinSpikes = double(curTetSpikePhaseVals>=phaseBins(phase) & curTetSpikePhaseVals<phaseBins(phase+1));
-            [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosRaw, ~,...
-                unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosZ,earlyTimeBins] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, currPos, slideWindowSize, numPerms, rlyTimeBins);
-            
-            [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorRaw, ~,...
-                unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorZ,~] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, prevOdr, slideWindowSize, numPerms, rlyTimeBins);
-            unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.TimeBins = earlyTimeBins;
-        end
-    end
-end          
-   
+% [earlyUnitEpoch, earlyUnitIDs, earlyLfpEpoch, earlyLfpIDs, ~, rlyTimeBins, earlyTrialInfo] = EpochExtraction_SM('PokeIn', -0.9, 0.6, 'org', 'TiUTr', 'lfpBand', 'All', 'lfpData', 'Phase');
+% 
+% currPos = nan(size(earlyTrialInfo,1),1);
+% prevOdr = nan(size(earlyTrialInfo,1),1);
+% for trl = 2:size(earlyTrialInfo,1)
+%     if earlyTrialInfo(trl,1)==1 && (earlyTrialInfo(trl,3) - earlyTrialInfo(trl-1,3) == 1)
+%         currPos(trl) = earlyTrialInfo(trl,3);
+%         prevOdr(trl) = earlyTrialInfo(trl-1,4);
+%     end
+% end
+% earlyEpochEnsmbl = earlyUnitEpoch(:,:,~isnan(currPos));
+% earlyEpochLFP = earlyLfpEpoch(:,:,~isnan(currPos));
+% currPos = currPos(~isnan(currPos));
+% prevOdr = prevOdr(~isnan(prevOdr));     
+% 
+% lfpIDparts = cellfun(@(b)[b(1);b(3)], cellfun(@(a)strsplit(a, '_'), earlyLfpIDs, 'uniformoutput', 0), 'uniformoutput', 0);
+% lfpIDparts = [lfpIDparts{:}];
+% bands = unique(lfpIDparts(2,:));
+% bands(strcmp(bands, 'Raw')) = [];
+% 
+% for uni = 1:length(earlyUnitIDs)
+%     curUniInfoSpot = strcmp(earlyUnitIDs{uni}, {unitInfo.UnitName});
+%     curTet = earlyUnitIDs{uni}(1:regexp(earlyUnitIDs{uni}, '-')-1);
+%     curTetEpochLog = logical(earlyEpochEnsmbl(:,uni,:));
+%     for band = 1:length(bands)
+%         curTetLFPepoch = earlyEpochLFP(:,strcmp(bands{band},lfpIDparts(2,:)) & strcmp(curTet,lfpIDparts(1,:)),:);
+%         curTetSpikePhaseVals = nan(size(curTetEpochLog));
+%         curTetSpikePhaseVals(curTetEpochLog) = curTetLFPepoch(curTetEpochLog);
+%         for phase = 1:length(phaseBins)-1
+%             curTetCurBandPhaseBinSpikes = double(curTetSpikePhaseVals>=phaseBins(phase) & curTetSpikePhaseVals<phaseBins(phase+1));
+%             [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosRaw, ~,...
+%                 unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.CurrPosZ,earlyTimeBins] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, currPos, slideWindowSize, numPerms, rlyTimeBins);
+%             
+%             [unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorRaw, ~,...
+%                 unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.PrevOdorZ,~] = UnitFvalCalcPERM_SM(curTetCurBandPhaseBinSpikes, prevOdr, slideWindowSize, numPerms, rlyTimeBins);
+%             unitInfo(curUniInfoSpot).InformationContentSpikePhase.(bands{band}).(phaseBinLabels{phase}).EarlyTrial.TimeBins = earlyTimeBins;
+%         end
+%     end
+% end          
+%    
 %%%%%%%%% Add in late trial stuff here when there's the luxury of time.
 %% Analysis #4: Create Aligned BehavMatrix for the whole trial
 fprintf('Starting Analysis 4....');
-wholeTrialBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 2], 'PokeIn');
-wholeTrialEnsemble = cell2mat(reshape(ExtractTrialData_SM(wholeTrialBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(wholeTrialBehavMatrix)])); 
+wholeTrialPokeInBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.8 2], 'PokeIn');
+wholeTrialPokeInEnsemble = cell2mat(reshape(ExtractTrialData_SM(wholeTrialPokeInBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(wholeTrialPokeInBehavMatrix)])); 
 
 eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
-trialTimeBins = ExtractTrialData_SM(wholeTrialBehavMatrix, behavMatrix(:,1));
+trialTimeBins = ExtractTrialData_SM(wholeTrialPokeInBehavMatrix, behavMatrix(:,1));
 eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
 eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
 frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
 eventTimeBins = eventTimeBins{frstNonMptTrl};
 
 for u = 1:length(unitIDs)
-    curUniTrlFR = nan(size(wholeTrialEnsemble,1), size(wholeTrialEnsemble,3));
-    curUniTrlRstr = cell(1,size(wholeTrialEnsemble,3));
+    curUniTrlFR = nan(size(wholeTrialPokeInEnsemble,1), size(wholeTrialPokeInEnsemble,3));
+    curUniTrlRstr = cell(1,size(wholeTrialPokeInEnsemble,3));
     for trl = 1:size(curUniTrlFR,2)
-        curUniTrlFR(:,trl) = conv(wholeTrialEnsemble(:,u,trl), instFRgauss, 'same');
-        curUniTrlRstr{trl} = eventTimeBins(logical(wholeTrialEnsemble(:,u,trl)));
+        curUniTrlFR(:,trl) = conv(wholeTrialPokeInEnsemble(:,u,trl), instFRgauss, 'same');
+        curUniTrlRstr{trl} = eventTimeBins(logical(wholeTrialPokeInEnsemble(:,u,trl)));
     end
-    unitInfo(u).WholeTrial.TimeBins = eventTimeBins;
-    unitInfo(u).WholeTrial.FiringRate = curUniTrlFR;
-    unitInfo(u).WholeTrial.Rasters = curUniTrlRstr;
+    unitInfo(u).WholeTrial.PokeIn.TimeBins = eventTimeBins;
+    unitInfo(u).WholeTrial.PokeIn.FiringRate = curUniTrlFR;
+    unitInfo(u).WholeTrial.PokeIn.Rasters = curUniTrlRstr;
+end
+
+wholeTrialPokeOutBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-1.8 1], 'PokeOut');
+wholeTrialPokeOutEnsemble = cell2mat(reshape(ExtractTrialData_SM(wholeTrialPokeOutBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(wholeTrialPokeOutBehavMatrix)])); 
+
+eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeOut');
+trialTimeBins = ExtractTrialData_SM(wholeTrialPokeOutBehavMatrix, behavMatrix(:,1));
+eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
+eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
+frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
+eventTimeBins = eventTimeBins{frstNonMptTrl};
+
+for u = 1:length(unitIDs)
+    curUniTrlFR = nan(size(wholeTrialPokeOutEnsemble,1), size(wholeTrialPokeOutEnsemble,3));
+    curUniTrlRstr = cell(1,size(wholeTrialPokeOutEnsemble,3));
+    for trl = 1:size(curUniTrlFR,2)
+        curUniTrlFR(:,trl) = conv(wholeTrialPokeOutEnsemble(:,u,trl), instFRgauss, 'same');
+        curUniTrlRstr{trl} = eventTimeBins(logical(wholeTrialPokeOutEnsemble(:,u,trl)));
+    end
+    unitInfo(u).WholeTrial.PokeOut.TimeBins = eventTimeBins;
+    unitInfo(u).WholeTrial.PokeOut.FiringRate = curUniTrlFR;
+    unitInfo(u).WholeTrial.PokeOut.Rasters = curUniTrlRstr;
 end
 fprintf('Completed\n');
 %% Save Analyses
