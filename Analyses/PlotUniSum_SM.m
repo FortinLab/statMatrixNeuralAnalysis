@@ -422,40 +422,48 @@ for u = 1:length(uniSumFiles)
     set(pokeInFRplot, 'ylim', [0 max(yLimVals)]);
         
     %% Plot F-Ratios for Position and Odor
-    pokeInTrialTimeBins = uniSum.WholeTrial.PokeIn.TimeBins;
+        pokeInTrialTimeBins = uniSum.WholeTrial.PokeIn.TimeBins;
     pokeInPosFZval = uniSum.InformationContent.TrialPokeIn.PosZ;
+    pokeInPosSANSAfZval = uniSum.InformationContent.TrialPokeInSANSA.PosZ;
     pokeInOdrFZval = uniSum.InformationContent.TrialPokeIn.OdorZ;
-    
+    pokeInOdrSANSAfZval = uniSum.InformationContent.TrialPokeOutSANSA.PosZ;
+
     pokeInFZplot = axes('Position', [0.325 0.1 0.3 0.25]);
-    plot(pokeInTrialTimeBins, pokeInPosFZval, 'linewidth', 2, 'color', 'k');
+    plot(pokeInTrialTimeBins, pokeInPosFZval, 'linewidth', 1, 'color', 'k');
     hold on;
-    plot(pokeInTrialTimeBins, pokeInOdrFZval, 'linewidth', 2, 'color', 'r');
+    plot(pokeInTrialTimeBins, pokeInOdrFZval, 'linewidth', 1, 'color', 'r');
+    plot(pokeInTrialTimeBins, pokeInPosSANSAfZval, 'linewidth', 1, 'color', 'k', 'linestyle', ':');
+    plot(pokeInTrialTimeBins, pokeInOdrSANSAfZval, 'linewidth', 1, 'color', 'r', 'linestyle', ':');
     line(pokeInFZplot,[min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], [0 0], 'linewidth', 1.5, 'color', 'k');
     line(pokeInFZplot,[min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], [2 2], 'linewidth', 0.5, 'color', 'k', 'linestyle', '-.');
     line(pokeInFZplot,[min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], [-2 -2], 'linewidth', 0.5, 'color', 'k', 'linestyle', '-.');
     set(pokeInFZplot, 'xlim', [min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], 'color', 'none');
-%     pokeInFZplot.XAxis.Color = 'none';
+    %     pokeInFZplot.XAxis.Color = 'none';
     ylabel({'\bfF-Ratios(z-norm)'});
     box off
-    
+
     pokeOutTrialTimeBins = uniSum.WholeTrial.PokeOut.TimeBins;
     pokeOutPosFZval = uniSum.InformationContent.TrialPokeOut.PosZ;
+    pokeOutPosSANSAfZval = uniSum.InformationContent.TrialPokeOutSANSA.PosZ;
     pokeOutOdrFZval = uniSum.InformationContent.TrialPokeOut.OdorZ;
-    
+    pokeOutOdrSANSAfZval = uniSum.InformationContent.TrialPokeOutSANSA.OdorZ;
+
     pokeOutFZplot = axes('Position', [0.65 0.1 0.3 0.25]);
-    posPlot = plot(pokeOutTrialTimeBins, pokeOutPosFZval, 'linewidth', 2, 'color', 'k');
+    posPlot = plot(pokeOutTrialTimeBins, pokeOutPosFZval, 'linewidth', 1, 'color', 'k');
     hold on;
-    odrPlot = plot(pokeOutTrialTimeBins, pokeOutOdrFZval, 'linewidth', 2, 'color', 'r');   
+    odrPlot = plot(pokeOutTrialTimeBins, pokeOutOdrFZval, 'linewidth', 1, 'color', 'r');
+    posSANSAplot = plot(pokeOutTrialTimeBins, pokeOutPosSANSAfZval, 'linewidth', 1, 'color', 'k', 'linestyle', ':');
+    odrSANSAplot = plot(pokeOutTrialTimeBins, pokeOutOdrSANSAfZval, 'linewidth', 1, 'color', 'r', 'linestyle', ':');
     line(pokeOutFZplot,[min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], [0 0], 'linewidth', 1.5, 'color', 'k');
     line(pokeOutFZplot,[min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], [2 2], 'linewidth', 0.5, 'color', 'k', 'linestyle', '-.');
     line(pokeOutFZplot,[min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], [-2 -2], 'linewidth', 0.5, 'color', 'k', 'linestyle', '-.');
     set(pokeOutFZplot, 'xlim', [min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], 'color', 'none');
-%     pokeOutFZplot.XAxis.Color = 'none';
+    %     pokeOutFZplot.XAxis.Color = 'none';
     box off
-    leg = legend([posPlot, odrPlot], 'Position', 'Odor');
+    leg = legend([posPlot, odrPlot, posSANSAplot, odrSANSAplot], 'Position', 'Odor', 'Pos(sansA)', 'Odor(sansA)');
     leg.Orientation = 'horizontal';
     legendPos = leg.Position;
-    leg.Position = [0.65 0.35 legendPos(3) legendPos(4)]; 
+    leg.Position = [0.4 0.35 legendPos(3) legendPos(4)];
     
     linkaxes([pokeInFZplot, pokeOutFZplot], 'y');
     line(pokeInFZplot,[0 0], get(pokeInFZplot, 'ylim'), 'color','k');
