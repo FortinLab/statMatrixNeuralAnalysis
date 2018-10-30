@@ -86,8 +86,8 @@ for u = 1:length(uniSumFiles)
     
     %% Plot Mean Evoked Responses
     meanFR = axes('Position', [0.05 0.625 0.135 0.15]);
-    BarPlotErrorbars([uniSum.TrialEpochFRs.PreTrialFR(1), uniSum.TrialEpochFRs.EarlyTrialFR(1), uniSum.TrialEpochFRs.LateTrialFR(1), uniSum.TrialEpochFRs.PostTrialFR(1)],...
-        [uniSum.TrialEpochFRs.PreTrialFR(2), uniSum.TrialEpochFRs.EarlyTrialFR(2), uniSum.TrialEpochFRs.LateTrialFR(2), uniSum.TrialEpochFRs.PostTrialFR(2)]);
+    BarPlotErrorbars([uniSum.TrialEpochFRs.PreTrialFRSANSA(1), uniSum.TrialEpochFRs.EarlyTrialFRSANSA(1), uniSum.TrialEpochFRs.LateTrialFRSANSA(1), uniSum.TrialEpochFRs.PostTrialFRSANSA(1)],...
+        [uniSum.TrialEpochFRs.PreTrialFRSANSA(2), uniSum.TrialEpochFRs.EarlyTrialFRSANSA(2), uniSum.TrialEpochFRs.LateTrialFRSANSA(2), uniSum.TrialEpochFRs.PostTrialFRSANSA(2)]);
     axis(meanFR, 'tight');
     set(meanFR, 'xlim', [0 5], 'xtick', 1:4, 'xticklabel', {'Pre-Trial', 'Early-Trial', 'Late-Trial', 'Post-Trial'}, 'XTickLabelRotation', 45, 'color', 'none');
     box off
@@ -96,8 +96,8 @@ for u = 1:length(uniSumFiles)
     ylabel('\bf\fontsize{10}Mean Firing Rate');
     
     fdbkFR = axes('Position', [0.2 0.625 0.06 0.15]);
-    BarPlotErrorbars([uniSum.TrialEpochFRs.RewardFR(1), uniSum.TrialEpochFRs.ErrorFR(1)],...
-        [uniSum.TrialEpochFRs.RewardFR(2), uniSum.TrialEpochFRs.ErrorFR(2)]);
+    BarPlotErrorbars([uniSum.TrialEpochFRs.RewardFRSANSA(1), uniSum.TrialEpochFRs.ErrorFRSANSA(1)],...
+        [uniSum.TrialEpochFRs.RewardFRSANSA(2), uniSum.TrialEpochFRs.ErrorFRSANSA(2)]);
     axis(fdbkFR, 'tight');
     set(fdbkFR, 'xlim', [0 3], 'xtick', 1:2, 'xticklabel', {'Reward', 'Error'}, 'XTickLabelRotation', 45, 'color', 'none');
     box off
@@ -109,15 +109,15 @@ for u = 1:length(uniSumFiles)
     set(meanFR, 'ylim', [curYlim(1) curYlim(2)+2]);
     curYlim = get(meanFR, 'ylim');
         
-    if uniSum.TrialEpochStats.TrialEpochsF(2)<newCritF
+    if uniSum.TrialEpochStats.TrialEpochsFSANSA(2)<newCritF
         line(meanFR, [1 4], repmat(curYlim(2)-1, [1 2]), 'color', 'k');
         text(meanFR,2.5, curYlim(2)-1+0.1, '\fontsize{20}\bf*');
     end
-    if uniSum.TrialEpochStats.TrialPeriodsF(2)<newCritF
+    if uniSum.TrialEpochStats.TrialPeriodsFSANSA(2)<newCritF
         line(meanFR, [2 3], repmat(curYlim(2)-2, [1 2]), 'color', 'k');
         text(meanFR, 2.5, curYlim(2)-2+0.1, '\fontsize{20}\bf*');
     end
-    if uniSum.TrialEpochStats.FeedbackF(2)<newCritF
+    if uniSum.TrialEpochStats.FeedbackFSANSA(2)<newCritF
         line(fdbkFR, [1 2], repmat(curYlim(2)-1, [1 2]), 'color', 'k');
         text(fdbkFR, 1.5, curYlim(2)-1+0.1, '\fontsize{20}\bf*');
     end
@@ -152,120 +152,136 @@ for u = 1:length(uniSumFiles)
     
     %% Plot Trial Epoch F-Values
     preTrl = axes('position', [0.05 0.1 0.035 0.15]);    
-    bar(preTrl, 1:4, [uniSum.TrialEpochStats.PreTrial.PrevOdor(1),...
-        uniSum.TrialEpochStats.PreTrial.Odor(1),...
+    bar(preTrl, 1:4, [uniSum.TrialEpochStats.PreTrial.Odor(1),...
+        uniSum.TrialEpochStats.PreTrial.OdorSANSA(1),...
         uniSum.TrialEpochStats.PreTrial.Position(1),...
-        uniSum.TrialEpochStats.PreTrial.NxtPos(1)]);    
+        uniSum.TrialEpochStats.PreTrial.PositionSANSA(1)]);    
     box(preTrl, 'off');
     set(preTrl, 'color', 'none', 'xlim', [0 5], 'xtick', 0.5:3.5,...
-        'xticklabel', {'\fontsize{5}PrvOdr', '\fontsize{5}Odor', '\fontsize{5}Pos', '\fontsize{5}NxtPos'}, 'xticklabelrotation', 45);
+        'xticklabel', {'\fontsize{5}Odor', '\fontsize{5}Odor(-A)', '\fontsize{5}Pos', '\fontsize{5}Pos(-A)'}, 'xticklabelrotation', 45);
     ylabel('\bf\fontsize{10}F-Ratio');
     title(preTrl, 'Pre')
-    if uniSum.TrialEpochStats.PreTrial.PrevOdor(2)<newCritF
-        text(preTrl,1, uniSum.TrialEpochStats.PreTrial.PrevOdor(1)+0.1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
-    end
     if uniSum.TrialEpochStats.PreTrial.Odor(2)<newCritF
-        text(preTrl,2, uniSum.TrialEpochStats.PreTrial.Odor(1)+0.1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+        text(preTrl,1, uniSum.TrialEpochStats.PreTrial.Odor(1)+0.1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    end
+    if uniSum.TrialEpochStats.PreTrial.OdorSANSA(2)<newCritF
+        text(preTrl,2, uniSum.TrialEpochStats.PreTrial.OdorSANSA(1)+0.1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
     if uniSum.TrialEpochStats.PreTrial.Position(2)<newCritF
         text(preTrl,3, uniSum.TrialEpochStats.PreTrial.Position(1)+0.1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
-    if uniSum.TrialEpochStats.PreTrial.NxtPos(2)<newCritF
-        text(preTrl,4, uniSum.TrialEpochStats.PreTrial.NxtPos(1)+0.1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    if uniSum.TrialEpochStats.PreTrial.PositionSANSA(2)<newCritF
+        text(preTrl,4, uniSum.TrialEpochStats.PreTrial.PositionSANSA(1)+0.1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
     
-    rlyTrl = axes('position', [0.0935 0.1 0.035 0.15]);    
-    bar(rlyTrl, 1:4, [uniSum.TrialEpochStats.EarlyTrial.PrevOdor(1),...
-        uniSum.TrialEpochStats.EarlyTrial.Odor(1),...
+    rlyTrl = axes('position', [0.09 0.1 0.035 0.15]);    
+    bar(rlyTrl, 1:4, [uniSum.TrialEpochStats.EarlyTrial.Odor(1),...
+        uniSum.TrialEpochStats.EarlyTrial.OdorSANSA(1),...
         uniSum.TrialEpochStats.EarlyTrial.Position(1),...
-        uniSum.TrialEpochStats.EarlyTrial.NxtPos(1)]);
+        uniSum.TrialEpochStats.EarlyTrial.PositionSANSA(1)]);
     box(rlyTrl, 'off');    
     set(rlyTrl, 'color', 'none', 'xlim', [0 5], 'yticklabels', [], 'xtick', 0.5:3.5,...
-        'xticklabel', {'\fontsize{5}PrvOdr', '\fontsize{5}Odor', '\fontsize{5}Pos', '\fontsize{5}NxtPos'}, 'xticklabelrotation', 45);
+        'xticklabel', {'\fontsize{5}Odor', '\fontsize{5}Odor(-A)', '\fontsize{5}Pos', '\fontsize{5}Pos(-A)'}, 'xticklabelrotation', 45);
     title(rlyTrl, 'Early')
-    if uniSum.TrialEpochStats.EarlyTrial.PrevOdor(2)<newCritF
-        text(rlyTrl,1, uniSum.TrialEpochStats.EarlyTrial.PrevOdor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
-    end
     if uniSum.TrialEpochStats.EarlyTrial.Odor(2)<newCritF
-        text(rlyTrl,2, uniSum.TrialEpochStats.EarlyTrial.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+        text(rlyTrl,1, uniSum.TrialEpochStats.EarlyTrial.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    end
+    if uniSum.TrialEpochStats.EarlyTrial.OdorSANSA(2)<newCritF
+        text(rlyTrl,2, uniSum.TrialEpochStats.EarlyTrial.OdorSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
     if uniSum.TrialEpochStats.EarlyTrial.Position(2)<newCritF
         text(rlyTrl,3, uniSum.TrialEpochStats.EarlyTrial.Position(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
-    if uniSum.TrialEpochStats.EarlyTrial.NxtPos(2)<newCritF
-        text(rlyTrl,4, uniSum.TrialEpochStats.EarlyTrial.NxtPos(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    if uniSum.TrialEpochStats.EarlyTrial.PositionSANSA(2)<newCritF
+        text(rlyTrl,4, uniSum.TrialEpochStats.EarlyTrial.PositionSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
     
-    ltTrl = axes('position', [0.14 0.1 0.035 0.15]);    
-    bar(ltTrl, 1:4, [uniSum.TrialEpochStats.LateTrial.PrevOdor(1),...
-        uniSum.TrialEpochStats.LateTrial.Odor(1),...
+    ltTrl = axes('position', [0.13 0.1 0.035 0.15]);    
+    bar(ltTrl, 1:4, [uniSum.TrialEpochStats.LateTrial.Odor(1),...
+        uniSum.TrialEpochStats.LateTrial.OdorSANSA(1),...
         uniSum.TrialEpochStats.LateTrial.Position(1),...
-        uniSum.TrialEpochStats.LateTrial.NxtPos(1)]);
+        uniSum.TrialEpochStats.LateTrial.PositionSANSA(1)]);
     box(ltTrl, 'off');
     set(ltTrl, 'color', 'none', 'xlim', [0 5], 'yticklabels', [], 'xtick', 0.5:3.5,...
-        'xticklabel', {'\fontsize{5}PrvOdr', '\fontsize{5}Odor', '\fontsize{5}Pos', '\fontsize{5}NxtPos'}, 'xticklabelrotation', 45);
+        'xticklabel', {'\fontsize{5}Odor', '\fontsize{5}Odor(-A)', '\fontsize{5}Pos', '\fontsize{5}Pos(-A)'}, 'xticklabelrotation', 45);
     title(ltTrl, 'Late')     
-    if uniSum.TrialEpochStats.LateTrial.PrevOdor(2)<newCritF
-        text(ltTrl,1, uniSum.TrialEpochStats.LateTrial.PrevOdor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
-    end
     if uniSum.TrialEpochStats.LateTrial.Odor(2)<newCritF
-        text(ltTrl,2, uniSum.TrialEpochStats.LateTrial.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+        text(ltTrl,1, uniSum.TrialEpochStats.LateTrial.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    end
+    if uniSum.TrialEpochStats.LateTrial.OdorSANSA(2)<newCritF
+        text(ltTrl,2, uniSum.TrialEpochStats.LateTrial.OdorSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
     if uniSum.TrialEpochStats.LateTrial.Position(2)<newCritF
         text(ltTrl,3, uniSum.TrialEpochStats.LateTrial.Position(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
-    if uniSum.TrialEpochStats.LateTrial.NxtPos(2)<newCritF
-        text(ltTrl,4, uniSum.TrialEpochStats.LateTrial.NxtPos(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    if uniSum.TrialEpochStats.LateTrial.PositionSANSA(2)<newCritF
+        text(ltTrl,4, uniSum.TrialEpochStats.LateTrial.PositionSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end   
     
-    pstTrl = axes('position', [0.18 0.1 0.035 0.15]);    
-    bar(pstTrl, 1:4, [uniSum.TrialEpochStats.PostTrial.PrevOdor(1),...
-        uniSum.TrialEpochStats.PostTrial.Odor(1),...
+    pstTrl = axes('position', [0.17 0.1 0.035 0.15]);    
+    bar(pstTrl, 1:4, [uniSum.TrialEpochStats.PostTrial.Odor(1),...
+        uniSum.TrialEpochStats.PostTrial.OdorSANSA(1),...
         uniSum.TrialEpochStats.PostTrial.Position(1),...
-        uniSum.TrialEpochStats.PostTrial.NxtPos(1)]);
+        uniSum.TrialEpochStats.PostTrial.PositionSANSA(1)]);
     box(pstTrl, 'off');
     set(pstTrl, 'color', 'none', 'xlim', [0 5], 'yticklabels', [], 'xtick', 0.5:3.5,...
-        'xticklabel', {'\fontsize{5}PrvOdr', '\fontsize{5}Odor', '\fontsize{5}Pos', '\fontsize{5}NxtPos'}, 'xticklabelrotation', 45);    
+        'xticklabel', {'\fontsize{5}Odor', '\fontsize{5}Odor(-A)', '\fontsize{5}Pos', '\fontsize{5}Pos(-A)'}, 'xticklabelrotation', 45);    
     title(pstTrl, 'Post')         
-    if uniSum.TrialEpochStats.PostTrial.PrevOdor(2)<newCritF
-        text(pstTrl,1, uniSum.TrialEpochStats.PostTrial.PrevOdor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
-    end
     if uniSum.TrialEpochStats.PostTrial.Odor(2)<newCritF
-        text(pstTrl,2, uniSum.TrialEpochStats.PostTrial.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+        text(pstTrl,1, uniSum.TrialEpochStats.PostTrial.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    end
+    if uniSum.TrialEpochStats.PostTrial.OdorSANSA(2)<newCritF
+        text(pstTrl,2, uniSum.TrialEpochStats.PostTrial.OdorSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
     if uniSum.TrialEpochStats.PostTrial.Position(2)<newCritF
         text(pstTrl,3, uniSum.TrialEpochStats.PostTrial.Position(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
-    if uniSum.TrialEpochStats.PostTrial.NxtPos(2)<newCritF
-        text(pstTrl,4, uniSum.TrialEpochStats.PostTrial.NxtPos(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    if uniSum.TrialEpochStats.PostTrial.PositionSANSA(2)<newCritF
+        text(pstTrl,4, uniSum.TrialEpochStats.PostTrial.PositionSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end       
     
-    rwd = axes('position', [0.22 0.1 0.02 0.15]);    
-    bar(rwd, 1:2, [uniSum.TrialEpochStats.Reward.Odor(1),...
-        uniSum.TrialEpochStats.Reward.Position(1)]);
+    rwd = axes('position', [0.21 0.1 0.035 0.15]);    
+    bar(rwd, 1:4, [uniSum.TrialEpochStats.Reward.Odor(1),...
+        uniSum.TrialEpochStats.Reward.OdorSANSA(1),...
+        uniSum.TrialEpochStats.Reward.Position(1),...
+        uniSum.TrialEpochStats.Reward.PositionSANSA(1)]);
     box(rwd, 'off');
-    set(rwd, 'color', 'none', 'xlim', [0 3], 'yticklabels', [], 'xtick', 0.5:1.5,...
-        'xticklabel', {'\fontsize{5}Odor', '\fontsize{5}Pos'}, 'xticklabelrotation', 45);            
+    set(rwd, 'color', 'none', 'xlim', [0 5], 'yticklabels', [], 'xtick', 0.5:3.5,...
+        'xticklabel', {'\fontsize{5}Odor', '\fontsize{5}Odor(-A)', '\fontsize{5}Pos', '\fontsize{5}Pos(-A)'}, 'xticklabelrotation', 45);            
     title(rwd, 'Rwd')               
     if uniSum.TrialEpochStats.Reward.Odor(2)<newCritF
         text(rwd,1, uniSum.TrialEpochStats.Reward.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
-    if uniSum.TrialEpochStats.Reward.Position(2)<newCritF
-        text(rwd,2, uniSum.TrialEpochStats.Reward.Position(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    if uniSum.TrialEpochStats.Reward.OdorSANSA(2)<newCritF
+        text(rwd,2, uniSum.TrialEpochStats.Reward.OdorSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
+    if uniSum.TrialEpochStats.Reward.Position(2)<newCritF
+        text(rwd,3, uniSum.TrialEpochStats.Reward.Position(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    end
+    if uniSum.TrialEpochStats.Reward.PositionSANSA(2)<newCritF
+        text(rwd,4, uniSum.TrialEpochStats.Reward.PositionSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    end       
     
-    err = axes('position', [0.25 0.1 0.02 0.15]);    
-    bar(err, 1:2, [uniSum.TrialEpochStats.Error.Odor(1),...
-        uniSum.TrialEpochStats.Error.Position(1)]);
+    err = axes('position', [0.25 0.1 0.035 0.15]);    
+    bar(err, 1:4, [uniSum.TrialEpochStats.Error.Odor(1),...
+        uniSum.TrialEpochStats.Error.OdorSANSA(1),...
+        uniSum.TrialEpochStats.Error.Position(1),...
+        uniSum.TrialEpochStats.Error.PositionSANSA(1)]);
     box(err, 'off'); 
-    set(err, 'color', 'none', 'xlim', [0 3], 'yticklabels', [], 'xtick', 0.5:1.5,...
-        'xticklabel', {'\fontsize{5}Odor', '\fontsize{5}Pos'}, 'xticklabelrotation', 45);            
+    set(err, 'color', 'none', 'xlim', [0 5], 'yticklabels', [], 'xtick', 0.5:1.5,...
+        'xticklabel', {'\fontsize{5}Odor', '\fontsize{5}Odor(-A)', '\fontsize{5}Pos', '\fontsize{5}Pos(-A)'}, 'xticklabelrotation', 45);            
     title(err, 'Err')                           
     if uniSum.TrialEpochStats.Error.Odor(2)<newCritF
         text(err,1, uniSum.TrialEpochStats.Error.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
+    if uniSum.TrialEpochStats.Error.OdorSANSA(2)<newCritF
+        text(err,2, uniSum.TrialEpochStats.Error.OdorSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    end
     if uniSum.TrialEpochStats.Error.Position(2)<newCritF
-        text(err,2, uniSum.TrialEpochStats.Error.Position(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+        text(err,3, uniSum.TrialEpochStats.Error.Position(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+    end
+    if uniSum.TrialEpochStats.Error.PositionSANSA(2)<newCritF
+        text(err,4, uniSum.TrialEpochStats.Error.PositionSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end                   
     
     linkaxes([preTrl, rlyTrl, ltTrl, pstTrl, rwd, err], 'y');
@@ -426,7 +442,7 @@ for u = 1:length(uniSumFiles)
     pokeInPosFZval = uniSum.InformationContent.TrialPokeIn.PosZ;
     pokeInPosSANSAfZval = uniSum.InformationContent.TrialPokeInSANSA.PosZ;
     pokeInOdrFZval = uniSum.InformationContent.TrialPokeIn.OdorZ;
-    pokeInOdrSANSAfZval = uniSum.InformationContent.TrialPokeOutSANSA.PosZ;
+    pokeInOdrSANSAfZval = uniSum.InformationContent.TrialPokeOutSANSA.OdorZ;
 
     pokeInFZplot = axes('Position', [0.325 0.1 0.3 0.25]);
     plot(pokeInTrialTimeBins, pokeInPosFZval, 'linewidth', 1, 'color', 'k');
