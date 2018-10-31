@@ -336,14 +336,14 @@ fprintf('Completed\n');
 %% Analysis #2: F-Ratio over time... position vs odor during different periods
 fprintf('Starting Analysis 2 @%s....', datetime);
 %%% Poke In Aligned
-trialPokeInBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 2.1], 'PokeIn');
-trialPokeInEnsemble = cell2mat(reshape(ExtractTrialData_SM(trialPokeInBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(trialPokeInBehavMatrix)])); 
-eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
-trialTimeBins = ExtractTrialData_SM(trialPokeInBehavMatrix, behavMatrix(:,1));
-eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
-eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
-frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
-trlPokeInTimeBins = eventTimeBins{frstNonMptTrl};
+% trialPokeInBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.9 2.1], 'PokeIn');
+% trialPokeInEnsemble = cell2mat(reshape(ExtractTrialData_SM(trialPokeInBehavMatrix, ensembleMatrix(:,2:end)), [1,1,length(trialPokeInBehavMatrix)])); 
+% eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
+% trialTimeBins = ExtractTrialData_SM(trialPokeInBehavMatrix, behavMatrix(:,1));
+% eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
+% eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
+% frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
+% trlPokeInTimeBins = eventTimeBins{frstNonMptTrl};
 
 % All Correct Trials
 % [posFvalsPokeInTrial, ~, posFvalsPokeInTrialZ, trialPokeInTimeBins] = UnitFvalCalcPERM_SM(trialPokeInEnsemble(:,:,correctTrialLog), trialPosition(correctTrialLog), slideWindowSize, numPerms, trlPokeInTimeBins);
@@ -351,7 +351,7 @@ trlPokeInTimeBins = eventTimeBins{frstNonMptTrl};
 % Sans Odor A
 % [posFvalsPokeInSANSATrial, ~, posFvalsPokeInSANSATrialZ, trialPokeInTimeBins] = UnitFvalCalcPERM_SM(trialPokeInEnsemble(:,:,correctTrialLog & sansaLog), trialPosition(correctTrialLog & sansaLog), slideWindowSize, numPerms, trlPokeInTimeBins);
 % [odrFvalsPokeInSANSATrial, ~, odrFvalsPokeInSANSATrialZ, ~] = UnitFvalCalcPERM_SM(trialPokeInEnsemble(:,:,correctTrialLog & sansaLog), trialOdor(correctTrialLog & sansaLog), slideWindowSize, numPerms, trlPokeInTimeBins);
-[odrFvalsEarlyTrial, ~, odrFvalsEarlyTrialZ, trialPokeInTimeBins] = UnitFvalCalcPERM_SM(trialPokeInEnsemble(:,:,prevOdrLog), prevOdrVect(prevOdrLog), slideWindowSize, numPerms, trlPokeInTimeBins);
+% [prevOdrFvalsPokeIn, ~, prevOdrFvalsPokeInZ, trialPokeInTimeBins] = UnitFvalCalcPERM_SM(trialPokeInEnsemble(:,:,prevOdrLog), prevOdrVect(prevOdrLog), slideWindowSize, numPerms, trlPokeInTimeBins);
 % Sans Odor A All In Sequence
 % [posFvalsPokeInSANSAaisTrial, ~, posFvalsPokeInSANSAaisTrialZ, trialPokeInTimeBins] = UnitFvalCalcPERM_SM(trialPokeInEnsemble(:,:,correctTrialLog & sansaLog & inSeqTrialLog), trialPosition(correctTrialLog & sansaLog & inSeqTrialLog), slideWindowSize, numPerms, trlPokeInTimeBins);
 
@@ -371,7 +371,7 @@ trlPokeOutTimeBins = eventTimeBins{frstNonMptTrl};
 % Sans Odor A
 % [posFvalsPokeOutSANSATrial, ~, posFvalsPokeOutSANSATrialZ, trialPokeOutTimeBins] = UnitFvalCalcPERM_SM(trialPokeOutEnsemble(:,:,correctTrialLog & sansaLog), trialPosition(correctTrialLog & sansaLog), slideWindowSize, numPerms, trlPokeOutTimeBins);
 % [odrFvalsPokeOutSANSATrial, ~, odrFvalsPokeOutSANSATrialZ,~] = UnitFvalCalcPERM_SM(trialPokeOutEnsemble(:,:,correctTrialLog & sansaLog), trialOdor(correctTrialLog & sansaLog), slideWindowSize, numPerms, trlPokeOutTimeBins);
-[odrFvalsLateTrial, ~, odrFvalsLateTrialZ, trialPokeOutTimeBins] = UnitFvalCalcPERM_SM(trialPokeOutEnsemble(:,:,prevOdrLog), curOdrVect(prevOdrLog), slideWindowSize, numPerms, trlPokeOutTimeBins);
+[prevOdrFvalsPokeOut, ~, prevOdrFvalsPokeOutZ, trialPokeOutTimeBins] = UnitFvalCalcPERM_SM(trialPokeOutEnsemble(:,:,prevOdrLog), prevOdrVect(prevOdrLog), slideWindowSize, numPerms, trlPokeOutTimeBins);
 % Sans Odor A All In Sequence
 % [posFvalsPokeOutSANSAaisTrial, ~, posFvalsPokeOutSANSAaisTrialZ, trialPokeOutTimeBins] = UnitFvalCalcPERM_SM(trialPokeOutEnsemble(:,:,correctTrialLog & sansaLog & inSeqTrialLog), trialPosition(correctTrialLog & sansaLog & inSeqTrialLog), slideWindowSize, numPerms, trlPokeOutTimeBins);
 
@@ -385,13 +385,13 @@ for u = 1:length(unitIDs)
 %     unitInfo(u).InformationContent.TrialPokeIn.OdorRaw = odrFvalsPokeInTrial(:,u);
 %     unitInfo(u).InformationContent.TrialPokeIn.OdorZ = odrFvalsPokeInTrialZ(:,u);
     % All correct trials Sans Odor A
-    unitInfo(u).InformationContent.TrialPokeInSANSA.TimeBins = trialPokeInTimeBins;
+%     unitInfo(u).InformationContent.TrialPokeInSANSA.TimeBins = trialPokeInTimeBins;
 %     unitInfo(u).InformationContent.TrialPokeInSANSA.PosRaw = posFvalsPokeInSANSATrial(:,u);
 %     unitInfo(u).InformationContent.TrialPokeInSANSA.PosZ = posFvalsPokeInSANSATrialZ(:,u);
 %     unitInfo(u).InformationContent.TrialPokeInSANSA.OdorRaw = odrFvalsPokeInSANSATrial(:,u);
 %     unitInfo(u).InformationContent.TrialPokeInSANSA.OdorZ = odrFvalsPokeInSANSATrialZ(:,u);  
-    unitInfo(u).InformationContent.TrialPokeInSANSA.PrevOdorRaw = odrFvalsEarlyTrial(:,u);
-    unitInfo(u).InformationContent.TrialPokeInSANSA.PrevOdorZ = odrFvalsEarlyTrialZ(:,u);
+%     unitInfo(u).InformationContent.TrialPokeInSANSA.PrevOdorRaw = prevOdrFvalsPokeIn(:,u);
+%     unitInfo(u).InformationContent.TrialPokeInSANSA.PrevOdorZ = prevOdrFvalsPokeInZ(:,u);
     % All In Sequence Sans Odor A
 %     unitInfo(u).InformationContent.TrialPokeInSANSAais.TimeBins = trialPokeInTimeBins;
 %     unitInfo(u).InformationContent.TrialPokeInSANSAais.PosRaw = posFvalsPokeInSANSAaisTrial(:,u);
@@ -410,8 +410,8 @@ for u = 1:length(unitIDs)
 %     unitInfo(u).InformationContent.TrialPokeOutSANSA.PosZ = posFvalsPokeOutSANSATrialZ(:,u);
 %     unitInfo(u).InformationContent.TrialPokeOutSANSA.OdorRaw = odrFvalsPokeOutSANSATrial(:,u);
 %     unitInfo(u).InformationContent.TrialPokeOutSANSA.OdorZ = odrFvalsPokeOutSANSATrialZ(:,u);
-    unitInfo(u).InformationContent.TrialPokeOutSANSA.PrevOdorRaw = odrFvalsLateTrial(:,u);
-    unitInfo(u).InformationContent.TrialPokeOutSANSA.PrevOdorZ = odrFvalsLateTrialZ(:,u);
+    unitInfo(u).InformationContent.TrialPokeOutSANSA.PrevOdorRaw = prevOdrFvalsPokeOut(:,u);
+    unitInfo(u).InformationContent.TrialPokeOutSANSA.PrevOdorZ = prevOdrFvalsPokeOutZ(:,u);
     % All In Sequence Sans Odor A
 %     unitInfo(u).InformationContent.TrialPokeOutSANSAais.TimeBins = trialPokeOutTimeBins;
 %     unitInfo(u).InformationContent.TrialPokeOutSANSAais.PosRaw = posFvalsPokeOutSANSAaisTrial(:,u);
