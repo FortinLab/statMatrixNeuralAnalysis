@@ -288,6 +288,7 @@ for u = 1:length(uniSumFiles)
     
     %% Plot Trial Rasters Aligned Poke In
     corIStrlLog = uniSum.TrialInfo.InSeqTrialLog & uniSum.TrialInfo.CorrectTrialLog;
+%     corIStrlLog = uniSum.TrialInfo.CorrectTrialLog;
     pokeInTrialTimeBins = uniSum.WholeTrial.PokeIn.TimeBins;
     pokeDur = uniSum.TrialInfo.PokeDuration;
     pokeDur(~corIStrlLog) = [];   
@@ -329,7 +330,7 @@ for u = 1:length(uniSumFiles)
     axis(pokeInScatPlot, 'tight');
     pokeInScatPlot.YAxis.Color = 'none';
     scatter(trlPokeDur, trlPokeDurTrlNum*-1, 20, 'k', '<', 'filled');
-    set(pokeInScatPlot, 'xlim', [min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], 'color', 'none');
+    set(pokeInScatPlot, 'xlim', [min(pokeInTrialTimeBins) 0.5], 'color', 'none');
     line([0 0], get(pokeInScatPlot, 'ylim'), 'color','k');
     title('PokeIn Aligned');
     
@@ -375,7 +376,7 @@ for u = 1:length(uniSumFiles)
     axis(pokeOutScatPlot, 'tight');
     pokeOutScatPlot.YAxis.Color = 'none';
     scatter(trlPokeDur*-1, trlPokeDurTrlNum*-1, 20, 'k', '>', 'filled');
-    set(pokeOutScatPlot, 'xlim', [min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], 'color', 'none');
+    set(pokeOutScatPlot, 'xlim', [-0.5 max(pokeOutTrialTimeBins)], 'color', 'none');
     line([0 0], get(pokeOutScatPlot, 'ylim'), 'color','k');
     title('PokeOut Aligned');
     
@@ -392,19 +393,31 @@ for u = 1:length(uniSumFiles)
     hold on;
     pokeInFR = uniSum.WholeTrial.PokeIn.FiringRate;
     pokeInA = pokeInFR(:,aLog);
-    jbfill(pokeInTrialTimeBins',(mean(pokeInA,2)+std(pokeInA,1,2))', (mean(pokeInA,2)-std(pokeInA,1,2))', [44/255 168/255 224/255], [44/255 168/255 224/255], 0, 0.15);
+    pokeInB = pokeInFR(:,bLog);
+    pokeInC = pokeInFR(:,cLog);
+    pokeInD = pokeInFR(:,dLog);
+    patch(pokeInFRplot, 'XData', [pokeInTrialTimeBins', fliplr(pokeInTrialTimeBins')],...
+        'YData', [(mean(pokeInA,2)+(std(pokeInA,1,2)./sqrt(size(pokeInA,2)-1)))', fliplr((mean(pokeInA,2)-(std(pokeInA,1,2)./sqrt(size(pokeInA,2)-1)))')],...
+        'FaceColor', 'none', 'FaceAlpha', 0.15,...
+        'EdgeColor', [44/255 168/255 224/255]);
+    patch(pokeInFRplot, 'XData', [pokeInTrialTimeBins', fliplr(pokeInTrialTimeBins')],...
+        'YData', [(mean(pokeInB,2)+(std(pokeInB,1,2)./sqrt(size(pokeInB,2)-1)))', fliplr((mean(pokeInB,2)-(std(pokeInB,1,2)./sqrt(size(pokeInB,2)-1)))')],...
+        'FaceColor', 'none', 'FaceAlpha', 0.15,...
+        'EdgeColor', [154/255 133/255 122/255]); 
+    patch(pokeInFRplot, 'XData', [pokeInTrialTimeBins', fliplr(pokeInTrialTimeBins')],...
+        'YData', [(mean(pokeInC,2)+(std(pokeInC,1,2)./sqrt(size(pokeInC,2)-1)))', fliplr((mean(pokeInC,2)-(std(pokeInC,1,2)./sqrt(size(pokeInC,2)-1)))')],...
+        'FaceColor', 'none','FaceAlpha', 0.15,...
+        'EdgeColor', [9/255 161/255 74/255]);
+    patch(pokeInFRplot, 'XData', [pokeInTrialTimeBins', fliplr(pokeInTrialTimeBins')],...
+        'YData', [(mean(pokeInD,2)+(std(pokeInD,1,2)./sqrt(size(pokeInD,2)-1)))', fliplr((mean(pokeInD,2)-(std(pokeInD,1,2)./sqrt(size(pokeInD,2)-1)))')],...
+        'FaceColor', 'none', 'FaceAlpha', 0.15,...
+        'EdgeColor', [128/255 66/255 151/255]);
     hold on;
     plot(pokeInFRplot,pokeInTrialTimeBins, mean(pokeInA,2), 'color', [44/255 168/255 224/255], 'linewidth', 2);
-    pokeInB = pokeInFR(:,bLog);
-    jbfill(pokeInTrialTimeBins',(mean(pokeInB,2)+std(pokeInB,1,2))', (mean(pokeInB,2)-std(pokeInB,1,2))', [154/255 133/255 122/255], [154/255 133/255 122/255], 0, 0.15);
     plot(pokeInFRplot,pokeInTrialTimeBins, mean(pokeInB,2), 'color', [154/255 133/255 122/255], 'linewidth', 2);    
-    pokeInC = pokeInFR(:,cLog);
-    jbfill(pokeInTrialTimeBins',(mean(pokeInC,2)+std(pokeInC,1,2))', (mean(pokeInC,2)-std(pokeInC,1,2))', [9/255 161/255 74/255], [9/255 161/255 74/255], 0, 0.15);
     plot(pokeInFRplot,pokeInTrialTimeBins, mean(pokeInC,2), 'color', [9/255 161/255 74/255], 'linewidth', 2);
-    pokeInD = pokeInFR(:,dLog);
-    jbfill(pokeInTrialTimeBins',(mean(pokeInD,2)+std(pokeInD,1,2))', (mean(pokeInD,2)-std(pokeInD,1,2))', [128/255 66/255 151/255], [128/255 66/255 151/255], 0, 0.15);
     plot(pokeInFRplot,pokeInTrialTimeBins, mean(pokeInD,2), 'color', [128/255 66/255 151/255], 'linewidth', 2);
-    set(pokeInFRplot, 'xlim', [min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], 'color', 'none');
+    set(pokeInFRplot, 'xlim', [min(pokeInTrialTimeBins) 0.5], 'color', 'none');
     line([0 0], get(pokeInFRplot, 'ylim'), 'color','k');
     ylabel('\bfFiring Rate (spk/s)');
         
@@ -413,19 +426,32 @@ for u = 1:length(uniSumFiles)
     hold on;
     pokeOutFR = uniSum.WholeTrial.PokeOut.FiringRate;
     pokeOutA = pokeOutFR(:,aLog);
-    jbfill(pokeOutTrialTimeBins',(mean(pokeOutA,2)+std(pokeOutA,1,2))', (mean(pokeOutA,2)-std(pokeOutA,1,2))', [44/255 168/255 224/255], [44/255 168/255 224/255], 0, 0.15);
-    hold on;
-    aPlot = plot(pokeOutFRplot,pokeOutTrialTimeBins, mean(pokeOutA,2), 'color', [44/255 168/255 224/255], 'linewidth', 2);
-    pokeOutB = pokeOutFR(:,bLog);
-    jbfill(pokeOutTrialTimeBins',(mean(pokeOutB,2)+std(pokeOutB,1,2))', (mean(pokeOutB,2)-std(pokeOutB,1,2))', [154/255 133/255 122/255], [154/255 133/255 122/255], 0, 0.15);
-    bPlot = plot(pokeOutFRplot,pokeOutTrialTimeBins, mean(pokeOutB,2), 'color', [154/255 133/255 122/255], 'linewidth', 2);    
+    pokeOutB = pokeOutFR(:,bLog);   
     pokeOutC = pokeOutFR(:,cLog);
-    jbfill(pokeOutTrialTimeBins',(mean(pokeOutC,2)+std(pokeOutC,1,2))', (mean(pokeOutC,2)-std(pokeOutC,1,2))', [9/255 161/255 74/255], [9/255 161/255 74/255], 0, 0.15);
-    cPlot = plot(pokeOutFRplot,pokeOutTrialTimeBins, mean(pokeOutC,2), 'color', [9/255 161/255 74/255], 'linewidth', 2);
     pokeOutD = pokeOutFR(:,dLog);
-    jbfill(pokeOutTrialTimeBins',(mean(pokeOutD,2)+std(pokeOutD,1,2))', (mean(pokeOutD,2)-std(pokeOutD,1,2))', [128/255 66/255 151/255], [128/255 66/255 151/255], 0, 0.15);
+    
+    hold on;
+    patch(pokeOutFRplot, 'XData', [pokeOutTrialTimeBins', fliplr(pokeOutTrialTimeBins')],...
+        'YData', [(mean(pokeOutA,2)+(std(pokeOutA,1,2)./sqrt(size(pokeOutA,2)-1)))', fliplr((mean(pokeOutA,2)-(std(pokeOutA,1,2)./sqrt(size(pokeOutA,2)-1)))')],...
+        'FaceColor', 'none', 'FaceAlpha', 0.15,...
+        'EdgeColor', [44/255 168/255 224/255]); 
+    patch(pokeOutFRplot, 'XData', [pokeOutTrialTimeBins', fliplr(pokeOutTrialTimeBins')],...
+        'YData', [(mean(pokeOutB,2)+(std(pokeOutB,1,2)./sqrt(size(pokeOutB,2)-1)))', fliplr((mean(pokeOutB,2)-(std(pokeOutB,1,2)./sqrt(size(pokeOutB,2)-1)))')],...
+        'FaceColor', 'none', 'FaceAlpha', 0.15,...
+        'EdgeColor', [154/255 133/255 122/255]); 
+    patch(pokeOutFRplot, 'XData', [pokeOutTrialTimeBins', fliplr(pokeOutTrialTimeBins')],...
+        'YData', [(mean(pokeOutC,2)+(std(pokeOutC,1,2)./sqrt(size(pokeOutC,2)-1)))', fliplr((mean(pokeOutC,2)-(std(pokeOutC,1,2)./sqrt(size(pokeOutC,2)-1)))')],...
+        'FaceColor', 'none','FaceAlpha', 0.15,...
+        'EdgeColor', [9/255 161/255 74/255]);
+    patch(pokeOutFRplot, 'XData', [pokeOutTrialTimeBins', fliplr(pokeOutTrialTimeBins')],...
+        'YData', [(mean(pokeOutD,2)+(std(pokeOutD,1,2)./sqrt(size(pokeOutD,2)-1)))', fliplr((mean(pokeOutD,2)-(std(pokeOutD,1,2)./sqrt(size(pokeOutD,2)-1)))')],...
+        'FaceColor', 'none', 'FaceAlpha', 0.15,...
+        'EdgeColor', [128/255 66/255 151/255]);
+    aPlot = plot(pokeOutFRplot,pokeOutTrialTimeBins, mean(pokeOutA,2), 'color', [44/255 168/255 224/255], 'linewidth', 2);
+    bPlot = plot(pokeOutFRplot,pokeOutTrialTimeBins, mean(pokeOutB,2), 'color', [154/255 133/255 122/255], 'linewidth', 2);
+    cPlot = plot(pokeOutFRplot,pokeOutTrialTimeBins, mean(pokeOutC,2), 'color', [9/255 161/255 74/255], 'linewidth', 2);
     dPlot = plot(pokeOutFRplot,pokeOutTrialTimeBins, mean(pokeOutD,2), 'color', [128/255 66/255 151/255], 'linewidth', 2);
-    set(pokeOutFRplot, 'xlim', [min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], 'color', 'none');
+    set(pokeOutFRplot, 'xlim', [-0.5 max(pokeOutTrialTimeBins)], 'color', 'none');
     line([0 0], get(pokeOutFRplot, 'ylim'), 'color','k');
     pokeOutFRplot.YAxis.Color = 'none';
     leg = legend([aPlot, bPlot, cPlot, dPlot], {'A', 'B', 'C', 'D'});
@@ -438,22 +464,25 @@ for u = 1:length(uniSumFiles)
     set(pokeInFRplot, 'ylim', [0 max(yLimVals)]);
         
     %% Plot F-Ratios for Position and Odor
-        pokeInTrialTimeBins = uniSum.WholeTrial.PokeIn.TimeBins;
+    pokeInTrialTimeBins = uniSum.WholeTrial.PokeIn.TimeBins;
     pokeInPosFZval = uniSum.InformationContent.TrialPokeIn.PosZ;
     pokeInPosSANSAfZval = uniSum.InformationContent.TrialPokeInSANSA.PosZ;
     pokeInOdrFZval = uniSum.InformationContent.TrialPokeIn.OdorZ;
-    pokeInOdrSANSAfZval = uniSum.InformationContent.TrialPokeOutSANSA.OdorZ;
+    pokeInOdrSANSAfZval = uniSum.InformationContent.TrialPokeInSANSA.OdorZ;
+    pokeInPrevOdrSANSAfZval = uniSum.InformationContent.TrialPokeInSANSA.PrevOdorZ;
 
     pokeInFZplot = axes('Position', [0.325 0.1 0.3 0.25]);
     plot(pokeInTrialTimeBins, pokeInPosFZval, 'linewidth', 1, 'color', 'k');
     hold on;
     plot(pokeInTrialTimeBins, pokeInOdrFZval, 'linewidth', 1, 'color', 'r');
     plot(pokeInTrialTimeBins, pokeInPosSANSAfZval, 'linewidth', 1, 'color', 'k', 'linestyle', ':');
+%     hold on;
     plot(pokeInTrialTimeBins, pokeInOdrSANSAfZval, 'linewidth', 1, 'color', 'r', 'linestyle', ':');
+    plot(pokeInTrialTimeBins, pokeInPrevOdrSANSAfZval, 'linewidth', 1, 'color', 'c', 'linestyle', ':');
     line(pokeInFZplot,[min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], [0 0], 'linewidth', 1.5, 'color', 'k');
     line(pokeInFZplot,[min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], [2 2], 'linewidth', 0.5, 'color', 'k', 'linestyle', '-.');
     line(pokeInFZplot,[min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], [-2 -2], 'linewidth', 0.5, 'color', 'k', 'linestyle', '-.');
-    set(pokeInFZplot, 'xlim', [min(pokeInTrialTimeBins) max(pokeInTrialTimeBins)], 'color', 'none');
+    set(pokeInFZplot, 'xlim', [min(pokeInTrialTimeBins) 0.5], 'color', 'none');
     %     pokeInFZplot.XAxis.Color = 'none';
     ylabel({'\bfF-Ratios(z-norm)'});
     box off
@@ -463,20 +492,24 @@ for u = 1:length(uniSumFiles)
     pokeOutPosSANSAfZval = uniSum.InformationContent.TrialPokeOutSANSA.PosZ;
     pokeOutOdrFZval = uniSum.InformationContent.TrialPokeOut.OdorZ;
     pokeOutOdrSANSAfZval = uniSum.InformationContent.TrialPokeOutSANSA.OdorZ;
+    pokeOutPrevOdrSANSAfZval = uniSum.InformationContent.TrialPokeOutSANSA.PrevOdorZ;
 
     pokeOutFZplot = axes('Position', [0.65 0.1 0.3 0.25]);
     posPlot = plot(pokeOutTrialTimeBins, pokeOutPosFZval, 'linewidth', 1, 'color', 'k');
     hold on;
     odrPlot = plot(pokeOutTrialTimeBins, pokeOutOdrFZval, 'linewidth', 1, 'color', 'r');
     posSANSAplot = plot(pokeOutTrialTimeBins, pokeOutPosSANSAfZval, 'linewidth', 1, 'color', 'k', 'linestyle', ':');
+    hold on
     odrSANSAplot = plot(pokeOutTrialTimeBins, pokeOutOdrSANSAfZval, 'linewidth', 1, 'color', 'r', 'linestyle', ':');
+    prevOdrSANSAplot = plot(pokeInTrialTimeBins, pokeOutPrevOdrSANSAfZval, 'linewidth', 1, 'color', 'c', 'linestyle', ':');
     line(pokeOutFZplot,[min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], [0 0], 'linewidth', 1.5, 'color', 'k');
     line(pokeOutFZplot,[min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], [2 2], 'linewidth', 0.5, 'color', 'k', 'linestyle', '-.');
     line(pokeOutFZplot,[min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], [-2 -2], 'linewidth', 0.5, 'color', 'k', 'linestyle', '-.');
-    set(pokeOutFZplot, 'xlim', [min(pokeOutTrialTimeBins) max(pokeOutTrialTimeBins)], 'color', 'none');
-    %     pokeOutFZplot.XAxis.Color = 'none';
+    set(pokeOutFZplot, 'xlim', [-0.5 max(pokeOutTrialTimeBins)], 'color', 'none');
+%         pokeOutFZplot.XAxis.Color = 'none';
     box off
-    leg = legend([posPlot, odrPlot, posSANSAplot, odrSANSAplot], 'Position', 'Odor', 'Pos(sansA)', 'Odor(sansA)');
+    leg = legend([posPlot, odrPlot, posSANSAplot, odrSANSAplot, prevOdrSANSAplot], 'Position', 'Odor', 'Pos(sansA)', 'Odor(sansA)', 'PrevOdor');
+%     leg = legend([posSANSAplot, odrSANSAplot, prevOdrSANSAplot], 'Pos(sansA)', 'Odor(sansA)', 'PrevOdor');
     leg.Orientation = 'horizontal';
     legendPos = leg.Position;
     leg.Position = [0.4 0.35 legendPos(3) legendPos(4)];
@@ -490,7 +523,8 @@ for u = 1:length(uniSumFiles)
     orient(gcf, 'tall');
     orient(gcf, 'landscape');
 %     print
-    print('-fillpage', gcf, '-dpdf', uniSumFiles{u}(1:end-4));
+%     print('-painters', gcf, '-dpdf', uniSumFiles{u}(1:end-4));
+    saveas(gcf, [uniSumFiles{u}(1:end-4) '.png'], 'png');
     close gcf;
 end
     
