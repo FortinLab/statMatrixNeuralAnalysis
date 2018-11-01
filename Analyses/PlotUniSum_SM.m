@@ -523,7 +523,7 @@ for u = 1:length(uniSumFiles)
     orient(gcf, 'tall');
     orient(gcf, 'landscape');
 %     print
-%     print('-painters', gcf, '-dpdf', uniSumFiles{u}(1:end-4));
+    print('-painters', gcf, '-dpdf', uniSumFiles{u}(1:end-4));
     saveas(gcf, [uniSumFiles{u}(1:end-4) '.png'], 'png');
     close gcf;
 end
