@@ -420,9 +420,9 @@ end
 
 fprintf('Completed\n');
 %% Analysis #3: Examine Information content by LFP Phase
-fprintf('Starting Analysis 3 @%s....', datetime);
-% This is best done using the epoch extraction script since it give lfp
-% phase values.
+% fprintf('Starting Analysis 3 @%s....', datetime);
+% % This is best done using the epoch extraction script since it give lfp
+% % phase values.
 % [earlyUnitEpoch, earlyUnitIDs, earlyLfpEpoch, earlyLfpIDs, ~, rlyTimeBins, earlyTrialInfo] = EpochExtraction_SM('PokeIn', -0.9, 0.6, 'org', 'TiUTr', 'lfpBand', 'All', 'lfpData', 'Phase');
 % 
 % currPos = nan(size(earlyTrialInfo,1),1);
@@ -464,7 +464,7 @@ fprintf('Starting Analysis 3 @%s....', datetime);
 % end          
    
 %%%%%%%%% Add in late trial stuff here when there's the luxury of time.
-fprintf('Completed\n');
+% fprintf('Completed\n');
 %% Analysis #4: Create Aligned BehavMatrix for the whole trial
 % fprintf('Starting Analysis 4 @%s....', datetime);
 % wholeTrialPokeInBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.8 2], 'PokeIn');
@@ -519,4 +519,4 @@ for u = 1:length(unitIDs)
     save(sprintf('%s_%s_UniSum.mat', dirParts{end}, unitInfo(u).UnitName), 'uniSum');
     fprintf('... SAVED!\n');
 end
-PlotUniSum_SM
+% PlotUniSum_SM
