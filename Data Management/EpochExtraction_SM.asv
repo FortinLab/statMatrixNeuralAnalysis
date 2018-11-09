@@ -34,13 +34,10 @@ function [unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, tr
 %                                    4:8Hz in PFC files
 %                               : 'Alpha' - 9:12Hz filtered in PFC files,
 %                                   not present in HC files
-%                               : 'LowBeta' - 13:19Hz filtered in HC files,
-%                                   not present in PFC files
-%                               : 'Beta' - 20:40Hz filtered in HC files,
-%                                   16:32 in PFC files
-%                               : 'LowGamma' - 41:59Hz filtered in HC
-%                                   files, 35:55 in PFC files.
-%                               : 'HighGamma' - 61:80Hz filtered
+%                               : 'LowBeta' - 13:19Hz filtered in HC fi
+%                               : 'Beta' - 20:40Hz filtered
+%                               : 'LowGamma' - 41:59Hz filtered
+%                               : 'HighGamma' - 59:61Hz filtered
 %                               : 'Ripple' - 150:250Hz filtered
 %                               : 'All' - Pulls all the LFP band columns
 %                   2) 'lfpData': Default = voltage values
