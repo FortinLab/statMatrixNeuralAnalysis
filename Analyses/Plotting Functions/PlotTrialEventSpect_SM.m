@@ -55,7 +55,7 @@ for eve = 1:length(behavMatrixIDs)
         else
             set(subplotIDs(curEveSubplots(grp)), 'xlim', eventWindow, 'ylim', freqWindow);
         end
-        title(sprintf('%s: %s', curEventID, curGroupID));
+        title(sprintf('%s: %s', curEventID, curGroupID), 'interpreter', 'none');
         drawnow
     end
 end

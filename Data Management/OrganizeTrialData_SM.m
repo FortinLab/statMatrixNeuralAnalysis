@@ -53,6 +53,11 @@ trialPosition = cell(1,numTrials);
 trialPerf = cell(1,numTrials);
 trialTransDist = cell(1,numTrials);
 trialItmItmDist = cell(1,numTrials);
+trialPokeInNdx = repmat({nan}, [1, numTrials]);
+trialOdorNdx = repmat({nan}, [1, numTrials]);
+trialPokeOutNdx = repmat({nan}, [1, numTrials]);
+trialRewardNdx = repmat({nan}, [1, numTrials]);
+trialErrorNdx = repmat({nan}, [1, numTrials]);
 trialLogVect = cell(1,numTrials);
 trialNum = cell(1,numTrials);
 pokeDuration = cell(1,numTrials);
@@ -92,6 +97,22 @@ for trl = 1:numTrials
     curPokeIn = pokeInNdxs(find(pokeInNdxs<trialIndices(trl)==1,1, 'last'));
     curPokeOut = pokeOutNdxs(find(pokeOutNdxs>trialIndices(trl)==1,1, 'first'));
     pokeDuration{trl} = (curPokeOut-curPokeIn)/sampleRate;
+    
+    trialPokeInNdx{trl} = curPokeIn;
+    trialOdorNdx{trl} = trialIndices(trl);
+    trialPokeOutNdx{trl} = curPokeOut;
+    curFrontRwrdNdx = frontRwrdNdxs(find(frontRwrdNdxs>trialIndices(trl)==1,1, 'first'));
+    if  isempty(curFrontRwrdNdx) || trl==numTrials || curFrontRwrdNdx<trialIndices(trl+1)
+        trialRewardNdx{trl} = curFrontRwrdNdx;
+    else
+        trialRewardNdx{trl} = nan;
+    end
+    curErrSigNdx = errorSigNdxs(find(errorSigNdxs>trialIndices(trl)==1,1,'first'));
+    if isempty(curErrSigNdx) || trl==numTrials || curErrSigNdx<trialIndices(trl+1)
+        trialErrorNdx{trl} = curErrSigNdx;
+    else
+        trialErrorNdx{trl} = nan;
+    end
     switch trialStart
         case 'Odor'
             curIndex = trialIndices(trl);
@@ -100,11 +121,7 @@ for trl = 1:numTrials
         case 'PokeOut'
             curIndex = curPokeOut;
         case 'FrontReward'
-            curIndex = frontRwrdNdxs(find(frontRwrdNdxs>trialIndices(trl)==1,1, 'first'));
-            if  isempty(curIndex) || trl==numTrials || curIndex<trialIndices(trl+1)
-            else
-                curIndex = nan;
-            end
+            curIndex = trialRewardNdx{trl};
         case 'RearReward'
             curIndex = rearRwrdNdxs(find(rearRwrdNdxs>trialIndices(trl)==1,1,'first'));
             if  isempty(curIndex) || trl==numTrials || curIndex<trialIndices(trl+1)
@@ -112,11 +129,7 @@ for trl = 1:numTrials
                 curIndex = nan;
             end
         case 'ErrorSignal'
-            curIndex = errorSigNdxs(find(errorSigNdxs>trialIndices(trl)==1,1,'first'));
-            if isempty(curIndex) || trl==numTrials || curIndex<trialIndices(trl+1)
-            else
-                curIndex = nan;
-            end
+            curIndex = trialErrorNdx{trl};
     end
     if ~isnan(curIndex)
         curWindow = curIndex + trlWindow;
@@ -128,6 +141,8 @@ end
 %% Create behavMatrixTrialStruct
 behavMatrixTrialStruct = struct( 'TrialNum', trialNum, 'SequenceNum', seqNum,...
     'Odor', trialOdor, 'Position', trialPosition, 'PokeDuration', pokeDuration, 'Performance', trialPerf,...
+    'PokeInIndex', trialPokeInNdx, 'OdorIndex', trialOdorNdx, 'PokeOutIndex', trialPokeOutNdx,...
+    'RewardIndex', trialRewardNdx, 'ErrorIndex', trialErrorNdx,...
     'TranspositionDistance', trialTransDist, 'ItemItemDistance', trialItmItmDist,...
     'TrialLogVect', trialLogVect);
 behavMatrixTrialStruct(1).SeqLength = seqLength;

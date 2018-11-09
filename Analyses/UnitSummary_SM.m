@@ -3,13 +3,10 @@ function UnitSummary_SM
 %
 %   Omnibus code to summarize individual unit data
 
-%%
-close all
-clear all
-
 %% Determine Runtime Variables
 pehBinSize = 0.125;
 eventWindow = [-1 1];
+trialWindow = [-0.8 1.5];
 spectFreqWindow = [1 120];
 printYN = 1;
 %%
@@ -59,6 +56,7 @@ behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}, {'Error'}];
 %     rewardAlignedBehavMatrix];
 % behEventDataIDs = [{'PokeIn'}, {'PokeOut'}, {'Reward'}];
 
+trialAlignedBehavMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, trialWindow, 'PokeIn');
 %% Create Trial Based Logical Vectors
 seqLength = pokeInAlignedBehavMatrix(1).SeqLength;
 allTrlLog = true(1,length(pokeInAlignedBehavMatrix));
@@ -70,13 +68,6 @@ inCorrTrlLog = [pokeInAlignedBehavMatrix.Performance]==0;
 % Temporal Context vectors
 inSeqLog = [pokeInAlignedBehavMatrix.TranspositionDistance]==0;
 outSeqLog = ~inSeqLog;
-% 
-% %%%%%%% Comment in to revise perfLog Vectors %% GE Experiment
-% pokeDur = [pokeOutAlignedBehavMatrix.PokeDuration];
-% targDurLog = pokeDur>0.85;
-% corrTrlLog = (inSeqLog & targDurLog) | (outSeqLog & ~targDurLog);
-% inCorrTrlLog = (inSeqLog & ~targDurLog) | (outSeqLog & targDurLog);
-% %%%%%%
 
 perfLogs = [allTrlLog;corrTrlLog;inCorrTrlLog];
 perfLogIDs = [{'All'},{'Correct'},{'Incorrect'}];
@@ -101,7 +92,7 @@ for t = 1:length(tetsWithUnits)
     %% Find the relevant statMatrix data file in order to grab the relevant
     % LFP data
     curTet = tetsWithUnits{t};
-    smFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, curTet))};
+    smFile = fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, [curTet '_SM']))};
     load(smFile);
     
     curUnis = statMatrixColIDs(cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '-U([0-9]*)')));
@@ -109,26 +100,33 @@ for t = 1:length(tetsWithUnits)
     clear curTetStatDiffPERF curTetStatDiffTC 
     
     %% Plot Per-Tetrode Spectrograms
-%     % Performance
-%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-%         perfLogs, perfLogIDs,...
-%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,printYN); %#ok<NODEF>
-%     
-%     % Temporal Context
-%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-%         tcLogs, tcLogIDs,...
-%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
-%     
-%     % Temporal Context - Correct
-%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-%         tcCorrLogs, tcCorrLogIDs,...
-%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
-%     
-%     % Temporal Context - Incorrect
-%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-%         tcInCorrLogs, tcInCorrLogIDs,...
-%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+    % Performance
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        perfLogs, perfLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,printYN); %#ok<NODEF>
     
+    % Temporal Context
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        tcLogs, tcLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+    
+    % Temporal Context - Correct
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        tcCorrLogs, tcCorrLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+    
+    % Temporal Context - Incorrect
+    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+        tcInCorrLogs, tcInCorrLogIDs,...
+        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+    %% Spike Phase Relationship Stuff
+    PlotSpikePhaseRelations_SM(statMatrix, statMatrixColIDs,...
+        trialAlignedBehavMatrix,...
+        positionVects, fieldnames(positionVects),...
+        tcCorrLogs(2:3,:), tcCorrLogIDs(2:3), trialWindow, printYN);
+    PlotInterBandSpikePhaseRelations_SM(statMatrix, statMatrixColIDs,...
+        printYN);
+        
     %% Now do Per Unit Analysis
     for uni = 1:length(curUnis)
         curUnit = curUnis{uni};
@@ -182,10 +180,42 @@ for t = 1:length(tetsWithUnits)
         
         % F-Ratio Analysis Odor vs Position
         curTetStatDiffTC(uni) = FratioAnalysis_SM(curUnit, tcByOdor, tcByPosition); %#ok<AGROW>
-        %% Spike-Phase Relations
-        % To be fleshed out between GE and JDL
         
-        % Overall Spike-Phase by Event
+        %% Temporal Context X Performance PEH
+        % Overall InSeq v OutSeq Corr
+        tcCorrOverall = PlotTrialEventPEH_SM(curUnit,  behEventData, behEventDataIDs,...
+            tcCorrLogs, tcCorrLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);       
+        % Temporal Context Corr by Odor
+        tcCorrByOdor = PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
+            odorVects, fieldnames(odorVects),...
+            tcCorrLogs, tcCorrLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN); 
+        % Temporal Context by Position
+        tcCorrByPosition = PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
+            positionVects, fieldnames(positionVects),...
+            tcCorrLogs, tcCorrLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
+        
+        
+        % Overall InSeq v OutSeq InCorr
+        tcInCorrOverall = PlotTrialEventPEH_SM(curUnit,  behEventData, behEventDataIDs,...
+            tcInCorrLogs, tcInCorrLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);      
+        % Temporal Context Corr by Odor
+        tcInCorrByOdor = PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
+            odorVects, fieldnames(odorVects),...
+            tcInCorrLogs, tcInCorrLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN); 
+        % Temporal Context by Position
+        tcInCorrByPosition = PlotTrialEventByTrialTypePEH_SM(curUnit, behEventData, behEventDataIDs,...
+            positionVects, fieldnames(positionVects),...
+            tcInCorrLogs, tcInCorrLogIDs,...
+            curUniSpikeLog, eventWindow, pehBinSize, printYN);
+        
+        
+        %% Spike-Phase Relations        
+        % Overall Spike-Phase by Event        
         
         % Spike-Phase by Event & Performance
         

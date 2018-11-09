@@ -13,7 +13,8 @@ function [subplotData] = PlotTrialEventPEH_SM(unitID, behavMatrices, behavMatrix
 %
 %% 
 figure('Name', sprintf('%s (%s vs %s)', unitID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'NumberTitle', 'off');
-annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s (%s vs %s)', unitID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'linestyle', 'none');
+annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s (%s vs %s)', unitID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 
 %% 
 if isstruct(groupingLogs)
@@ -50,13 +51,13 @@ for eve = 1:length(behavMatrixIDs)
             end
             meanEventPEH = mean(cell2mat(curEventPEH),1);   
             semEventPEH = std(cell2mat(curEventPEH),0,1)./sqrt(length(curEventPEH)-1);
-            BarPlotErrorbars(meanEventPEH,semEventPEH, 'Color', 'Black', 'XTick', newBins(1:end-1)+(mode(diff(newBins))/2));
+            BarPlotErrorbars(meanEventPEH/pehBinSize,semEventPEH/pehBinSize, 'Color', 'Black', 'XTick', newBins(1:end-1)+(mode(diff(newBins))/2));
             axis tight
         else
             set(subplotIDs(curEveSubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
         end
         subplotData.(curEventID).(curGroupID) = [{newBins(1:end-1)+(mode(diff(newBins))/2)}; curEventPEH];
-        title(sprintf('%s: %s Trials', curEventID, curGroupID));
+        title(sprintf('%s: %s Trials', curEventID, curGroupID), 'interpreter', 'none');
         drawnow
     end
 end

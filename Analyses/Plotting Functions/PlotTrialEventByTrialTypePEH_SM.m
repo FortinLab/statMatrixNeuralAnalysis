@@ -35,7 +35,8 @@ for eve = 1:size(behavMatrices,1)
     curEvent = behavMatrices(eve,:);
     curEventID = behavMatrixIDs{eve};
     figIDs(eve) = figure('Name', sprintf('%s %s (%s vs %s)', unitID, curEventID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'NumberTitle', 'off');
-    annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s %s (%s vs %s)', unitID, curEventID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'linestyle', 'none');
+    annotation('textbox', [0.05 0.9 0.9 0.1], 'String', sprintf('%s %s (%s vs %s)', unitID, curEventID, groupingLogIDs{end-1}, groupingLogIDs{end}), 'linestyle', 'none', 'interpreter', 'none');
+    annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
     for tt = 1:length(trialTypeIDs)
         curTTLog = trialTypes(tt,:);
         curTTid = trialTypeIDs{tt};
@@ -55,12 +56,12 @@ for eve = 1:size(behavMatrices,1)
                 end
                 meanEventPEH = mean(cell2mat(curEventPEH),1);
                 semEventPEH = std(cell2mat(curEventPEH),0,1)./sqrt(length(curEventPEH)-1);
-                BarPlotErrorbars(meanEventPEH, semEventPEH, 'Color', 'Black', 'XTick', newBins(1:end-1)+(mode(diff(newBins))/2));
+                BarPlotErrorbars(meanEventPEH/pehBinSize, semEventPEH/pehBinSize, 'Color', 'Black', 'XTick', newBins(1:end-1)+(mode(diff(newBins))/2));
                 axis tight
             else
                 set(subplotIDs(eve,curTTsubplots(grp)), 'xlim', origBinWindows, 'ylim', [0 0.0001]);
             end
-            title(sprintf('%s %s: %s Trials', curTTid, curEventID, curGroupID));
+            title(sprintf('%s %s: %s Trials', curTTid, curEventID, curGroupID), 'interpreter', 'none');
             subplotData.(curEventID).(curGroupID).(curTTid) = curEventPEH;
         end
     end
