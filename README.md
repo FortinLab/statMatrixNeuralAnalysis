@@ -2,28 +2,24 @@
 **************************************************************
 # Overview of the statMatrix
 **************************************************************
-The statMatrix data structure is a standard data matrix structure developed in the Fortin Lab. It was designed to contain the neural and behavioral data from an experimental session. Each file contains two workspace variables. The statMatrix data structure, an NxM double matrix consisting of N rows corresponding to each LFP time sample and M columnns corresponding to different information sources. The second variable is the statMatrixColIDs which is a 1xM cell vector containing strings indicating the identity of each column. The columns of the statMatrix is generally organized as follows:
+The statMatrix data structure is a standard data matrix structure used by the Fortin Lab. It was designed to provide a standard organization for both neural and behavioral data derived from experimental sessions. Each file contains two workspace variables, 1) the main data structure and 2) column identifiers for the main data structure. The main data structure consists of an NxM double matrix consisting of N rows, determined by the sample rate of the LFP signal for the recording session (standard = 1kHz), and M columnns corresponding to different information sources. For each recording session a separate statMatrix file is produced for each recording source, i.e. tetrode as well as a separate file with containing the behavior data from the session.
 
-Column Order 
-(Note: index value may vary across files/experiments, numbers here reflect general order, not necessarily the corresponding index in the matrix):
-1) Timebin: Timestamps pulled from the LFP trace
-2) LFP Data: Multiple columns consisting of the Raw LFP trace as well as bandpass filtered traces for band-specific analysis. Each frequency range contains two columns, one indicating the voltage value for that trace e.g. "_RAW" or "_Theta" as well as a column of phase values appended with *"_HilbVals," e.g. "_RAW_HilbVals"* or *"_Theta_HilbVals."* (*See [below](https://github.com/FortinLab/statMatrixNeuralAnalysis/blob/master/README.md#statmatrix-behavior-columns-organization)*)
-3) Unit Data: Logical column vector (there shouldn't be any 2s...) indicating individual unit spiking activity. 1s indicate if the unit spiked during that time bin. 
-4) Behavior Data: Mostly logical vectors indicating when behavioral events occurred during the session. (*Specifics for different experimental conditions should be added below*)
+For data stored from each recording source, i.e. tetrode, the workspace variables saved in those files are the 'statMatrix' (main data matrix) and the 'statMatrixColIDs' (column identifiers), whereas behavioral data contains the 'behavMatrix' (main data matrix) and the 'behavMatrixColIDs' (column identifiers).
 
-***********************************************************
-# Creating the statMatrix
-***********************************************************
-The statMatrix is made in Matlab using custom made m-files. Unique .m conversion files are used for constructing the statMatrix depending on the configuration used to acquire the behavioral and neurophysiological data. Though the neural data organization for .plx (Plexon) or .spikes/.continuous (OpenEphys) are standardized by file type, the behavioral timestamps associated with them (events channels for .plx and ADC .continuous channels) are not always so standardized. Therefore, to properly extract behavioral timestamps you need to be sure you are using the correct behavioral analysis code for the data based on the rig it was collected on. I will probably make an index of these associates at some point but for now there's too much to flesh out here.
-
-As mentioned above the statMatrix is organized with rows indexed to the LFP sampleRate. This makes it easy to associate spiking activity and behavioral events to LFP signals with minimal loss of precision. As the LFP data is either collected directly at 1kHz/s or downsampled to that frequency, the loss of precision, i.e. associating a spike/event to one ms or another, is trivial, especially since most analysis is done on time aggregated measures (spk/s).
+The statMatrix is organized with rows indexed to the LFP sampleRate. This makes it easy to associate spiking activity and behavioral events to LFP signals with minimal loss of precision. As the LFP data is either collected directly at 1kHz/s or downsampled to that frequency, the loss of precision, i.e. associating a spike/event to one ms or another, is trivial, especially since most analysis is done using time aggregated spiking (spk/s).
 
 ***************************************************************
-# Working with the statMatrix
+# Main Data Structure Organization
 ***************************************************************
-Storage of data in statMatrix is advantageous... increased flexability... plug and play use... enables development of analysis/visualization tools that can be applied to any data set stored in that format... blah blah blah
 ____________________________________________
-### statMatrix Behavior Columns Organization
+### statMatrix Columns Organization
+____________________________________________
+**Sequence Task**
+* **Timebin:** Timestamps pulled from the LFP trace
+* **LFP Data:** Multiple columns consisting of the Raw LFP trace as well as bandpass filtered traces for band-specific analysis. Each frequency range contains two columns, one indicating the voltage value for that trace e.g. "_RAW" or "_Theta" as well as a column of phase values appended with *"_HilbVals," e.g. "_RAW_HilbVals"* or *"_Theta_HilbVals."* 
+* **Unit Data:** Logical vector (there shouldn't be any 2s...) indicating individual unit spiking activity. 1s indicate if the unit spiked during that time bin. 
+____________________________________________
+### behavMatrix Columns Organization
 ____________________________________________
 **Sequence Task**
 * **'Odor\[1-X]'**: Columns with logical 1 indicating when odor was delivered (no flag or indicator when odor presentation was terminated, assume it was at port withdrawal or trial feedback, whichever came first)
@@ -37,30 +33,21 @@ ____________________________________________
 * **'YvalRatMazePosition'**: Column indexing the rat's position within the maze along the short axis of the maze. **NOTE** The motion capture system sample rate is lower than the time bins used to organize the statMatrix (~30Hz vs 1kHz), all non-zero positions are actual position values, position \[0,0] is out of the maze and the rat never went there.
 
 ****************************************************************
-# List of statMatrix Functions
+# Select list of statMatrix Functions
 ****************************************************************
 NOTE Any modifications made to tailor code to processing a different file structure or data set should be saved as a new file and apppropriately named and commented to reflect that.
 
 ____________________________________________
-### statMatrix Creation Functions
+### statMatrix Creation
 ____________________________________________
-The following functions create statMatrix data files for each tetrode recorded from during the training session. Note that not all tetrodes will have units but they will all have LFP data recorded from them. Currently these functions create the traditional per-tetrode statMatrix files (i.e. timestamp, LFP, Unit, Behavior sections) but they also output a separate file with the behavioral section of the statMatrix saved separately. This behavMatrix file is identical to the Behavior section of the statMatrix and is saved with a corresponding behavMatrixColIDs variable for column based indexing.
-
-* **CreateStatMatrixFromPLX2.m**:
-The initial statMatrix creation function. Designed to extract data from a plexon (.plx) session data file. Originally created for use with the .plx files recorded by NJF in Boston. The main difference between this code and other versions is the behavioral analysis code associated with it (SummarizePLXabbr_BOS.m). The rest of the code should be identical to other variants. NOTE: This code is currently legacy as the integration of MountainSort into the pre-processing stages necessitated creation of new compilation code.
-
-* **CreateStatMatrixFromPLX2irvine.m**:
-Variation of the original statMatrix creation function CreateStatMatrixFromPLX2.m designed to extract data from .plx session data files recorded at UCI. NOTE: This code is currently legacy following integration of MountainSort as a pre-processing stage.
-
-* **CreateStatMatrixFromPLX_MS.m**:
-Variation of the original statMatrix creation function designed to extract data from .plx files produced following MountainSort pre-processing. NOTE: This code is currently tailored for use with the Boston data (i.e. it's currently coded to work with SummarizePLXabbr_BOS). To convert it to working with UCI files it should be as simple as swapping out the Behavioral analysis function that needs to be tested before being done and will necessitate creation of a new file and validation before inclusion into the code set.
+* **StatMatrixCreator.m**
+This is currently the standard function used to create the statMatrix files. It consists of a series of prompts to determine how the data was collected, where it was collected and what experiment the data is from and then organizes the data into the statMatrix format.
 
 ____________________________________________
 ### statMatrix Organization Functions
 ____________________________________________
-
-* **EnsembleCompilation_SM.m**:
-Code to extract all the unit data from all the individual per-tetrode statMatrix files and concatenate them together to create a single matrix. The data retains its original statMatrix organization in the variable called 'ensembleMatrix' and is paired with a column ID vector containing the corresponding unit names 'ensembleMatrixColIDs' for logical indexing to select or remove units.
+* **EpochExtraction.m**:
+This function provides an easy way to compile the data from a single session. It uses the OrganizeTrialData_SM and ExtractTrialData_SM functions listed below to extract and organize all the spiking activity and LFP data (currently only from the raw LFP signal column, an updated version is in the works) from a session. **Recommended method for most purposes/collaborators use**
 
 * **OrganizeTrialData_SM.m**:
 Code to organize the behavior data into a 1xN structure variable where each index corresponds to a session trial. Compiles information about each trial as subfields at each index and creates a logical vector for that trial period that can be used to extract neural data that occurred during that trial. **Needs to be commented**.
@@ -68,13 +55,10 @@ Code to organize the behavior data into a 1xN structure variable where each inde
 * **ExtractTrialData_SM.m**:
 Code to use the trial period logical vector created in OrganizeTrialData_SM.m to extract neural data stored in matrices.
 
-* **OrganizeStatMatrixByTrial.m**:
-Obsolete! Feel free to review for example code. Will be removed... eventually.
-
 ************************************************************************
-# List of Required Functions/Toolboxes
+# List of Suggested Functions/Toolboxes
 ************************************************************************
 * *Plexon Offline Files SDK*: 
-Toolbox created by Plexon to analyze .plx files in Matlab. Link [here](https://plexon.com/wp-content/uploads/2017/08/OmniPlex-and-MAP-Offline-SDK-Bundle_0.zip)
+Toolbox created by Plexon to analyze .plx files in Matlab. Used in the statMatrix creation. Link [here](https://plexon.com/wp-content/uploads/2017/08/OmniPlex-and-MAP-Offline-SDK-Bundle_0.zip)
 * *Circular Statistics Toolbox*:
-Toolbox from the matlab file exchange to perform circular (directional) statistics. Link [here](https://www.mathworks.com/matlabcentral/fileexchange/10676-circular-statistics-toolbox--directional-statistics-)
+Toolbox from the matlab file exchange to perform circular (directional) statistics. Used in some statMatrix related analyses. Link [here](https://www.mathworks.com/matlabcentral/fileexchange/10676-circular-statistics-toolbox--directional-statistics-)
