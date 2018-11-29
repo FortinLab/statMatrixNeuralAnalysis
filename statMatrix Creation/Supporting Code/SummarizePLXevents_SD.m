@@ -63,6 +63,7 @@ else
     %%% event timestamps.
 %     error('This data was collected with an old version of the code that didn''t allow declaration of buffer duration, please use an older plxAnalysis script for it');
 end
+sequenceLength = ssnData(1).Settings.SequenceLength;
 % Now extract event data from the .plx file
 [numChans, chanNames] = plx_event_names(plxFile);
 plxStruct = struct('Channel', [], 'n', [], 'ts', [], 'sv', []);
@@ -85,15 +86,15 @@ strobeVal = {plxStruct.sv};
 % issued anytime during the session. If so then truncate all the other
 % behavioral variables to only the time points that occurred prior to
 % when the command was issued
-terminateChannelLog = strcmp(channels, 'Terminate');
-if ~(sum(terminateChannelLog)==0) && ~(plxStruct(terminateChannelLog).n == 0)
-    term = 1;
-    plxSummary.Terminate = 1;
-    terminateTime = plxStruct(terminateChannelLog).ts(find(plxStruct(terminateChannelLog).ts>0, 1, 'first'));
-else
+% terminateChannelLog = strcmp(channels, 'Terminate');
+% if ~(sum(terminateChannelLog)==0) && ~(plxStruct(terminateChannelLog).n == 0)
+%     term = 1;
+%     plxSummary.Terminate = 1;
+%     terminateTime = plxStruct(terminateChannelLog).ts(find(plxStruct(terminateChannelLog).ts>0, 1, 'first'));
+% else
     term = 0;
     plxSummary.Terminate = 0;
-end
+% end
 plxSummary.Errors = [];
 %% Pull Information from Buzzer channel (Sequence Block, Trial and Error Identifiers)
 % The easiest to parse the session is using the buzzer channel as it
@@ -227,7 +228,11 @@ plxSummary.SequenceLength = sequenceLength;
 
 odorPresSsn = odorPresTime;
 for opt = 1:length(odorPresSsn)
-    odorPresSsn{opt} = [ones(length(odorPresSsn{opt}),1).*opt odorPresSsn{opt}];
+    if opt<=5
+        odorPresSsn{opt} = [ones(length(odorPresSsn{opt}),1).*opt odorPresSsn{opt}];
+    elseif opt>5
+        odorPresSsn{opt} = [ones(length(odorPresSsn{opt}),1).*(opt+5) odorPresSsn{opt}];
+    end
 end
 odorPresSsn(cellfun(@(a)isempty(a), odorPresSsn)) = [];
 odorPresSsn = sortrows(cell2mat(odorPresSsn'), 2);
@@ -238,6 +243,11 @@ if ~sum(odorPresSsn(:,1)'-[ssnData.Odor])==0
     error('Odor order in .plx and .mat files don''t align, ensure you are working with the correct files')
 end
 
+if sum(unique(odorPresSsn(:,1)) > 5)>=1
+    plxSummary.DualListLog = true;
+else
+    plxSummary.DualListLog = false;
+end
 %% Identify Poke Times
 % The key information used here is when the poke was initiated and how
 % long it was held. When the poke was broken is less important and

@@ -155,6 +155,18 @@ fprintf(outfile, 'Initialized %s at %i:%i.%i\n', date, curTime(4), curTime(5), r
 fprintf(outfile, 'Working Directory = %s\n', cd);
 if rig==1 || rig==2
     fprintf(outfile, '     Plexon File used = %s\n', plxFile);
+    if rig==1
+        multiListCheck = questdlg('Use a different .plx file for behavioral events?', 'Event Check', 'Yes', 'No', 'Yes');
+        switch multiListCheck
+            case 'Yes'
+                multiList = 1;
+                 [fileName, filePath] = uigetfile('.plx', 'Identify the ORIGINAL .plx file');
+                 plxFileBehav = [filePath '\' fileName];
+                 fprintf(outfile, '     Plexon File used for behavior = %s\n', plxFileBehav);
+            case 'No'
+                multiList = 0;
+        end
+    end                
 elseif rig==3 || rig==4 || rig==5
     fprintf(outfile, '     OpenEphys Channel Map File Used = %s\n', chanMapFile);
 end
@@ -173,9 +185,17 @@ fprintf(outfile, '********************************************************\n');
 %% Now create the statMatrix files
 %% Create Behavior Matrix
 if rig == 1                                                                 % Irvine .plx files
-    [plxData] = SummarizePLXevents_SD(plxFile);
-    behaviorData = plxData.Raw;
-    summary = plxData.Summary;
+     if multiList
+         [plxData] = SummarizePLXevents_SD(plxFileBehav);
+         summary = plxData.Summary;
+         summary.PLXfileBehav = summary.PLXfile;
+         summary.PLXfile = plxFile;                                         % This is done here to account for issues stemming from Offline Sorter's export function that removes the sub-board identity of event inputs, i.e. removes the identifier for Odor A and Odor V
+     else
+         [plxData] = SummarizePLXevents_SD(plxFile);
+         summary = plxData.Summary;
+     end
+     behaviorData = plxData.Raw;
+         
     [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile);
 elseif rig == 2                                                             % Boston .plx files
     [fileName, filePath] = uigetfile('.mat','Select the plxData file for the recording session');
@@ -224,7 +244,7 @@ fclose(outfile);
 function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile)
     % Identify the PLX file being used for stuff
     if rig == 1
-        file = summary.PLXfile;
+        file = summary.PLXfileBehav;
     elseif rig == 2
         file = summary.PlxFile;
     end
@@ -247,28 +267,42 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behavio
 
     seqLength = summary.SequenceLength;
     maxSeqLength = max([behaviorData.OrdinalPosition]);
-    behVals = nan(length(tsVect)-1, seqLength + maxSeqLength + 5);
-    behDataHeaders = cell(1,seqLength + maxSeqLength + 7);
+    behPad = seqLength + maxSeqLength;
+    if summary.DualListLog 
+        behPad = behPad + seqLength;
+    end   
+    behVals = nan(length(tsVect)-1, behPad + 5);
+    behDataHeaders = cell(1,behPad + 7);
     % Step through each sequence item/position and identify when odors were
     % presented
-    fprintf(outfile, 'Odor Counts\n');
-    for seq = 1:seqLength
-        itemPresTimes = [behaviorData([behaviorData.SequenceItem]==seq).ItemPresentationTime];
-        behVals(:,seq) = histcounts(itemPresTimes, tsVect)';
-        behDataHeaders{seq} = ['Odor' num2str(seq)];
-        fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
-    end
+    % Do position first because it doesn't change with multiple lists
     fprintf(outfile, 'Position Counts\n');
     for pos = 1:maxSeqLength
         posPresTimes = [behaviorData([behaviorData.OrdinalPosition]==pos).ItemPresentationTime];
-        behVals(:,pos+seqLength) = histcounts(posPresTimes, tsVect)';
-        behDataHeaders{pos+seqLength} = ['Position' num2str(pos)];
+        behVals(:,pos) = histcounts(posPresTimes, tsVect)';
+        behDataHeaders{pos} = ['Position' num2str(pos)];
         fprintf(outfile, '     Position #%i = %i trials\n', pos, length(posPresTimes));
     end
+    fprintf(outfile, 'Odor Counts\n');
+    for seq = 1:seqLength
+        itemPresTimes = [behaviorData([behaviorData.SequenceItem]==seq).ItemPresentationTime];
+        behVals(:,seq+maxSeqLength) = histcounts(itemPresTimes, tsVect)';
+        behDataHeaders{seq+maxSeqLength} = ['Odor' num2str(seq)];
+        fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
+    end
+    if summary.DualListLog
+        for seq = 11:seqLength+10
+            itemPresTimes = [behaviorData([behaviorData.SequenceItem]==seq).ItemPresentationTime];
+            behVals(:,seq+seqLength+maxSeqLength-10) = histcounts(itemPresTimes, tsVect)';
+            behDataHeaders{seq+seqLength+maxSeqLength-10} = ['Odor' num2str(seq)];
+            fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
+        end
+    end
+    
     inSeqOdorPres = [behaviorData([behaviorData.TranspositionDistance]==0).ItemPresentationTime];
     outSeqOdorPres = [behaviorData(~([behaviorData.TranspositionDistance]==0)).ItemPresentationTime];
-    behVals(:,seqLength+maxSeqLength+1) = histcounts(inSeqOdorPres, tsVect)' - histcounts(outSeqOdorPres,tsVect)';
-    behDataHeaders{maxSeqLength+seqLength+1} = 'InSeqLog';
+    behVals(:,behPad+1) = histcounts(inSeqOdorPres, tsVect)' - histcounts(outSeqOdorPres,tsVect)';
+    behDataHeaders{behPad+1} = 'InSeqLog';
     fprintf(outfile, '\nCompiling InSeq trials.....\n     %i trials were InSeq (%i%%)\n', length(inSeqOdorPres), round(length(inSeqOdorPres)/length(behaviorData),2)*100);
     itmPresTimes = [behaviorData.ItemPresentationTime];
     trialPerformance = [behaviorData.Performance];
@@ -276,22 +310,22 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behavio
     corTrlHistCounts = histcounts(corrTrials, tsVect)';
     inCorrTrials = itmPresTimes(~logical(trialPerformance));
     inCorTrlHistCounts = histcounts(inCorrTrials, tsVect)';
-    behVals(:,seqLength + maxSeqLength+2) = corTrlHistCounts + (inCorTrlHistCounts*-1);
-    behDataHeaders{seqLength + maxSeqLength+2} = 'PerformanceLog';
+    behVals(:,behPad+2) = corTrlHistCounts + (inCorTrlHistCounts*-1);
+    behDataHeaders{behPad+2} = 'PerformanceLog';
     fprintf(outfile, 'Compiling Performance.....\n     %i trials were correct (%i%%)\n', sum(trialPerformance), round(mean(trialPerformance),2)*100);
 
-    behVals(:,seqLength + maxSeqLength+3) = histcounts([behaviorData.OdorTrigPokeTime], tsVect)' - histcounts([behaviorData.OdorPokeWithdrawTime], tsVect)';
-    behDataHeaders{seqLength + maxSeqLength+3} = 'PokeEvents';
+    behVals(:,behPad+3) = histcounts([behaviorData.OdorTrigPokeTime], tsVect)' - histcounts([behaviorData.OdorPokeWithdrawTime], tsVect)';
+    behDataHeaders{behPad+3} = 'PokeEvents';
 
-    behVals(:,seqLength + maxSeqLength+4) = histcounts([behaviorData.FrontRewardTime], tsVect)';
-    behDataHeaders{seqLength + maxSeqLength+4} = 'FrontReward';
+    behVals(:,behPad+4) = histcounts([behaviorData.FrontRewardTime], tsVect)';
+    behDataHeaders{behPad+4} = 'FrontReward';
 
-    behVals(:,seqLength + maxSeqLength+5) = histcounts([behaviorData.BackRewardTime], tsVect)';
-    behDataHeaders{seqLength + maxSeqLength+5} = 'BackReward';
+    behVals(:,behPad+5) = histcounts([behaviorData.BackRewardTime], tsVect)';
+    behDataHeaders{behPad+5} = 'BackReward';
 
     if isfield(behaviorData, 'ErrorSignalTime')
-        behVals(:,seqLength + maxSeqLength+6) = histcounts([behaviorData.ErrorSignalTime], tsVect)';
-        behDataHeaders{seqLength + maxSeqLength+6} = 'ErrorSignal';
+        behVals(:,behPad+6) = histcounts([behaviorData.ErrorSignalTime], tsVect)';
+        behDataHeaders{behPad+6} = 'ErrorSignal';
     end
 
     [numChans, chanNames] = plx_event_names(file);
@@ -331,22 +365,22 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behavio
                 end
                 aniPosHistBins = find(histcounts(aniPosition(:,1), tsVect));
                 if isfield(behaviorData, 'ErrorSignalTime')
-                    behVals(aniPosHistBins,seqLength + maxSeqLength+7) = aniX';
-                    behVals(aniPosHistBins,seqLength + maxSeqLength+8) = aniY';
+                    behVals(aniPosHistBins,behPad+7) = aniX';
+                    behVals(aniPosHistBins,behPad+8) = aniY';
                 else
-                    behVals(aniPosHistBins,seqLength + maxSeqLength+6) = aniX;
-                    behVals(aniPosHistBins,seqLength + maxSeqLength+7) = aniY;
+                    behVals(aniPosHistBins,behPad+6) = aniX;
+                    behVals(aniPosHistBins,behPad+7) = aniY;
                 end
                 findingStrobed = 0;
             end
         end
     end
     if isfield(behaviorData, 'ErrorSignalTime')
-        behDataHeaders{seqLength + maxSeqLength+7} = 'XvalRatMazePosition';
-        behDataHeaders{seqLength + maxSeqLength+8} = 'YvalRatMazePosition';
+        behDataHeaders{behPad+7} = 'XvalRatMazePosition';
+        behDataHeaders{behPad+8} = 'YvalRatMazePosition';
     else
-        behDataHeaders{seqLength + maxSeqLength+6} = 'XvalRatMazePosition';
-        behDataHeaders{seqLength + maxSeqLength+7} = 'YvalRatMazePosition';
+        behDataHeaders{behPad+6} = 'XvalRatMazePosition';
+        behDataHeaders{behPad+7} = 'YvalRatMazePosition';
     end
     behavMatrix = [tsVect(1:end-1)', behVals];
     behavMatrixColIDs = [{'TimeBin'}, behDataHeaders];
