@@ -268,7 +268,7 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behavio
     seqLength = summary.SequenceLength;
     maxSeqLength = max([behaviorData.OrdinalPosition]);
     behPad = seqLength + maxSeqLength;
-    if summary.DualListLog 
+    if isfield(summary, 'DualListLog') && summary.DualListLog 
         behPad = behPad + seqLength;
     end   
     behVals = nan(length(tsVect)-1, behPad + 5);
@@ -290,7 +290,7 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behavio
         behDataHeaders{seq+maxSeqLength} = ['Odor' num2str(seq)];
         fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
     end
-    if summary.DualListLog
+    if isfield(summary, 'DualListLog') && summary.DualListLog
         for seq = 11:seqLength+10
             itemPresTimes = [behaviorData([behaviorData.SequenceItem]==seq).ItemPresentationTime];
             behVals(:,seq+seqLength+maxSeqLength-10) = histcounts(itemPresTimes, tsVect)';
