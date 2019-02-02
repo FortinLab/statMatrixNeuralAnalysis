@@ -69,6 +69,8 @@ end
 w = gausswin(21);
 w = w/sum(w);
 %% Identify/Extract LFP data
+tetHilbVals = cell(1,length(tetFiles));
+tetRmsVals = cell(1,length(tetFiles));
 for fl = 1:length(tetFiles)
     load(tetFiles{fl});
     hilbVals = cell(1,length(bands));
@@ -84,6 +86,8 @@ for fl = 1:length(tetFiles)
             bands(b) = [];
         end
     end
+    tetHilbVals{fl} = hilbVals;
+    tetRmsVals{fl} = rmsVals;
     phasePowerNorm = cell(length(bands), length(bands));
     figure;
     spVals = nan(length(bands), length(bands));
@@ -133,14 +137,14 @@ for fl = 1:length(tetFiles)
 end
 
 %%
+close all
 load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))});
 
-eventTimes = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
-trialTimeBins = ExtractTrialData_SM(trialPokeInBehavMatrix, behavMatrix(:,1));
-eventTimes = ExtractTrialData_SM(eventTimes, behavMatrix(:,1));
-eventTimeBins = cellfun(@(a,b) a-b, trialTimeBins, eventTimes, 'uniformoutput',0);
-frstNonMptTrl = find(cellfun(@(a)~isempty(a), eventTimeBins),1, 'first');
-trlPokeInTimeBins = eventTimeBins{frstNonMptTrl};
-    
+pokeInTimesMtx = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
+pokeInTimes = ExtractTrialData_SM(pokeInTimesMtx, behavMatrix(:,1));
+pokeOutTimesMtx = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeOut');
+pokeOutTimes = ExtractTrialData_SM(pokeOutTimesMtx, behavMatrix(:,1));
+
+
                 
     
