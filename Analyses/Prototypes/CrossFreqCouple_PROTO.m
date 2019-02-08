@@ -5,6 +5,8 @@
 
 %% Load Data
 %% Extract Info and bands and shit idk
+clear all
+close all
 origDir = cd;    
 [fileDir] = uigetdir(origDir);
 if fileDir==0
@@ -66,6 +68,13 @@ else
         'Theta', 0.22);
 end
 
+for b = 1:length(bands)
+    if sum(strcmp(fieldnames(windowSize), bands{b}))>=1
+    else
+        bands(b) = [];
+    end
+end
+            
 w = gausswin(21);
 w = w/sum(w);
 %% Identify/Extract LFP data
@@ -88,6 +97,9 @@ for fl = 1:length(tetFiles)
     end
     tetHilbVals{fl} = hilbVals;
     tetRmsVals{fl} = rmsVals;
+end
+%%
+for fl = 1:length(tetFiles)
     phasePowerNorm = cell(length(bands), length(bands));
     figure;
     spVals = nan(length(bands), length(bands));
@@ -133,18 +145,126 @@ for fl = 1:length(tetFiles)
     figTitle = annotation('textbox', 'position', [0.025 0.935 0.7 0.05], 'String', tetFiles{fl},...
         'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
     set(gcf, 'PaperOrientation', 'landscape');
-    print(gcf,'-fillpage');
+%     print(gcf,'-fillpage');
 end
 
 %%
 close all
 load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))});
+sampPsec = 1/mode(diff(behavMatrix(:,1)));
 
 pokeInTimesMtx = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
 pokeInTimes = ExtractTrialData_SM(pokeInTimesMtx, behavMatrix(:,1));
 pokeOutTimesMtx = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeOut');
 pokeOutTimes = ExtractTrialData_SM(pokeOutTimesMtx, behavMatrix(:,1));
 
+odorVals = [pokeInTimesMtx.Odor];
+posVals = [pokeInTimesMtx.Position];
+inSeqLog = [pokeInTimesMtx.ItemItemDistance]==1;
 
-                
+timeWindows = [-0.5 0; 0 0.5];   
+ndxRange = round(sampPsec*timeWindows);
+
+trialPeriodIDs = [{'Pre-Trial'},{'Early Trial'},{'Late Trial'},{'Post Trial'}];
+
+entrainerCol = 2;
+phaseBins = linspace(-pi,pi,13);
+powerBins = linspace(-3,10,13);
+for tet = 1:length(tetHilbVals)
+    figure;
+    tempTrialHilbVals = cell(2,max(posVals),4);
+    tempTrialRmsVals = cell(2,max(posVals),4);
+    for trl = 1:length(pokeInTimes)
+        pokeInNdx = find(behavMatrix(:,1)==pokeInTimes{trl});
+        pokeOutNdx = find(behavMatrix(:,1)==pokeOutTimes{trl});
+        if inSeqLog(trl)
+            % Pre-Trial Period
+            tempTrialHilbVals{1,posVals(trl),1} = [tempTrialHilbVals{1,posVals(trl),1}; cellfun(@(a)a(pokeInNdx+ndxRange(1,1):pokeInNdx+ndxRange(1,2)), tetHilbVals{tet}, 'uniformoutput', 0)];
+            tempTrialRmsVals{1,posVals(trl),1} = [tempTrialRmsVals{1,posVals(trl),1}; cellfun(@(a)a(pokeInNdx+ndxRange(1,1):pokeInNdx+ndxRange(1,2)), tetRmsVals{tet}, 'uniformoutput', 0)];
+            % Early-Trial Period
+            tempTrialHilbVals{1,posVals(trl),2} = [tempTrialHilbVals{1,posVals(trl),2}; cellfun(@(a)a(pokeInNdx+ndxRange(2,1):pokeInNdx+ndxRange(2,2)), tetHilbVals{tet}, 'uniformoutput', 0)];
+            tempTrialRmsVals{1,posVals(trl),2} = [tempTrialRmsVals{1,posVals(trl),2}; cellfun(@(a)a(pokeInNdx+ndxRange(2,1):pokeInNdx+ndxRange(2,2)), tetRmsVals{tet}, 'uniformoutput', 0)];
+            % Late-Trial Period
+            tempTrialHilbVals{1,posVals(trl),3} = [tempTrialHilbVals{1,posVals(trl),3}; cellfun(@(a)a(pokeOutNdx+ndxRange(1,1):pokeOutNdx+ndxRange(1,2)), tetHilbVals{tet}, 'uniformoutput', 0)];
+            tempTrialRmsVals{1,posVals(trl),3} = [tempTrialRmsVals{1,posVals(trl),3}; cellfun(@(a)a(pokeOutNdx+ndxRange(1,1):pokeOutNdx+ndxRange(1,2)), tetRmsVals{tet}, 'uniformoutput', 0)];
+            % Post-Trial Period
+            tempTrialHilbVals{1,posVals(trl),4} = [tempTrialHilbVals{1,posVals(trl),4}; cellfun(@(a)a(pokeOutNdx+ndxRange(2,1):pokeOutNdx+ndxRange(2,2)), tetHilbVals{tet}, 'uniformoutput', 0)];
+            tempTrialRmsVals{1,posVals(trl),4} = [tempTrialRmsVals{1,posVals(trl),4}; cellfun(@(a)a(pokeOutNdx+ndxRange(2,1):pokeOutNdx+ndxRange(2,2)), tetRmsVals{tet}, 'uniformoutput', 0)];
+        else
+        end
+    end
+    
+    % Calculate CFC for all trials
+    preTrialALLtrialsHilb = tempTrialHilbVals(1,:,1)'; preTrialALLtrialsHilb = preTrialALLtrialsHilb{:};
+    preTrialALLtrials(:,:,1) = preTrialALLtrialsHilb;
+    preTrialALLtrialsRMS = tempTrialRmsVals(1,:,1)'; preTrialALLtrialsRMS = preTrialALLtrialsRMS{:};
+    preTrialALLtrials(:,:,2) = preTrialALLtrialsRMS;
+    
+    rlyTrialALLtrialsHilb = tempTrialHilbVals(1,:,2)'; rlyTrialALLtrialsHilb  = rlyTrialALLtrialsHilb{:};  
+    rlyTrialALLtrials(:,:,1) = rlyTrialALLtrialsHilb;
+    rlyTrialALLtrialsRMS = tempTrialRmsVals(1,:,2)'; rlyTrialALLtrialsRMS  = rlyTrialALLtrialsRMS{:};  
+    rlyTrialALLtrials(:,:,2) = rlyTrialALLtrialsRMS;
+        
+    lteTrialALLtrialsHilb = tempTrialHilbVals(1,:,3)'; lteTrialALLtrialsHilb = lteTrialALLtrialsHilb{:};   
+    lteTrialALLtrials(:,:,1) = lteTrialALLtrialsHilb;
+    lteTrialALLtrialsRMS = tempTrialRmsVals(1,:,3)'; lteTrialALLtrialsRMS = lteTrialALLtrialsRMS{:}; 
+    lteTrialALLtrials(:,:,2) = lteTrialALLtrialsRMS;
+    
+    postTrialALLtrialsHilb = tempTrialHilbVals(1,:,4)'; postTrialALLtrialsHilb = postTrialALLtrialsHilb{:};   
+    postTrialALLtrials(:,:,1) = postTrialALLtrialsHilb;
+    postTrialALLtrialsRMS = tempTrialRmsVals(1,:,4)'; postTrialALLtrialsRMS  = postTrialALLtrialsRMS{:}; 
+    postTrialALLtrials(:,:,2) = postTrialALLtrialsRMS;
+    
+    trialPeriodData = [{cell2mat(preTrialALLtrials)}, {cell2mat(rlyTrialALLtrials)}, {cell2mat(lteTrialALLtrials)}, {cell2mat(postTrialALLtrials)}];
+        
+    for bnd = 1:length(bands)
+        if bnd == entrainerCol
+        else
+            curPhasePowerVals = repmat({nan(length(powerBins)-1, length(phaseBins)-1)}, size(trialPeriodData));
+            for pwr = 1:length(powerBins)-1
+                for ph = 1:length(phaseBins)-1
+                    for tprd = 1:length(trialPeriodData)
+                        curPhasePowerLog = (trialPeriodData{tprd}(:,entrainerCol,2)>=powerBins(pwr) & trialPeriodData{tprd}(:,entrainerCol,2)<powerBins(pwr+1)) &...
+                            (trialPeriodData{tprd}(:,entrainerCol,1)>=phaseBins(ph) & trialPeriodData{tprd}(:,entrainerCol,1)<phaseBins(ph+1));
+                        curPhasePowerVals{tprd}(pwr,ph) = nanmean(trialPeriodData{tprd}(curPhasePowerLog,bnd,2));
+                    end
+                end
+            end
+            for tprd = 1:length(curPhasePowerVals)
+                if entrainerCol==1 || bnd>entrainerCol
+                    spVals(bnd,tprd) = subplot(length(bands)-1, length(curPhasePowerVals), sub2ind([length(bands)-1 length(curPhasePowerVals)], tprd,bnd-1));
+                else
+                    spVals(bnd,tprd) = subplot(length(bands)-1, length(curPhasePowerVals), sub2ind([length(bands)-1 length(curPhasePowerVals)], tprd,bnd));
+                end
+                imagesc(phaseBins, powerBins, curPhasePowerVals{tprd});
+                set(spVals(bnd,tprd), 'ydir', 'normal');
+                if tprd==1
+                    ylabel(bands{bnd}, 'FontWeight', 'bold');
+                end
+                if bnd-entrainerCol ==1
+                    title(trialPeriodIDs{tprd});
+                end
+                cLims(bnd,tprd,1) = min(get(spVals(bnd,tprd), 'clim')); 
+                cLims(bnd,tprd,2) = max(get(spVals(bnd,tprd), 'clim')); 
+                colorbar
+                drawnow
+            end
+        end
+    end
+    
+    
+%     for r = 1:length(bands)
+%         if r == entrainerCol
+%         else
+%             for c = 1:length(curPhasePowerVals)
+%                 set(spVals(r,c), 'clim', [min(cLims(:)) max(cLims(:))]);
+%             end
+%         end
+%     end
+    colormap jet
+    figTitle = annotation('textbox', 'position', [0.025 0.935 0.7 0.05], 'String', tetFiles{tet},...
+        'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+    set(gcf, 'PaperOrientation', 'landscape');
+    print(gcf,'-fillpage');
+end
     
