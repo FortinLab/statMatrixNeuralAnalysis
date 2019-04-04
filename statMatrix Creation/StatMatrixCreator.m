@@ -314,14 +314,16 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behavio
                                 (aniPosition(t,4)>0 && aniPosition(t,5)>0)
                             aniX(t) = aniPosition(t,4);
                             aniY(t) = aniPosition(t,5);
-                        elseif (aniPosition(t,4)==0 && aniPosition(t,5)==0) &&...
-                                (aniPosition(t,2)>0 && aniPosition(t,3)>0)
+                        elseif (aniPosition(t,2)>0 && aniPosition(t,3)>0) &&...
+                                (aniPosition(t,4)==0 && aniPosition(t,5)==0)
                             aniX(t) = aniPosition(t,2);
                             aniY(t) = aniPosition(t,3);
                         elseif (aniPosition(t,2)>0 && aniPosition(t,3)>0) &&...
                                 (aniPosition(t,3)>0 && aniPosition(t,5)>0)
-                            aniX(t) = mean([aniPosition(t,2) aniPosition(t,4)]);
-                            aniY(t) = mean([aniPosition(t,3) aniPosition(t,5)]);
+                            aniX(t) = aniPosition(t,4);
+                            aniY(t) = aniPosition(t,5);
+%                             aniX(t) = mean([aniPosition(t,2) aniPosition(t,4)]);
+%                             aniY(t) = mean([aniPosition(t,3) aniPosition(t,5)]);
                         elseif (aniPosition(t,2)==0 && aniPosition(t,3)==0) &&...
                                 (aniPosition(t,3)==0 && aniPosition(t,5)==0)
                             aniX(t) = 0;
