@@ -85,15 +85,11 @@ for fl = 1:length(tetFiles)
     hilbVals = cell(1,length(bands));
     rmsVals = cell(1,length(bands));
     for b = 1:length(bands)
-        if sum(strcmp(fieldnames(windowSize), bands{b}))>=1
-            windowNdxs = windowSize.(bands{b})*sampleRate;
-            voltColLog = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs,{[sprintf('_%s',bands{b}) '$']}));
-            hilbColLog = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs,{[sprintf('_%s',bands{b}) '_Hilb']}));
-            hilbVals{b} = statMatrix(:,hilbColLog);
-            rmsVals{b} = zscore(conv(sqrt(conv(statMatrix(:,voltColLog).^2, ones(windowNdxs,1)/windowNdxs, 'same')), w, 'same'));
-        else
-            bands(b) = [];
-        end
+        windowNdxs = windowSize.(bands{b})*sampleRate;
+        voltColLog = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs,{[sprintf('_%s',bands{b}) '$']}));
+        hilbColLog = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs,{[sprintf('_%s',bands{b}) '_Hilb']}));
+        hilbVals{b} = statMatrix(:,hilbColLog);
+        rmsVals{b} = zscore(conv(sqrt(conv(statMatrix(:,voltColLog).^2, ones(windowNdxs,1)/windowNdxs, 'same')), w, 'same'));
     end
     tetHilbVals{fl} = hilbVals;
     tetRmsVals{fl} = rmsVals;
@@ -161,13 +157,14 @@ pokeOutTimes = ExtractTrialData_SM(pokeOutTimesMtx, behavMatrix(:,1));
 odorVals = [pokeInTimesMtx.Odor];
 posVals = [pokeInTimesMtx.Position];
 inSeqLog = [pokeInTimesMtx.ItemItemDistance]==1;
+performanceLog = [pokeInTimesMtx.Performance]==1;
 
 timeWindows = [-0.5 0; 0 0.5];   
 ndxRange = round(sampPsec*timeWindows);
 
 trialPeriodIDs = [{'Pre-Trial'},{'Early Trial'},{'Late Trial'},{'Post Trial'}];
 
-entrainerCol = 2;
+entrainerCol = 1;
 phaseBins = linspace(-pi,pi,13);
 powerBins = linspace(-3,10,13);
 for tet = 1:length(tetHilbVals)
@@ -177,7 +174,7 @@ for tet = 1:length(tetHilbVals)
     for trl = 1:length(pokeInTimes)
         pokeInNdx = find(behavMatrix(:,1)==pokeInTimes{trl});
         pokeOutNdx = find(behavMatrix(:,1)==pokeOutTimes{trl});
-        if inSeqLog(trl)
+        if inSeqLog(trl) && performanceLog(trl)
             % Pre-Trial Period
             tempTrialHilbVals{1,posVals(trl),1} = [tempTrialHilbVals{1,posVals(trl),1}; cellfun(@(a)a(pokeInNdx+ndxRange(1,1):pokeInNdx+ndxRange(1,2)), tetHilbVals{tet}, 'uniformoutput', 0)];
             tempTrialRmsVals{1,posVals(trl),1} = [tempTrialRmsVals{1,posVals(trl),1}; cellfun(@(a)a(pokeInNdx+ndxRange(1,1):pokeInNdx+ndxRange(1,2)), tetRmsVals{tet}, 'uniformoutput', 0)];
@@ -227,6 +224,7 @@ for tet = 1:length(tetHilbVals)
                         curPhasePowerLog = (trialPeriodData{tprd}(:,entrainerCol,2)>=powerBins(pwr) & trialPeriodData{tprd}(:,entrainerCol,2)<powerBins(pwr+1)) &...
                             (trialPeriodData{tprd}(:,entrainerCol,1)>=phaseBins(ph) & trialPeriodData{tprd}(:,entrainerCol,1)<phaseBins(ph+1));
                         curPhasePowerVals{tprd}(pwr,ph) = nanmean(trialPeriodData{tprd}(curPhasePowerLog,bnd,2));
+%                         curPhasePowerVals{tprd}(pwr,ph) = nanmedian(trialPeriodData{tprd}(curPhasePowerLog,bnd,2));
                     end
                 end
             end
@@ -253,18 +251,19 @@ for tet = 1:length(tetHilbVals)
     end
     
     
-%     for r = 1:length(bands)
-%         if r == entrainerCol
-%         else
-%             for c = 1:length(curPhasePowerVals)
-%                 set(spVals(r,c), 'clim', [min(cLims(:)) max(cLims(:))]);
-%             end
-%         end
-%     end
+    for r = 1:length(bands)
+        if r == entrainerCol
+        else
+            for c = 1:length(curPhasePowerVals)
+                set(spVals(r,c), 'clim', [min(cLims(r,:)) max(cLims(r,:))]);
+            end
+        end
+    end
     colormap jet
     figTitle = annotation('textbox', 'position', [0.025 0.935 0.7 0.05], 'String', tetFiles{tet},...
         'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
     set(gcf, 'PaperOrientation', 'landscape');
-    print(gcf,'-fillpage');
+    print(gcf,sprintf('%s_XfreqCouple', tetFiles{tet}(1:end-4)), '-dpdf', '-fillpage');
+    close all
 end
     
