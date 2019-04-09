@@ -274,13 +274,13 @@ for u = 1:length(uniSumFiles)
     if uniSum.TrialEpochStats.Error.Odor(2)<newCritF
         text(err,1, uniSum.TrialEpochStats.Error.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
-    if uniSum.TrialEpochStats.Error.OdorSANSA(2)<newCritF
+    if length(uniSum.TrialEpochStats.Error.OdorSANSA)==2 && uniSum.TrialEpochStats.Error.OdorSANSA(2)<newCritF
         text(err,2, uniSum.TrialEpochStats.Error.OdorSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
     if uniSum.TrialEpochStats.Error.Position(2)<newCritF
         text(err,3, uniSum.TrialEpochStats.Error.Position(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
-    if uniSum.TrialEpochStats.Error.PositionSANSA(2)<newCritF
+    if length(uniSum.TrialEpochStats.Error.PositionSANSA)==2 && uniSum.TrialEpochStats.Error.PositionSANSA(2)<newCritF
         text(err,4, uniSum.TrialEpochStats.Error.PositionSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end                   
     
