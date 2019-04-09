@@ -86,14 +86,14 @@ strobeVal = {plxStruct.sv};
 % behavioral variables to only the time points that occurred prior to
 % when the command was issued
 terminateChannelLog = strcmp(channels, 'Terminate');
-if ~(sum(terminateChannelLog)==0) && ~(plxStruct(terminateChannelLog).n == 0)
-    term = 1;
-    plxSummary.Terminate = 1;
-    terminateTime = plxStruct(terminateChannelLog).ts(find(plxStruct(terminateChannelLog).ts>0, 1, 'first'));
-else
+% if ~(sum(terminateChannelLog)==0) && ~(plxStruct(terminateChannelLog).n == 0)
+%     term = 1;
+%     plxSummary.Terminate = 1;
+%     terminateTime = plxStruct(terminateChannelLog).ts(find(plxStruct(terminateChannelLog).ts>0, 1, 'first'));
+% else
     term = 0;
-    plxSummary.Terminate = 0;
-end
+%     plxSummary.Terminate = 0;
+% end
 plxSummary.Errors = [];
 %% Pull Information from Buzzer channel (Sequence Block, Trial and Error Identifiers)
 % The easiest to parse the session is using the buzzer channel as it
@@ -143,7 +143,7 @@ end
 if ~(length(sequenceBlockInitiationTimes)==length(unique([ssnData.SequenceNumber])))
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
-    error('Number of Sequences don''t match, check files and code for source of discrepancy');
+%     error('Number of Sequences don''t match, check files and code for source of discrepancy');
 end
 % The number of single buzzer activations (reflecting trial availability & 
 % error signal presentation), plus the number of double buzzer activations 
@@ -153,7 +153,7 @@ if ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnDa
     ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)-1)     
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
-    error('Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy');
+%     error('Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy');
 end
 %% Identify Beep (Reward Signal) Times
 beepChanNum = strcmp(channels, 'Tone');
@@ -359,7 +359,7 @@ end
 if ~(length(trialEndTimes)==length(ssnData)*2) && sum(trialEndChanNum)~=0
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
-    error('More Trial End Time events than trials in ssnData, check files');
+%     error('More Trial End Time events than trials in ssnData, check files');
 end
 
 %% Position Data
