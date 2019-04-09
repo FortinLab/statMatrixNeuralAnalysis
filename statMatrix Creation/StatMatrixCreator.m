@@ -203,7 +203,8 @@ elseif rig == 2                                                             % Bo
     end
     summary = plxData.Summary;
     fprintf(outfile, '     Trial data used = %s\n', trialType);
-    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile);
+    pathParts = strsplit(plxFile, '\');
+    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, pathParts{end}, outputFileName, outfile);
 elseif rig == 3 || rig == 4                                                         % Open Ephys files in a behavior rig
     [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixOE(rig, outputFileName, outfile);
 elseif rig == 5                                                                     % Open Ephys in main acoustic chamber (Tardis)
@@ -212,23 +213,40 @@ end
 clc
 %% Create statMatrix
 if rig == 1 || rig == 2
-    CreateNeuralMatrixPLX(exp, data, rig, loc, behavMatrix(:,1), summary, outputFileName, outfile)
+    CreateNeuralMatrixPLX(exp, data, rig, loc, behavMatrix(:,1), summary, pathParts{end}, outputFileName, outfile)
 else
     CreateNeuralMatrixOE(exp, data, rig, behavMatrix(:,1), chanMapStruct, outputFileName, outfile);
 end
 
 fprintf(outfile, 'StatMatrix creation complete. Process took %ih\n', round(toc(start),2)/3600);
 fclose(outfile);
+% SummarizeUnits_SM
 %% Plexon Matrix Creation Functions
 % Behavior Matrix
-function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile)
+function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, fileName, outputFileName, outfile)
+    global fileUseCheck % I know this is messy
     % Identify the PLX file being used for stuff
     if rig == 1
         file = summary.PLXfile;
     elseif rig == 2
         file = summary.PlxFile;
     end
-
+    
+    if strcmp(file, fileName)==0
+        fileUseCheck = questdlg(sprintf('Filenames don''t match:\n plxFile = %s\n Selected = %s\n', file, fileName),...
+            'Use selected files?',...
+            'Yes',...
+            'No',...
+            'Yes');
+        switch fileUseCheck
+            case 'Yes'
+                file = fileName;
+                fprintf(outfile, 'plxData .plx file did not match selected file... used selected: %s\n', fileName);
+            case 'No'
+                fprintf(outfile, 'plxData .plx file did not match selected file... used plxData file: %s... code probably errored\n', file);
+        end
+    end
+    
     chan = 1;
     [samp, ~, tetTS, fn, ~] = plx_ad_v(file, chan);
     while tetTS == -1
@@ -356,7 +374,8 @@ function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behavio
 end
 
 % Neural Matrix
-function CreateNeuralMatrixPLX(exp, data, rig, loc, tsVect, summary, outputFileName, outfile)
+function CreateNeuralMatrixPLX(exp, data, rig, loc, tsVect, summary, fileName, outputFileName, outfile)
+    global fileUseCheck
     tsVect(end+1) = tsVect(end)+(mode(diff(tsVect)));
     % Identify the source for the lfp Files
     if rig == 1 || rig == 2
@@ -364,6 +383,10 @@ function CreateNeuralMatrixPLX(exp, data, rig, loc, tsVect, summary, outputFileN
             plxFile = summary.PLXfile;
         elseif rig == 2                                                     % Plexon collected in Boston
             plxFile = summary.PlxFile;
+        end
+        switch fileUseCheck
+            case 'Yes'
+                plxFile = fileName;
         end
         [~, plxADchanNames] = plx_adchan_names(plxFile);
         tetLFPchanNames = cell(size(plxADchanNames,1),1);
