@@ -368,7 +368,8 @@ if term
     trialEndTimes(end) = [];
 end
 
-if ~(length(trialEndTimes)==length(ssnData)*2) && sum(trialEndChanNum)~=0
+if (length(trialEndTimes)-length(ssnData)*2)~=1 && sum(trialEndChanNum)~=0 ||...
+    (length(trialEndTimes)==length(ssnData)*2) && sum(trialEndChanNum)~=0
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
     error('More Trial End Time events than trials in ssnData, check files');
@@ -474,17 +475,22 @@ for trl = 1:size(odorPresSsn,1)
                 if plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 0
                     break
                 elseif plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 1
-                    error('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct', trl);
+                    warning('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct', trl);
+                    tempPokeNum = tempPokeNum+1;
+                    tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 1
                     break
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 0
-                    error('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
+                    warning('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
+                    tempPokeNum = tempPokeNum+1;
+                    tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
                 end
             elseif tempPokeNum > sum(trialPokesLog)
                 break
+            else
+                tempPokeNum = tempPokeNum+1;
+                tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
             end
-            tempPokeNum = tempPokeNum+1;
-            tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
         end
         plxSession(trl).PokeDuration = tempPokeDur;
     elseif sum(trialPokesLog)==0
