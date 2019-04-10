@@ -196,7 +196,7 @@ if rig == 1                                                                 % Ir
      end
      behaviorData = plxData.Raw;
          
-    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile);
+    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, summary.PLXfile, outputFileName, outfile);
 elseif rig == 2                                                             % Boston .plx files
     [fileName, filePath] = uigetfile('.mat','Select the plxData file for the recording session');
     load([filePath fileName]);
