@@ -1,4 +1,4 @@
-function [plxData] = SummarizePLXevents_SD(plxFile, matFile)
+function [plxData] = SummarizePLXevents_SD(plxFile, matFile, outfile)
 %% FillPLXeventTSsToSsnData
 %   Alternative approach to examining timestamps/trial values etc. This one
 %   uses the parameters stored in the ssnData .mat file to guide the
@@ -16,25 +16,34 @@ if ~(nargin == 2)
         end
         plxFile = [path fileName];
     end
-    [path, fileName] = fileparts(plxFile);
-    path = [path '\'];
-    flContents = dir(path);
-    fileNames = {flContents.name};
-    matFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, [fileName '_([0-9]*)-([A-Z | a-z]*)-([0-9]*).mat']));
-    if sum(matFileLog)==0
-        [matFileName, matFilePath] = uigetfile('.mat', 'No .MAT file found in the folder with the .PLX file, select the ssnData file');
-        if matFileName == 0
-            disp('No .MAT file selected, analysis cancelled')
-            return
+    if isempty(matFile)
+        [path, fileName] = fileparts(plxFile);
+        path = [path '\'];
+        flContents = dir(path);
+        fileNames = {flContents.name};
+        matFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, [fileName '_([0-9]*)-([A-Z | a-z]*)-([0-9]*).mat']));
+        if sum(matFileLog)==0
+            [matFileName, matFilePath] = uigetfile('.mat', 'No .MAT file found in the folder with the .PLX file, select the ssnData file');
+            if matFileName == 0
+                disp('No .MAT file selected, analysis cancelled')
+                return
+            end
+            matFile = [matFilePath matFileName];
+        else
+            matFile = [path fileNames{matFileLog}];
+            [~, matFileName] = fileparts(matFile);
         end
-        matFile = [matFilePath matFileName];
-    else
-        matFile = [path fileNames{matFileLog}];
-        [~, matFileName] = fileparts(matFile);
     end
+    if isempty(outfile)
+        outfile = fopen(sprintf('%s_PLXeventSummary.txt', matFileName), 'At');
+    end
+else
+    outfile = fopen(sprintf('%s_PLXeventSummary.txt', matFileName), 'At'); %#ok<NODEF>
 end
 plxSummary.MATfile = matFileName;
 plxSummary.PLXfile = [fileName '.plx'];
+
+fprintf(outfile, '\n****Beginning behavioral analysis using SummarizePLXevents_SD.m. ****\n     Mat File = %s\n     Plx File = %s\n', plxSummary.MATfile, plxSummary.PLXfile);
 %% Load Data
 % Load the ssnData file first
 load(matFile);
@@ -63,6 +72,7 @@ else
     %%% event timestamps.
 %     error('This data was collected with an old version of the code that didn''t allow declaration of buffer duration, please use an older plxAnalysis script for it');
 end
+sequenceLength = ssnData(1).Settings.SequenceLength;
 % Now extract event data from the .plx file
 [numChans, chanNames] = plx_event_names(plxFile);
 plxStruct = struct('Channel', [], 'n', [], 'ts', [], 'sv', []);
@@ -85,14 +95,15 @@ strobeVal = {plxStruct.sv};
 % issued anytime during the session. If so then truncate all the other
 % behavioral variables to only the time points that occurred prior to
 % when the command was issued
-terminateChannelLog = strcmp(channels, 'Terminate');
+
+% terminateChannelLog = strcmp(channels, 'Terminate');
 % if ~(sum(terminateChannelLog)==0) && ~(plxStruct(terminateChannelLog).n == 0)
 %     term = 1;
 %     plxSummary.Terminate = 1;
 %     terminateTime = plxStruct(terminateChannelLog).ts(find(plxStruct(terminateChannelLog).ts>0, 1, 'first'));
 % else
     term = 0;
-%     plxSummary.Terminate = 0;
+    plxSummary.Terminate = 0;
 % end
 plxSummary.Errors = [];
 %% Pull Information from Buzzer channel (Sequence Block, Trial and Error Identifiers)
@@ -143,7 +154,8 @@ end
 if ~(length(sequenceBlockInitiationTimes)==length(unique([ssnData.SequenceNumber])))
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
-%     error('Number of Sequences don''t match, check files and code for source of discrepancy');
+    fprintf(outfile, 'Number of Sequences don''t match, check files and code for source of discrepancy\n PLX Count = %i\n MAT Count = %i\n', length(sequenceBlockInitiationTimes), length(unique([ssnData.SequenceNumber])));
+    warning('Number of Sequences don''t match, check files and code for source of discrepancy');
 end
 % The number of single buzzer activations (reflecting trial availability & 
 % error signal presentation), plus the number of double buzzer activations 
@@ -153,7 +165,8 @@ if ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnDa
     ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)-1)     
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
-%     error('Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy');
+    fprintf(outfile, 'Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy\n PLX Count = %i\n MAT Count = %i\n', length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0), length(ssnData));
+    warning('Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy');
 end
 %% Identify Beep (Reward Signal) Times
 beepChanNum = strcmp(channels, 'Tone');
@@ -213,9 +226,10 @@ if term
 end
 
 if length(odorPresTime{1}) < length(odorPresTime{2})
+    fprintf(outfile, 'More Bs than As\n');
     plxSummary.Errors = {'More Bs than As'};
     %         error('More Bs than As')
-    plxData.Session = plxSession;
+    plxData.Session = plxSession; %#ok<NODEF>
     plxData.Summary = plxSummary;
     return
 end
@@ -227,7 +241,11 @@ plxSummary.SequenceLength = sequenceLength;
 
 odorPresSsn = odorPresTime;
 for opt = 1:length(odorPresSsn)
-    odorPresSsn{opt} = [ones(length(odorPresSsn{opt}),1).*opt odorPresSsn{opt}];
+    if opt<=5
+        odorPresSsn{opt} = [ones(length(odorPresSsn{opt}),1).*opt odorPresSsn{opt}];
+    elseif opt>5
+        odorPresSsn{opt} = [ones(length(odorPresSsn{opt}),1).*(opt+5) odorPresSsn{opt}];
+    end
 end
 odorPresSsn(cellfun(@(a)isempty(a), odorPresSsn)) = [];
 odorPresSsn = sortrows(cell2mat(odorPresSsn'), 2);
@@ -235,9 +253,15 @@ odorPresSsn = sortrows(cell2mat(odorPresSsn'), 2);
 if ~sum(odorPresSsn(:,1)'-[ssnData.Odor])==0
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
+    fprintf(outfile, 'Odor order in .plx and .mat files don''t align, ensure you are working with the correct files\n');
     error('Odor order in .plx and .mat files don''t align, ensure you are working with the correct files')
 end
 
+if sum(unique(odorPresSsn(:,1)) > 5)>=1
+    plxSummary.DualListLog = true;
+else
+    plxSummary.DualListLog = false;
+end
 %% Identify Poke Times
 % The key information used here is when the poke was initiated and how
 % long it was held. When the poke was broken is less important and
@@ -279,6 +303,7 @@ interPokeInterval = diff([[0; pokeEndTimes], [pokeInitiationTimes; 0]],1,2);
 interPokeInterval(1) = []; % Remove first inter-poke interval because it refers to period between first and second poke, not period from start to end of first poke
 interPokeInterval(end) = nan; % NaN out the final entry because there is no poke in after the final poke out
 if nansum(interPokeInterval<0)>0
+    fprintf(outfile, 'Inter Poke Intervals are not all positive, something is wrong\n');
     error('Inter Poke Intervals are not all positive, something is wrong');
 end
 
@@ -356,10 +381,12 @@ if term
     trialEndTimes(end) = [];
 end
 
-if ~(length(trialEndTimes)==length(ssnData)*2) && sum(trialEndChanNum)~=0
+if (length(trialEndTimes)-length(ssnData)*2)~=1 && sum(trialEndChanNum)~=0 ||...
+    (length(trialEndTimes)==length(ssnData)*2) && sum(trialEndChanNum)~=0
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
-%     error('More Trial End Time events than trials in ssnData, check files');
+    fprintf(outfile, 'More Trial End Time events than trials in ssnData, check files\n');
+    error('More Trial End Time events than trials in ssnData, check files');
 end
 
 %% Position Data
@@ -462,17 +489,26 @@ for trl = 1:size(odorPresSsn,1)
                 if plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 0
                     break
                 elseif plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 1
-                    error('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct', trl);
+                    msgbox(sprintf('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
+%                     error('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct', trl);
+                    fprintf(outfile, 'Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct\n', trl);
+                    tempPokeNum = tempPokeNum+1;
+                    tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 1
                     break
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 0
-                    error('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
+                    msgbox(sprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
+%                     error('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
+                    fprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n', trl);
+                    tempPokeNum = tempPokeNum+1;
+                    tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
                 end
             elseif tempPokeNum > sum(trialPokesLog)
                 break
+            else
+                tempPokeNum = tempPokeNum+1;
+                tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
             end
-            tempPokeNum = tempPokeNum+1;
-            tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
         end
         plxSession(trl).PokeDuration = tempPokeDur;
     elseif sum(trialPokesLog)==0
@@ -493,6 +529,7 @@ for trl = 1:size(odorPresSsn,1)
         plxSession(trl).ErrorSignalTime = nonDoubleBuzzBuzzer(find(nonDoubleBuzzBuzzer>plxSession(trl).ItemPresentationTime, 1, 'first'));
     elseif plxSession(trl).Performance==-1 % Ordinal Transfer trials
     else
+        fprintf(outfile, 'Trial #%i: Abberant performance value\n', trl);
         error('Trial #%i: Abberant performance value', trl);
     end
     
@@ -510,16 +547,19 @@ for trl = 1:size(odorPresSsn,1)
     % threshold of 0.00001
     if plxSession(trl).PokeDuration - ssnData(trl).PokeDuration > 0.00001
 %         error('Trial #%i: Trial poke durations for .PLX and .MAT don''t match', trl);
+        fprintf(outfile, 'Trial #%i: Poke Duration discrepancy of %i\n', trl, plxSession(trl).PokeDuration - ssnData(trl).PokeDuration);
         plxSummary.Errors = [plxSummary.Errors; ['Trial #' num2str(trl) ': Poke Duration discrepancy of ' num2str(plxSession(trl).PokeDuration - ssnData(trl).PokeDuration)]];
     end
     
     % Check to ensure trial start came before trial end
     if plxSession(trl).TrialAvailTime>plxSession(trl).TrialEndTime
+        fprintf(outfile, 'Trial #%i: Trial available timestamp occurs before trial end timestamp\n', trl);
         error('Trial #%i: Trial available timestamp occurs before trial end timestamp', trl);
     end
     
     % Check to ensure trial poke in occurred after trial start
     if plxSession(trl).OdorTrigPokeTime<plxSession(trl).TrialAvailTime
+        fprintf(outfile, 'Trial #%i: Trial available timestamp occurs after poke in\n', trl);
         error('Trial #%i: Trial available timestamp occurs after poke in', trl);
     end
         
@@ -528,12 +568,14 @@ for trl = 1:size(odorPresSsn,1)
         % duration elapsed
         if ~((plxSession(trl).RewardSignalTime - plxSession(trl).OdorTrigPokeTime) > plxSession(trl).TargetDuration)
             if isfield(ssnData(1).Settings, 'GracePeriodDur') && plxSession(trl).TargetDuration - plxSession(trl).PokeDuration > ssnData(trl).Settings.GracePeriodDur
+                fprintf(outfile, 'Trial #%i: Reward signal time occurred before target duration elapsed\n', trl);
                 error('Trial #%i: Reward signal time occurred before target duration elapsed', trl);
             end
         end
         % Check to ensure reward was presented AFTER the reward signal
         % occurred
         if plxSession(trl).FrontRewardTime<plxSession(trl).RewardSignalTime
+            fprintf('Trial #%i: Reward presentation time occured BEFORE reward signal time\n', trl);
             error('Trial #%i: Reward presentation time occured BEFORE reward signal time', trl);
         end
     elseif plxSession(trl).Performance==0 && plxSession(trl).TranspositionDistance==0 % InSeq Incorrect Trials
@@ -548,5 +590,6 @@ end
 %% Compile Outputs
 plxData.Raw = plxSession;
 plxData.Summary = plxSummary;
+fprintf(outfile, 'Behavioral Analysis Completed\n\n********************************************************\n');
 
 
