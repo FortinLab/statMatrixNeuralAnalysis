@@ -476,12 +476,14 @@ for trl = 1:size(odorPresSsn,1)
                     break
                 elseif plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 1
                     warning('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct', trl);
+%                     error('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct', trl);
                     tempPokeNum = tempPokeNum+1;
                     tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 1
                     break
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 0
                     warning('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
+%                     error('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
                     tempPokeNum = tempPokeNum+1;
                     tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
                 end
