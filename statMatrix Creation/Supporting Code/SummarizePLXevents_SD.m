@@ -139,23 +139,25 @@ if term
     sequenceBlockInitiationTimes(end) = [];
     nonDoubleBuzzBuzzer(nonDoubleBuzzBuzzer>terminateTime) = [];
 end
-% The number of double buzzer activations should match the number of
-% sequences recorded in the ssnData structure
-if ~(length(sequenceBlockInitiationTimes)==length(unique([ssnData.SequenceNumber])))
-    fprintf('PLX file = %s\n', plxFile);
-    fprintf('MAT file = %s\n', matFile);
-    error('Number of Sequences don''t match, check files and code for source of discrepancy');
-end
-% The number of single buzzer activations (reflecting trial availability & 
-% error signal presentation), plus the number of double buzzer activations 
-% (reflecting sequence start), minus the number of error trials that
-% occurred, should equal the total number of trials that occurred
-if ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)) &&...
-    ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)-1)     
-    fprintf('PLX file = %s\n', plxFile);
-    fprintf('MAT file = %s\n', matFile);
-    error('Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy');
-end
+% *** These checks are disabled because they are not accurate checks of
+% file validity ***
+% % The number of double buzzer activations should match the number of
+% % sequences recorded in the ssnData structure
+% if ~(length(sequenceBlockInitiationTimes)==length(unique([ssnData.SequenceNumber])))
+%     fprintf('PLX file = %s\n', plxFile);
+%     fprintf('MAT file = %s\n', matFile);
+%     error('Number of Sequences don''t match, check files and code for source of discrepancy');
+% end
+% % The number of single buzzer activations (reflecting trial availability & 
+% % error signal presentation), plus the number of double buzzer activations 
+% % (reflecting sequence start), minus the number of error trials that
+% % occurred, should equal the total number of trials that occurred
+% if ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)) &&...
+%     ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)-1)     
+%     fprintf('PLX file = %s\n', plxFile);
+%     fprintf('MAT file = %s\n', matFile);
+%     error('Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy');
+% end
 %% Identify Beep (Reward Signal) Times
 beepChanNum = strcmp(channels, 'Tone');
 beepTimes = plxStruct(beepChanNum).ts;
