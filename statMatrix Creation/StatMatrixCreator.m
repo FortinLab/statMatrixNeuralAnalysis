@@ -186,12 +186,12 @@ fprintf(outfile, '********************************************************\n');
 %% Create Behavior Matrix
 if rig == 1                                                                 % Irvine .plx files
      if multiList
-         [plxData] = SummarizePLXevents_SD(plxFileBehav);
+         [plxData] = SummarizePLXevents_SD(plxFileBehav, [], outfile);
          summary = plxData.Summary;
          summary.PLXfileBehav = summary.PLXfile;
          summary.PLXfile = plxFile;                                         % This is done here to account for issues stemming from Offline Sorter's export function that removes the sub-board identity of event inputs, i.e. removes the identifier for Odor A and Odor V
      else
-         [plxData] = SummarizePLXevents_SD(plxFile);
+         [plxData] = SummarizePLXevents_SD(plxFile, [], outfile);
          summary = plxData.Summary;
      end
      behaviorData = plxData.Raw;
@@ -244,7 +244,13 @@ fclose(outfile);
 function [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile)
     % Identify the PLX file being used for stuff
     if rig == 1
-        file = summary.PLXfileBehav;
+        if isfield(summary, 'PLXfileBehav')
+            file = summary.PLXfileBehav;
+        elseif isfield(summary, 'PLXfile')
+            file = summary.PLXfile;
+        else
+            error('No plx file found in behavior summary, what happened here!');
+        end            
     elseif rig == 2
         file = summary.PlxFile;
     end
