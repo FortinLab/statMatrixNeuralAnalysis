@@ -15,6 +15,23 @@ if ~(nargin == 2)
             return
         end
         plxFile = [path fileName];
+        [path, fileName] = fileparts(plxFile);
+        path = [path '\'];
+        flContents = dir(path);
+        fileNames = {flContents.name};
+        matFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, [fileName '_([0-9]*)-([A-Z | a-z]*)-([0-9]*).mat']));
+        if sum(matFileLog)==0
+            [matFileName, matFilePath] = uigetfile('.mat', 'No .MAT file found in the folder with the .PLX file, select the ssnData file');
+            if matFileName == 0
+                disp('No .MAT file selected, analysis cancelled')
+                return
+            end
+            matFile = [matFilePath matFileName];
+        else
+            matFile = [path fileNames{matFileLog}];
+            [~, matFileName] = fileparts(matFile);
+        end
+        outfile = fopen(sprintf('%s_PLXeventSummary.txt', matFileName), 'At');
     end
     if isempty(matFile)
         [path, fileName] = fileparts(plxFile);
