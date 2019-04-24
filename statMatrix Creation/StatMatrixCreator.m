@@ -133,7 +133,20 @@ dataType = questdlg('What type of data are you compiling?',...
     'Plexon Session File');
 switch dataType
     case 'Plexon Session File'
-        data = 1;
+        plxFileOrg = questdlg('Are the cut files all in a single .plx file or is it split into individual tetrodes?',...
+            'Identify File Organization',...
+            'Single File',...
+            'Multiple Files',...
+            'Multiple Files');
+        switch plxFileOrg
+            case 'Single File'
+                data = 1;
+            case 'Multiple Files'
+                data = 5;
+                plxCutFileDir = uigetdir('Identify file directory for cut files');
+                plxCutFiles = dir(plxCutFileDir);
+                plxCutFileNames = {plxCutFiles(cellfun(@(a)~isempty(a), strfind({plxCutFiles.name}, '.plx'))).name};
+        end
     case 'MountainSort Cut Files'
         questdlg({'Verify the cut, MS processed, .plx files have been named to match their channel names in the original plexon recordings.' '' 'If they don''t match, change them now'},...
             'File Name Verification', 'Ok', 'Ok');
@@ -155,6 +168,12 @@ fprintf(outfile, 'Initialized %s at %i:%i.%i\n', date, curTime(4), curTime(5), r
 fprintf(outfile, 'Working Directory = %s\n', cd);
 if rig==1 || rig==2
     fprintf(outfile, '     Plexon File used = %s\n', plxFile);
+    if data == 5
+        fprintf(outfile, '     ::Cut files used::\n');
+        for fl = 1:length(plxCutFileNames)
+            fprintf(outfile, '     %s\n', plxCutFileNames{fl});
+        end
+    end
     if rig==1
         multiListCheck = questdlg('Use a different .plx file for behavioral events?', 'Event Check', 'Yes', 'No', 'Yes');
         switch multiListCheck
@@ -194,9 +213,14 @@ if rig == 1                                                                 % Ir
          [plxData] = SummarizePLXevents_SD(plxFile, [], outfile);
          summary = plxData.Summary;
      end
+     
+     if data == 5
+         summary.PLXcutFiles = plxCutFileNames;
+         summary.PLXcutFileDir = plxCutFileDir;
+     end
      behaviorData = plxData.Raw;
          
-    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, summary.PLXfile, outputFileName, outfile);
+    [behavMatrix, behavMatrixColIDs] = CreateBehaviorMatrixPLX(rig, behaviorData, summary, outputFileName, outfile);
 elseif rig == 2                                                             % Boston .plx files
     [fileName, filePath] = uigetfile('.mat','Select the plxData file for the recording session');
     load([filePath fileName]);
@@ -448,6 +472,22 @@ function CreateNeuralMatrixPLX(exp, data, rig, loc, tsVect, summary, outputFileN
                 error('Open Ephys not implemented yet');
             end
             tetsWithUnits = cellfun(@(a,b,c)a(b:c), spkFiles, tetNameStart, tetNameEnd, 'uniformoutput', 0);
+        elseif data == 5
+            % Here the Unit and LFP data are pulled from different files
+            %   like the MountainSort files... except the tetrodes are not
+            %   stored on channels 1-4 like the MountainSort files are.
+            %   Rather, this data is derived from .plx files that are
+            %   broken into individual tetrodes and then cut separately.
+            [~,chanNames] = plx_chan_names(plxFile);
+            tetNames = cell(size(chanNames,1),1);
+            for t = 1:size(chanNames,1)
+                curChanName = deblank(chanNames(t,:));
+                tetNames{t} = curChanName(1:end-2);
+            end
+            spikeFileDir = summary.PLXcutFileDir;
+            spkFiles = summary.PLXcutFiles;
+            [tetNameStart, tetNameEnd] = regexp(spkFiles, '_T([0-9]*)_');
+            tetsWithUnits = cellfun(@(a,b,c)a(b+1:c-1), spkFiles, tetNameStart, tetNameEnd, 'uniformoutput', 0);
         end
     end
     ensembleMatrix = cell(size(tetsWithUnits));
@@ -456,7 +496,7 @@ function CreateNeuralMatrixPLX(exp, data, rig, loc, tsVect, summary, outputFileN
     % Now run through each channel individually to identify things
     % tetLFPchanNames
     % tetsWithUnits
-    for chan = 1:length(tetLFPchanNames)
+    for chan = 6:length(tetLFPchanNames)
         if rig == 1 || rig == 2
             curADchan = tetLFPchanNames{chan};
             curTet = curADchan(1:end-2);
@@ -488,6 +528,12 @@ function CreateNeuralMatrixPLX(exp, data, rig, loc, tsVect, summary, outputFileN
                     [tsCountFl, ~, ~, ~] = plx_info(tetFile, 1);
                     curNumUnis = sum(tsCountFl(:,2)>0)-1;
                     curChanNums = 1:4;
+                elseif data == 5
+                    tetFile = [spikeFileDir '\' spkFiles{find(strcmp(curTet, tetsWithUnits),1)}];
+                    fprintf(outfile, '     Spike data for %s found on %s\n', curTet, tetFile);
+                    [tsCountFl, ~, ~, ~] = plx_info(tetFile, 1);
+                    curChanNums = find(strcmp(tetNames, curTet));
+                    curNumUnis = sum(tsCountFl(2:end,curChanNums(2))~=0);
                 else
                     tetFile = plxFile;
                     curUniLog = strcmp(tetNames, curTet);
