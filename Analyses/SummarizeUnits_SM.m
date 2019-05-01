@@ -61,7 +61,7 @@ for p = 1:length(phaseBins)-1
 end
 
 % Number of permutations for chance distribution estimation
-numPerms = 100;
+numPerms = 10;
 
 %% Analysis #1: Examine Average Evoked activity during trial periods
 fprintf('Starting Analysis #1 @%s....', datetime);
