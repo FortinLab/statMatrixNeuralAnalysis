@@ -11,6 +11,10 @@ end
 dirContents = dir(fileDir);
 fileNames = {dirContents.name};
 
+%% Define Standard Variables
+timeBinSize = 0.025;
+slideWindowSize = 30;
+spatialBinSize = 2;
 
 %% Load Relevant Data
 load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))});
@@ -64,7 +68,6 @@ orientMatrixColIDs = [orientMatrixColIDs, {'PortAngle'}, {'HeadAngle'}, {'TailAn
 % bins down the road to verify I get similar values.
 
 % Create Gaussian
-slideWindowSize = 50;
 instFRgauss = gausswin(slideWindowSize);
 instFRgauss = instFRgauss/(length(instFRgauss)*mode(diff(behavMatrix(:,1))));
 
@@ -84,6 +87,7 @@ corrTrlLog = [pokeInTrialMatrix.Performance];
 isLog = [pokeInTrialMatrix.TranspositionDistance]==0;
 pokeInNdxs = {pokeInTrialMatrix.PokeInIndex};
 pokeInNdxsISC = pokeInNdxs(corrTrlLog & isLog);
+odorIDsISC = [pokeInTrialMatrix(corrTrlLog & isLog).Odor];
 
 % Extract Orientation Data
 % Pull out the InSeq Correct Trials
@@ -135,20 +139,23 @@ meanFRvals = mean(allFRvals,1);
 allTrialIDvals = cell2mat(cellfun(@(a,b)b(~isnan(a(:,2)),1), orientationTrialData, trialIDvals, 'uniformoutput', 0)');
 
 % Orientation Occupancy Bins: Define spaces and calculate p(occupy)
-% First break the orientation data out of the trial organization
+% First break the orientation data out of the trial organization.
+% Note: 1pixel = ~1.7mm
 allOrientData = cell2mat(cellfun(@(a)a(~isnan(a(:,2)),:), orientationTrialData, 'uniformoutput', 0)');
 % Head Position: Head X/Y
 headXcolLog = strcmp(orientMatrixColIDs, 'HeadX');
-headXbins = 30:2:80;
+headXbins = 30:spatialBinSize:90;
 headYcolLog = strcmp(orientMatrixColIDs, 'HeadY');
-headYbins = 240:300;
+headYbins = 240:spatialBinSize:300;
 headOccupancyMatrix = histcounts2(allOrientData(:,headXcolLog), allOrientData(:,headYcolLog), headXbins, headYbins, 'Normalization', 'probability')';
+headOccupancyMatrix(headOccupancyMatrix==0) = nan;
 % Tail Position: Tail X/Y
 tailXcolLog = strcmp(orientMatrixColIDs, 'TailX');
-tailXbins = 60:2:180;
+tailXbins = 60:spatialBinSize:180;
 tailYcolLog = strcmp(orientMatrixColIDs, 'TailY');
-tailYbins = 180:5:260;
+tailYbins = 180:spatialBinSize:264;
 tailOccupancyMatrix = histcounts2(allOrientData(:,tailXcolLog), allOrientData(:,tailYcolLog), tailXbins, tailYbins, 'Normalization', 'probability')';
+tailOccupancyMatrix(tailOccupancyMatrix==0) = nan;
 % Head Angle: Angle at the head between the port and the tail
 headAngleColLog = strcmp(orientMatrixColIDs, 'HeadAngle');
 headAngleBins = 0:15:180;
@@ -165,27 +172,61 @@ portAngleOccupancyVector = histcounts(allOrientData(:,portAngleColLog), portAngl
 % Trial Position Occupancy Bins: Here I'm considering position to be a 2-D
 % where the x-axis is Time and the Y-axis is trial position
 posBins = 0.5:4.5;
-timeBins = firingRateTrialData{1}(1,1)-0.05:0.05:firingRateTrialData{1}(end,1)+0.05;
+timeBins = firingRateTrialData{1}(1,1)-timeBinSize:timeBinSize:firingRateTrialData{1}(end,1)+timeBinSize;
 timeBinOccupancyMatrix = histcounts2(allTimeVals, allTrialIDvals, timeBins, posBins, 'Normalization', 'probability')';
+
+%% Analyze the Orientation Data
+% For this I will be breaking down the head and tail spatial position by
+% trial position and analyzing the variation across and within trials. 
+tPosHeadOccupyFig = PlotTrialPositionOccupancy(allOrientData, orientationTrialData, headXcolLog, headYcolLog, headXbins, headYbins, allTrialIDvals, odorIDsISC, timeBins, 'Head');
+figure(tPosHeadOccupyFig);
+annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('Spatial Bin = %.02fmm, Temporal Bin = %.02fms', spatialBinSize*1.7, timeBinSize*1000), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+orient(tPosHeadOccupyFig, 'tall');
+orient(tPosHeadOccupyFig, 'landscape');
+%     print
+print('-painters', tPosHeadOccupyFig, '-dpdf', 'HeadLocationTrialPositionSummary');
+tPosTailOccupyFig = PlotTrialPositionOccupancy(allOrientData, orientationTrialData, tailXcolLog, tailYcolLog, tailXbins, tailYbins, allTrialIDvals, odorIDsISC, timeBins, 'Tail');
+figure(tPosTailOccupyFig);
+annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('Spatial Bin = %.02fmm, Temporal Bin = %.02fms', spatialBinSize*1.7, timeBinSize*1000), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+orient(tPosTailOccupyFig, 'tall');
+orient(tPosTailOccupyFig, 'landscape');
+%     print
+print('-painters', tPosTailOccupyFig, '-dpdf', 'TailLocationTrialPositionSummary');   
+% Compute the deviation (distance) for the Head and Tail during the first
+% frame of every trial from the spatial position on trial #1 in the
+% sequence
+
+% Compute the deviation (distance) of the Head and Tail during the trial
+% period for every trial
+
+% Calculate the spatial position for Head and Tail for each trial position
+% for the entire trial period
+
+% Calculate the difference across trial positions for the spatial position
+% matrix (just do subtraction for now) and plot the difference in grayscale
+
+
 
 %% Run Analyses
 for uni = 1:length(ensembleUnitSummaries)
     %% Port Orientation Alone Analyses
     % Head Position Information
-    [headFRmap, headICmap, headIC] = CalculateFieldIC(allOrientData(:,headXcolLog), allOrientData(:,headYcolLog),...
+    [headFRmap, headICmap, headIC, headICrate] = CalculateFieldIC(allOrientData(:,headXcolLog), allOrientData(:,headYcolLog),...
         headXbins, headYbins, headOccupancyMatrix, allFRvals(:,uni), meanFRvals(uni));
     % Tail Position Information
-    [tailFRmap, tailICmap, tailIC] = CalculateFieldIC(allOrientData(:,tailXcolLog), allOrientData(:,tailYcolLog),...
+    [tailFRmap, tailICmap, tailIC, tailICrate] = CalculateFieldIC(allOrientData(:,tailXcolLog), allOrientData(:,tailYcolLog),...
         tailXbins, tailYbins, tailOccupancyMatrix, allFRvals(:,uni), meanFRvals(uni));
     
     % Head Angle Information
-    [headAngleFRvect, headAngleICvect, headAngleICval] = CalculateVectorIC(allOrientData(:,headAngleColLog),...
+    [headAngleFRvect, headAngleICvect, headAngleICval, headAngleICrate] = CalculateVectorIC(allOrientData(:,headAngleColLog),...
         headAngleBins, headAngleOccupancyVector, allFRvals(:,uni), meanFRvals(uni));
     % Tail Angle Information
-    [tailAngleFRvect, tailAngleICvect, tailAngleICval] = CalculateVectorIC(allOrientData(:,tailAngleColLog),...
+    [tailAngleFRvect, tailAngleICvect, tailAngleICval, tailAngleICrate] = CalculateVectorIC(allOrientData(:,tailAngleColLog),...
         tailAngleBins, tailAngleOccupancyVector, allFRvals(:,uni), meanFRvals(uni));
     % Port Angle Information
-    [portAngleFRvect, portAngleICvect, portAngleICval] = CalculateVectorIC(allOrientData(:,portAngleColLog),...
+    [portAngleFRvect, portAngleICvect, portAngleICval, portAngleICrate] = CalculateVectorIC(allOrientData(:,portAngleColLog),...
         portAngleBins, portAngleOccupancyVector, allFRvals(:,uni), meanFRvals(uni));
     
     
@@ -200,6 +241,7 @@ for uni = 1:length(ensembleUnitSummaries)
     z = colormap('jet');
     z(1,:) = [1 1 1];
     colormap(z);
+    set(gca, 'clim', [-0.01, max(get(gca, 'clim'))]);
     % Head FR Map
     subplot(3,3,2)
     imagesc(headFRmap);
@@ -212,7 +254,7 @@ for uni = 1:length(ensembleUnitSummaries)
     subplot(3,3,3)
     imagesc(headICmap);
     set(gca, 'ydir', 'normal');
-    title(sprintf('Head Position IC (Overall = %.03f bits)', headIC));
+    title(sprintf('Head Position IC (Overall = %.03f bits | %.03f bit/sec)', headIC, headICrate));
     cb = colorbar('southoutside');
     cb.Label.String = 'Information Content (bits)';
     colormap(z);
@@ -225,6 +267,7 @@ for uni = 1:length(ensembleUnitSummaries)
     cb = colorbar('southoutside');
     cb.Label.String = 'p(Occupancy)';
     colormap(z);
+    set(gca, 'clim', [-0.01, max(get(gca, 'clim'))]);
     % Head FR Map
     subplot(3,3,5)
     imagesc(tailFRmap);
@@ -237,7 +280,7 @@ for uni = 1:length(ensembleUnitSummaries)
     subplot(3,3,6)
     imagesc(tailICmap);
     set(gca, 'ydir', 'normal');
-    title(sprintf('Tail Position IC (Overall = %.03f bits)', tailIC));
+    title(sprintf('Tail Position IC (Overall = %.03f bits | %.03f bit/sec)', tailIC, tailICrate));
     cb = colorbar('southoutside');
     cb.Label.String = 'Information Content (bits)';
     colormap(z);
@@ -257,7 +300,7 @@ for uni = 1:length(ensembleUnitSummaries)
     yyaxis right
     ylabel 'Firing Rate'
     legend('Occ', 'FR', 'IC', 'location', 'best');
-    title(sprintf('Head Angle (Overall IC = %.03f bits', headAngleICval));
+    title(sprintf('Head Angle (Overall IC = %.03f bits | %.03f bit/sec)', headAngleICval, headAngleICrate));
     
     subplot(3,3,8)
     yyaxis left
@@ -273,7 +316,7 @@ for uni = 1:length(ensembleUnitSummaries)
     yyaxis right
     ylabel 'Firing Rate'
     legend('Occ', 'FR', 'IC', 'location', 'best');
-    title(sprintf('Tail Angle (Overall IC = %.03f bits', tailAngleICval));
+    title(sprintf('Tail Angle (Overall IC = %.03f bits | %.03f bit/sec)', tailAngleICval, tailAngleICrate));
 
     subplot(3,3,9)
     yyaxis left
@@ -289,9 +332,10 @@ for uni = 1:length(ensembleUnitSummaries)
     yyaxis right
     ylabel 'Firing Rate'
     legend('Occ', 'FR', 'IC', 'location', 'best');
-    title(sprintf('Port Angle (Overall IC = %.03f bits', portAngleICval));
+    title(sprintf('Port Angle (Overall IC = %.03f bits | %.03f bit/sec)', portAngleICval, portAngleICrate));
     
     annotation('textbox', [0.05 0.9 0.9 0.1], 'String', ensembleMatrixColIDs{uni+1}, 'linestyle', 'none', 'FontSize', 20); %#ok<USENS>
+    annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('Spatial Bin = %.02fmm, Gaussian = %.02fms', spatialBinSize*1.7, slideWindowSize), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
     annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
     drawnow
     
@@ -303,7 +347,7 @@ for uni = 1:length(ensembleUnitSummaries)
     
     %% Trial Position Alone
     % Trial Position
-    [trialFRmap, trialICmap, trialIC] = CalculateFieldIC(allTimeVals, allTrialIDvals,...
+    [trialFRmap, trialICmap, trialIC, trialICrate] = CalculateFieldIC(allTimeVals, allTrialIDvals,...
         timeBins, posBins, timeBinOccupancyMatrix, allFRvals(:,uni), meanFRvals(uni));
     
     figure;
@@ -318,6 +362,7 @@ for uni = 1:length(ensembleUnitSummaries)
     z = colormap('jet');
     z(1,:) = [1 1 1];
     colormap(z);
+    set(gca, 'clim', [-0.01, max(get(gca, 'clim'))]);
     
     subplot(1,3,2)
     imagesc(firingRateTrialData{1}(1,1):0.1:firingRateTrialData{1}(end,1),1:4,trialFRmap);
@@ -336,12 +381,13 @@ for uni = 1:length(ensembleUnitSummaries)
     hold on;
     line([0 0], [0.5 4.5], 'linewidth', 2, 'color', 'k');
 %     set(gca, 'ydir', 'normal');
-    title(sprintf('Trial Position IC (Overall = %.03f bits)', trialIC));
+    title(sprintf('Trial Position IC (Overall = %.03f bits | %.03f bit/sec)', trialIC, trialICrate));
     cb = colorbar('southoutside');
     cb.Label.String = 'Information Content (bits)';
     colormap(z);
     
     annotation('textbox', [0.05 0.9 0.9 0.1], 'String', ensembleMatrixColIDs{uni+1}, 'linestyle', 'none', 'FontSize', 20);
+    annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('Temporal Bin = %.02fmm, Gaussian = %.02fms', timeBinSize*1000, slideWindowSize), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
     annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
     drawnow
     
@@ -353,8 +399,8 @@ for uni = 1:length(ensembleUnitSummaries)
 end
 
 end
-
-function [frMap, icMap, totalICval] = CalculateFieldIC(curXdata, curYdata, xBinLims, yBinLims, occupancyMatrix, uniFR, meanFR)
+%%
+function [frMap, icMap, totalICval, overallICrate] = CalculateFieldIC(curXdata, curYdata, xBinLims, yBinLims, occupancyMatrix, uniFR, meanFR)
 frMap = nan(length(yBinLims)-1, length(xBinLims)-1);
 icMap = nan(length(yBinLims)-1, length(xBinLims)-1);
 for r = 1:length(yBinLims)-1
@@ -366,9 +412,10 @@ for r = 1:length(yBinLims)-1
     end
 end
 totalICval = nansum(icMap(:));
+overallICrate = totalICval*meanFR;
 end
-
-function [frVect, icVect, totalICval] = CalculateVectorIC(curXdata, xBinLims, occupancyVector, uniFR, meanFR)
+%%
+function [frVect, icVect, totalICval, overallICrate] = CalculateVectorIC(curXdata, xBinLims, occupancyVector, uniFR, meanFR)
 frVect = nan(1,length(xBinLims)-1);
 icVect = nan(1,length(xBinLims)-1);
 for c = 1:length(xBinLims)-1
@@ -377,4 +424,153 @@ for c = 1:length(xBinLims)-1
     icVect(c) = occupancyVector(c)*(frVect(c)/meanFR)*log2(frVect(c)/meanFR);
 end
 totalICval = nansum(icVect);
+overallICrate = totalICval*meanFR;
+end
+
+%%
+function [curTrialOccupancyPlot] = PlotTrialPositionOccupancy(allOrientData, orientationTrialData, xColLog, yColLog, xBins, yBins, allTrialIDvals, odorIDsISC, timeBins, feature)
+
+trialOccupancy = cell(1,4);
+for pos = 1:4
+    trialOccupancy{pos} = histcounts2(allOrientData(allTrialIDvals==pos,xColLog), allOrientData(allTrialIDvals==pos,yColLog), xBins, yBins, 'Normalization', 'probability')';
+    trialOccupancy{pos}(trialOccupancy{pos}==0) = nan;
+end
+
+% This is going to be hard coded unfortunately, but I think that's going to
+% be the easiest way to handle it.
+curTrialOccupancyPlot = figure;
+jMod = colormap('jet');
+jMod(1,:) = [1 1 1];
+pMod = colormap('parula');
+pMod(1,:) = [1 1 1];
+
+pos1 = subplot(4,4,1);
+imagesc(trialOccupancy{1});
+set(pos1, 'ydir', 'normal', 'clim', [-0.01, max(get(gca, 'clim'))]);
+title(sprintf('Trial 1 %s Location', feature));
+colormap(pos1, jMod);
+
+pos2 = subplot(4,4,6);
+imagesc(trialOccupancy{2});
+set(pos2, 'ydir', 'normal', 'clim', [-0.01, max(get(gca, 'clim'))]);
+title(sprintf('Trial 2 %s Location', feature));
+colormap(pos2, jMod);
+
+pos3 = subplot(4,4,11);
+imagesc(trialOccupancy{3});
+set(pos3, 'ydir', 'normal', 'clim', [-0.01, max(get(gca, 'clim'))]);
+title(sprintf('Trial 3 %s Location', feature));
+colormap(pos3, jMod);
+
+pos4 = subplot(4,4,16);
+imagesc(trialOccupancy{4});
+set(pos4, 'ydir', 'normal', 'clim', [-0.01, max(get(gca, 'clim'))]);
+title(sprintf('Trial 4 %s Location', feature));
+colormap(pos4, jMod);
+
+% Now, zero out the nans... I know I nan'd out my zeros before. That's
+% better for the bulk of the analyses, this is better for this analysis.
+for t = 1:4
+    trialOccupancy{t}(isnan(trialOccupancy{t})) = 0;
+end
+
+pos2m1 = subplot(4,4,2);
+curDiffMtx = CalculateOccupyDiffMtx(trialOccupancy{1}, trialOccupancy{2});
+imagesc(curDiffMtx);
+set(pos2m1, 'ydir', 'normal', 'clim', [min(get(gca, 'clim'))-0.01, max(get(gca, 'clim'))]);
+title('Trial 2 - Trial 1');
+colormap(pos2m1, pMod);
+
+pos3m1 = subplot(4,4,3);
+curDiffMtx = CalculateOccupyDiffMtx(trialOccupancy{1}, trialOccupancy{3});
+imagesc(curDiffMtx);
+set(pos3m1, 'ydir', 'normal', 'clim', [min(get(gca, 'clim'))-0.01, max(get(gca, 'clim'))]);
+title('Trial 3 - Trial 1');
+colormap(pos3m1, pMod);
+
+pos4m1 = subplot(4,4,4);
+curDiffMtx = CalculateOccupyDiffMtx(trialOccupancy{1}, trialOccupancy{4});
+imagesc(curDiffMtx);
+set(pos4m1, 'ydir', 'normal', 'clim', [min(get(gca, 'clim'))-0.01, max(get(gca, 'clim'))]);
+title('Trial 4 - Trial 1');
+colormap(pos4m1, pMod);
+
+pos3m2 = subplot(4,4,7);
+curDiffMtx = CalculateOccupyDiffMtx(trialOccupancy{2}, trialOccupancy{3});
+imagesc(curDiffMtx);
+set(pos3m2, 'ydir', 'normal', 'clim', [min(get(gca, 'clim'))-0.01, max(get(gca, 'clim'))]);
+title('Trial 3 - Trial 2');
+colormap(pos3m2, pMod);
+
+pos4m2 = subplot(4,4,8);
+curDiffMtx = CalculateOccupyDiffMtx(trialOccupancy{2}, trialOccupancy{4});
+imagesc(curDiffMtx);
+set(pos4m2, 'ydir', 'normal', 'clim', [min(get(gca, 'clim'))-0.01, max(get(gca, 'clim'))]);
+title('Trial 4 - Trial 2');
+colormap(pos4m2, pMod);
+
+pos4m3 = subplot(4,4,12);
+curDiffMtx = CalculateOccupyDiffMtx(trialOccupancy{3}, trialOccupancy{4});
+imagesc(curDiffMtx);
+set(pos4m3, 'ydir', 'normal', 'clim', [min(get(gca, 'clim'))-0.01, max(get(gca, 'clim'))]);
+title('Trial 4 - Trial 3');
+colormap(pos4m3, pMod);
+
+%% Extract spatial position in the first frame after poke in for every trial
+xFF = nan(1,length(orientationTrialData));
+yFF = nan(1,length(orientationTrialData));
+trialMoveVect = cell(1,length(orientationTrialData));
+for trl = 1:length(orientationTrialData)
+    curTrlData = orientationTrialData{trl};
+    curTrlData(isnan(curTrlData(:,2)),:) = [];
+    xFF(trl) = curTrlData(find(curTrlData(:,1)>=0, 1, 'first'), xColLog);
+    yFF(trl) = curTrlData(find(curTrlData(:,1)>=0, 1, 'first'), yColLog);
+    trialMoveVect{trl} = [curTrlData(:,1), cell2mat(arrayfun(@(a,b)sqrt(((a-xFF(trl))^2)+((b-yFF(trl))^2)), curTrlData(:,xColLog), curTrlData(:,yColLog), 'uniformoutput', 0))];
+end
+% Compute the average spatial position for Head and Tail across trial
+% positions
+trialHeadXff = nan(2,4);
+trialHeadYff = nan(2,4);
+trialMoveVals = repmat({nan(2,length(timeBins)-1)}, [1 4]);
+for pos = 1:4
+    trialHeadXff(1,pos) = mean(xFF(odorIDsISC==pos));
+    trialHeadXff(2,pos) = std(xFF(odorIDsISC==pos));
+    
+    trialHeadYff(1,pos) = mean(yFF(odorIDsISC==pos));
+    trialHeadYff(2,pos) = std(yFF(odorIDsISC==pos));
+    curPosTrlVects = cell2mat(trialMoveVect(odorIDsISC==pos)');
+    tempDistVect = trialMoveVals{pos};
+    for tb = 1:length(timeBins)-1
+        tempDistVect(1,tb) = mean(curPosTrlVects(curPosTrlVects(:,1)>=timeBins(tb) & curPosTrlVects(:,1)<timeBins(tb+1),2));
+        tempDistVect(2,tb) = std(curPosTrlVects(curPosTrlVects(:,1)>=timeBins(tb) & curPosTrlVects(:,1)<timeBins(tb+1),2));        
+    end
+    trialMoveVals{pos} = tempDistVect;
+end
+
+subplot(4,4,9)
+errorbar(trialHeadXff(1,:), trialHeadYff(1,:),trialHeadYff(2,:),trialHeadYff(2,:), trialHeadXff(2,:), trialHeadXff(2,:), 'CapSize', 0);
+for pos = 1:4
+    text(trialHeadXff(1,pos), trialHeadYff(1,pos), sprintf('%i', pos), 'horizontalalignment', 'center', 'FontSize', 15, 'FontWeight', 'Bold');
+end
+ylabel('Y-Coordinate');
+xlabel('X-Coordinate');
+title(sprintf('Initial %s Position Upon Poke In', feature));
+
+subplot(4,4,[13 14])
+errorbar(timeBins(2:end)-mode(diff(timeBins)),trialMoveVals{1}(1,:), trialMoveVals{1}(2,:), 'capsize', 0, 'color', [44/255 168/255 224/255]);
+hold on;
+errorbar(timeBins(2:end)-mode(diff(timeBins)),trialMoveVals{2}(1,:), trialMoveVals{2}(2,:), 'capsize', 0, 'color', [154/255 133/255 122/255]);
+errorbar(timeBins(2:end)-mode(diff(timeBins)),trialMoveVals{3}(1,:), trialMoveVals{3}(2,:), 'capsize', 0, 'color', [9/255 161/255 74/255]);
+errorbar(timeBins(2:end)-mode(diff(timeBins)),trialMoveVals{4}(1,:), trialMoveVals{4}(2,:), 'capsize', 0, 'color', [128/255 66/255 151/255]);
+legend('Position 1', 'Position 2', 'Position 3', 'Position 4', 'location', 'best');
+set(gca, 'ylim', [-1 max(get(gca, 'ylim'))]);
+title('Distance From First Poke In Frame');
+xlabel 'Time'
+ylabel 'Distance (pixels)'
+
+    function diffOccupyMatrix = CalculateOccupyDiffMtx(occupyMatrix1, occupyMatrix2)
+        diffOccupyMatrix = occupyMatrix2-occupyMatrix1;
+        noOccupyMask = (occupyMatrix2==0 & occupyMatrix1==0);
+        diffOccupyMatrix(noOccupyMask) = nan;
+    end
 end
