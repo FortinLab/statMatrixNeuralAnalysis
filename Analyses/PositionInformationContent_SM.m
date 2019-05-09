@@ -343,7 +343,7 @@ for uni = 1:length(ensembleUnitSummaries)
     orient(gcf, 'landscape');
 %     print
     print('-painters', gcf, '-dpdf', sprintf('%s_OrientInfo_Summary', ensembleMatrixColIDs{uni+1}));
-    close(gcf);
+%     close(gcf);
     
     %% Trial Position Alone
     % Trial Position
@@ -402,12 +402,14 @@ end
 %%
 function [frMap, icMap, totalICval, overallICrate] = CalculateFieldIC(curXdata, curYdata, xBinLims, yBinLims, occupancyMatrix, uniFR, meanFR)
 frMap = nan(length(yBinLims)-1, length(xBinLims)-1);
+frStdMap = nan(length(yBinLims)-1, length(xBinLims)-1);
 icMap = nan(length(yBinLims)-1, length(xBinLims)-1);
 for r = 1:length(yBinLims)-1
     yValLog = (curYdata>=yBinLims(r) & curYdata<yBinLims(r+1));
     for c = 1:length(xBinLims)-1
         xValLog = (curXdata>=xBinLims(c) & curXdata<xBinLims(c+1));
         frMap(r,c) = mean(uniFR(yValLog & xValLog));
+        frStdMap(r,c) = std(uniFR(yValLog & xValLog));
         icMap(r,c) = occupancyMatrix(r,c)*(frMap(r,c)/meanFR)*log2(frMap(r,c)/meanFR);
     end
 end
