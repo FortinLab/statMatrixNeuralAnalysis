@@ -11,9 +11,9 @@ dirContents = dir(fileDir);
 fileNames = {dirContents.name};
 
 %% Define Standard Variables
-slideWindowSize = 30;
+slideWindowSize = 100;
 spatialBinSize = 2;
-numPerms = 10;
+numPerms = 50;
 
 %% Load Relevant Data
 load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))});
@@ -173,28 +173,83 @@ for uni = 1:length(ensembleUnitSummaries)
     curUniPokeInFR = reshape(pokeInFRisc(:,uni+1,:), [size(pokeInFRisc,1), size(pokeInFRisc,3), 1]);
     curUniPokeOutFR = reshape(pokeOutFRisc(:,uni+1,:), [size(pokeOutFRisc,1), size(pokeOutFRisc,3), 1]);
     
+    % Poke In Oriented
     [curUniPIfvalPOS, curUniPIfvalPOSz] = SlidingFvalCalc(curUniPokeInFR, posIDsISC, numPerms);
-    [curUniPOfvalPOS, curUniPOfvalPOSz] = SlidingFvalCalc(curUniPokeOutFR, posIDsISC, numPerms);
     
     [curUniPIfvalHeadX, curUniPIfvalHeadXz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headXcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    [curUniPIfvalHeadY, curUniPIfvalHeadYz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headYcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
     
+    [curUniPIfvalTailX, curUniPIfvalTailXz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,tailXcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    [curUniPIfvalTailY, curUniPIfvalTailYz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,tailYcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
     
+    [curUniPIfvalPortAngle, curUniPIfvalPortAnglez] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,portAngleColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    [curUniPIfvalHeadAngle, curUniPIfvalHeadAnglez] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headAngleColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    [curUniPIfvalTailAngle, curUniPIfvalTailAnglez] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,tailAngleColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
     
+    [curUniPIfvalHeadTailDist, curUniPIfvalHeadTailDistZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,htLengthColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    [curUniPIfvalHeadPortDist, curUniPIfvalHeadPortDistZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,hpLengthColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    [curUniPIfvalTailPortDist, curUniPIfvalTailPortDistZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,ptLengthColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
     
+    % Poke Out Oriented
+    [curUniPOfvalPOS, curUniPOfvalPOSz] = SlidingFvalCalc(curUniPokeOutFR, posIDsISC, numPerms);
+    
+    [curUniPOfvalHeadX, curUniPOfvalHeadXz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headXcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    [curUniPOfvalHeadY, curUniPOfvalHeadYz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headYcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    
+    [curUniPOfvalTailX, curUniPOfvalTailXz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,tailXcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    [curUniPOfvalTailY, curUniPOfvalTailYz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,tailYcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    
+    [curUniPOvalPortAngle, curUniPOfvalPortAnglez] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,portAngleColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    [curUniPOfvalHeadAngle, curUniPOfvalHeadAnglez] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headAngleColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    [curUniPOfvalTailAngle, curUniPOfvalTailAnglez] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,tailAngleColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    
+    [curUniPOfvalHeadTailDist, curUniPOfvalHeadTailDistZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,htLengthColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    [curUniPOfvalHeadPortDist, curUniPOfvalHeadPortDistZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,hpLengthColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    [curUniPOfvalTailPortDist, curUniPOfvalTailPortDistZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,ptLengthColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+        
     figure; 
-    subplot(1,2,1);
-    plot(pokeInTSs, curUniPIfvalPOSz);
+    sp1 = subplot(1,2,1);
+    plot(pokeInTSs, curUniPIfvalPOSz,'linewidth', 2);
     hold on;
     plot(pokeInTSs, curUniPIfvalHeadXz, 'k');
+    plot(pokeInTSs, curUniPIfvalHeadYz, '--k');
+    plot(pokeInTSs, curUniPIfvalTailXz, 'r');
+    plot(pokeInTSs, curUniPIfvalTailYz, '--r');
+    plot(pokeInTSs, curUniPIfvalPortAnglez, 'g');
+    plot(pokeInTSs, curUniPIfvalHeadAnglez, '--g');
+    plot(pokeInTSs, curUniPIfvalTailAnglez, '.g');
+    plot(pokeInTSs, curUniPIfvalHeadTailDistZ, 'c');
+    plot(pokeInTSs, curUniPIfvalHeadPortDistZ, '--c');
+    plot(pokeInTSs, curUniPIfvalTailPortDistZ, '.c');
+    title('Poke In Aligned')
+    axis tight
+    legend('Sequence Position', 'Head Loc X', 'Head Loc Y', 'Tail Loc X', 'Tail Loc Y', 'Port Angle', 'Head Angle', 'Tail Angle', 'Head-Tail', 'Head-Port', 'Tail-Port', 'location', 'best');
     
-    subplot(1,2,2);
-    plot(pokeOutTSs, curUniPOfvalPOSz);
+    sp2 = subplot(1,2,2);
+    plot(pokeOutTSs, curUniPOfvalPOSz, 'linewidth', 2);
+    hold on;
+    plot(pokeOutTSs, curUniPOfvalHeadXz, 'k');
+    plot(pokeOutTSs, curUniPOfvalHeadYz, '--k');
+    plot(pokeOutTSs, curUniPOfvalTailXz, 'r');
+    plot(pokeOutTSs, curUniPOfvalTailYz, '--r');
+    plot(pokeOutTSs, curUniPOfvalPortAnglez, 'g');
+    plot(pokeOutTSs, curUniPOfvalHeadAnglez, '--g');
+    plot(pokeOutTSs, curUniPOfvalTailAnglez, '.g');
+    plot(pokeOutTSs, curUniPOfvalHeadTailDistZ, 'c');
+    plot(pokeOutTSs, curUniPOfvalHeadPortDistZ, '--c');
+    plot(pokeOutTSs, curUniPOfvalTailPortDistZ, '.c');    
+    title('Poke Out Aligned');
+    axis tight
     
+    linkaxes([sp1, sp2], 'y');
+    annotation('textbox', [0.05 0.9 0.9 0.1], 'String', ensembleMatrixColIDs{uni+1}, 'linestyle', 'none', 'FontSize', 20);
+    annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('Gaussian = %.02fms Number of Permutations = %i', slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
+    annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
     
-    
-    
-    
-    
+    orient(gcf, 'tall');
+    orient(gcf, 'landscape');
+%     print
+    print('-painters', gcf, '-dpdf', sprintf('%s_OrientFvalInfo_Summary', ensembleMatrixColIDs{uni+1}));        
 end
 
 %%
