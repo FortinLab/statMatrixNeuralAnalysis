@@ -88,7 +88,7 @@ statDiffPerTetPERF = cell(length(tetsWithUnits),1);
 statDiffPerTetTC = cell(length(tetsWithUnits),1);
 %% Unit Summary Overall
 % Plot stuff here
-for t = 1:length(tetsWithUnits)
+for t = 2:length(tetsWithUnits)
     %% Find the relevant statMatrix data file in order to grab the relevant
     % LFP data
     curTet = tetsWithUnits{t};
@@ -104,12 +104,12 @@ for t = 1:length(tetsWithUnits)
     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
         perfLogs, perfLogIDs,...
         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow,printYN); %#ok<NODEF>
-    
-    % Temporal Context
-    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-        tcLogs, tcLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
-    
+%     
+%     % Temporal Context
+%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+%         tcLogs, tcLogIDs,...
+%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+%     
     % Temporal Context - Correct
     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
         tcCorrLogs, tcCorrLogIDs,...

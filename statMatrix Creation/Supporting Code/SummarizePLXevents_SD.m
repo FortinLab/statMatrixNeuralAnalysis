@@ -397,11 +397,11 @@ if term
     trialEndTimes(end) = [];
 end
 
-if (length(trialEndTimes)-length(ssnData)*2)~=1 && sum(trialEndChanNum)~=0 ||...
-    (length(trialEndTimes)==length(ssnData)*2) && sum(trialEndChanNum)~=0
+if ((length(trialEndTimes)-length(ssnData)*2)~=1 && (length(trialEndTimes)-length(ssnData)*2)~=0) && sum(trialEndChanNum)~=0 ||...
+    (length(trialEndTimes)==length(ssnData)*2) && sum(trialEndChanNum)==0
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
-    fprintf(outfile, 'More Trial End Time events than trials in ssnData, check files\n');
+    fprintf(outfile, 'More Trial End Time events (%i) than trials in ssnData (%i), check files\n', length(trialEndTimes)/2, length(ssnData));
     error('More Trial End Time events than trials in ssnData, check files');
 end
 
@@ -513,11 +513,16 @@ for trl = 1:size(odorPresSsn,1)
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 1
                     break
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 0
-                    msgbox(sprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
-%                     error('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
-                    fprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n', trl);
-                    tempPokeNum = tempPokeNum+1;
-                    tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                    if tempPokeDur < 0.2
+                        tempPokeNum = tempPokeNum+1;
+                        tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                    else
+                        msgbox(sprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
+                        error('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
+%                         fprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n', trl);
+                        tempPokeNum = tempPokeNum+1;
+                        tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                    end
                 end
             elseif tempPokeNum > sum(trialPokesLog)
                 break
