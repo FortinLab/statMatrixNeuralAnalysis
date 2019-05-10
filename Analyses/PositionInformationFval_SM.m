@@ -209,6 +209,8 @@ pokeOutOrientISC = cell2mat(reshape(pokeOutOrientationInterp(trialLog), [1,1,sum
 pokeInOrientBinsISC = cell2mat(reshape(orientBinValsPI(trialLog), [1,1,sum(trialLog)]));
 pokeOutOrientBinsISC = cell2mat(reshape(orientBinValsPO(trialLog), [1,1,sum(trialLog)]));
 
+fValsPI = cell(4,length(ensembleUnitSummaries));
+fValsPO = cell(4,length(ensembleUnitSummaries));
 %% Run Sliding F-Ratio Analysis
 for uni = 1:length(ensembleUnitSummaries)
     curUniPokeInFR = reshape(pokeInFRisc(:,uni+1,:), [size(pokeInFRisc,1), size(pokeInFRisc,3), 1]);
@@ -216,13 +218,17 @@ for uni = 1:length(ensembleUnitSummaries)
     
     % Poke In Oriented
     [curUniPIfvalPOS, curUniPIfvalPOSz] = SlidingFvalCalc(curUniPokeInFR, posIDsISC, numPerms);
+    fValsPI{1,uni} = curUniPIfvalPOSz;
     [curUniPIfvalHeadLoc, curUniPIfvalHeadLocZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientBinsISC(:,1,:), [size(pokeInOrientBinsISC,1), size(pokeInOrientBinsISC,3), 1]), numPerms);
+    fValsPI{2,uni} = curUniPIfvalHeadLocZ;
     [curUniPIfvalTailLoc, curUniPIfvalTailLocZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientBinsISC(:,2,:), [size(pokeInOrientBinsISC,1), size(pokeInOrientBinsISC,3), 1]), numPerms);
+    fValsPI{3,uni} = curUniPIfvalTailLocZ;
     
     [curUniPIfvalInteract, curUniPIfvalInteractZ] = SlidingFvalCalcInteract(curUniPokeInFR, posIDsISC,...
         reshape(pokeInOrientBinsISC(:,1,:), [size(pokeInOrientBinsISC,1), size(pokeInOrientBinsISC,3), 1]),...
         reshape(pokeInOrientBinsISC(:,2,:), [size(pokeInOrientBinsISC,1), size(pokeInOrientBinsISC,3), 1]),...
         numPerms);
+    fValsPI{4,uni} = curUniPIfvalInteractZ;
 
 
 %     
@@ -242,13 +248,17 @@ for uni = 1:length(ensembleUnitSummaries)
 %     
     % Poke Out Oriented
     [curUniPOfvalPOS, curUniPOfvalPOSz] = SlidingFvalCalc(curUniPokeOutFR, posIDsISC, numPerms);
+    fValsPO{1,uni} = curUniPOfvalPOSz;
     [curUniPOfvalHeadLoc, curUniPOfvalHeadLocZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientBinsISC(:,1,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]), numPerms);
+    fValsPO{2,uni} = curUniPOfvalHeadLocZ;
     [curUniPOfvalTailLoc, curUniPOfvalTailLocZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientBinsISC(:,2,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]), numPerms);
+    fValsPO{3,uni} = curUniPOfvalTailLocZ;
 
     [curUniPOfvalInteract, curUniPOfvalInteractZ] = SlidingFvalCalcInteract(curUniPokeOutFR, posIDsISC,...
         reshape(pokeOutOrientBinsISC(:,1,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]),...
         reshape(pokeOutOrientBinsISC(:,2,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]),...
         numPerms);
+    fValsPO{4,uni} = curUniPOfvalInteractZ;
 %     
 %     [curUniPOfvalHeadX, curUniPOfvalHeadXz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headXcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
 %     [curUniPOfvalHeadY, curUniPOfvalHeadYz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headYcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
