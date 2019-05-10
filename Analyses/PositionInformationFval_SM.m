@@ -11,7 +11,7 @@ dirContents = dir(fileDir);
 fileNames = {dirContents.name};
 
 %% Define Standard Variables
-slideWindowSize = 30;
+slideWindowSize = 100;
 spatialBinSize = 5;
 numPerms = 50;
 
@@ -217,7 +217,13 @@ for uni = 1:length(ensembleUnitSummaries)
     % Poke In Oriented
     [curUniPIfvalPOS, curUniPIfvalPOSz] = SlidingFvalCalc(curUniPokeInFR, posIDsISC, numPerms);
     [curUniPIfvalHeadLoc, curUniPIfvalHeadLocZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientBinsISC(:,1,:), [size(pokeInOrientBinsISC,1), size(pokeInOrientBinsISC,3), 1]), numPerms);
-    [curUniPIfvalTailLoc, curUniPIfvalTailLocZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeOutOrientBinsISC(:,2,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]), numPerms);
+    [curUniPIfvalTailLoc, curUniPIfvalTailLocZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientBinsISC(:,2,:), [size(pokeInOrientBinsISC,1), size(pokeInOrientBinsISC,3), 1]), numPerms);
+    
+    [curUniPIfvalInteract, curUniPIfvalInteractZ] = SlidingFvalCalcInteract(curUniPokeInFR, posIDsISC,...
+        reshape(pokeInOrientBinsISC(:,1,:), [size(pokeInOrientBinsISC,1), size(pokeInOrientBinsISC,3), 1]),...
+        reshape(pokeInOrientBinsISC(:,2,:), [size(pokeInOrientBinsISC,1), size(pokeInOrientBinsISC,3), 1]),...
+        numPerms);
+
 
 %     
 %     [curUniPIfvalHeadX, curUniPIfvalHeadXz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headXcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
@@ -236,9 +242,13 @@ for uni = 1:length(ensembleUnitSummaries)
 %     
     % Poke Out Oriented
     [curUniPOfvalPOS, curUniPOfvalPOSz] = SlidingFvalCalc(curUniPokeOutFR, posIDsISC, numPerms);
-    [curUniPOfvalHeadLoc, curUniPOfvalHeadLocZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeOutOrientBinsISC(:,1,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]), numPerms);
-    [curUniPOfvalTailLoc, curUniPOfvalTailLocZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeOutOrientBinsISC(:,2,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]), numPerms);
+    [curUniPOfvalHeadLoc, curUniPOfvalHeadLocZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientBinsISC(:,1,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]), numPerms);
+    [curUniPOfvalTailLoc, curUniPOfvalTailLocZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientBinsISC(:,2,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]), numPerms);
 
+    [curUniPOfvalInteract, curUniPOfvalInteractZ] = SlidingFvalCalcInteract(curUniPokeOutFR, posIDsISC,...
+        reshape(pokeOutOrientBinsISC(:,1,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]),...
+        reshape(pokeOutOrientBinsISC(:,2,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]),...
+        numPerms);
 %     
 %     [curUniPOfvalHeadX, curUniPOfvalHeadXz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headXcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
 %     [curUniPOfvalHeadY, curUniPOfvalHeadYz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headYcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
@@ -260,6 +270,7 @@ for uni = 1:length(ensembleUnitSummaries)
     hold on;    
     plot(pokeInTSs, curUniPIfvalHeadLocZ, 'k');
     plot(pokeInTSs, curUniPIfvalTailLocZ, '--k');
+    plot(pokeInTSs, curUniPIfvalInteractZ, 'r');
 %     plot(pokeInTSs, curUniPIfvalHeadXz, 'k');
 %     plot(pokeInTSs, curUniPIfvalHeadYz, '--k');
 %     plot(pokeInTSs, curUniPIfvalTailXz, 'r');
@@ -272,7 +283,7 @@ for uni = 1:length(ensembleUnitSummaries)
 %     plot(pokeInTSs, curUniPIfvalTailPortDistZ, '.c');
     title('Poke In Aligned')
     axis tight
-    legend('Sequence Position', 'Head', 'Tail', 'location', 'best');
+    legend('Sequence Position', 'Head', 'Tail', 'Interaction', 'location', 'best');
 %     legend('Sequence Position', 'Head Loc X', 'Head Loc Y', 'Tail Loc X', 'Tail Loc Y', 'Port Angle', 'Head Angle', 'Tail Angle', 'Head-Tail', 'Head-Port', 'Tail-Port', 'location', 'best');
     
     sp2 = subplot(2,1,2);
@@ -280,6 +291,7 @@ for uni = 1:length(ensembleUnitSummaries)
     hold on;
     plot(pokeOutTSs, curUniPOfvalHeadLocZ, 'k');
     plot(pokeOutTSs, curUniPOfvalTailLocZ, '--k');
+    plot(pokeOutTSs, curUniPOfvalInteractZ, 'r');
 %     plot(pokeOutTSs, curUniPOfvalHeadXz, 'k');
 %     plot(pokeOutTSs, curUniPOfvalHeadYz, '--k');
 %     plot(pokeOutTSs, curUniPOfvalTailXz, 'r');
@@ -332,6 +344,62 @@ for r = 1:numPerms
             fVectPerm(r,t) = tableRND{2,5};
         else
             fVectPerm(r,t) = 1;
+        end
+    end
+end
+fVectPerm(isnan(fVectPerm)) = 1;
+fVectZ = nan(1,size(curUniFR,1));
+for t = 1:size(curUniFR,1)
+    tempZ = zscore([fVectRaw(t); fVectPerm(:,t)]);
+    fVectZ(t) = tempZ(1);
+end
+
+end
+
+%%
+function [fVectRaw, fVectZ] = SlidingFvalCalcInteract(curUniFR, idVect1, idVect2, idVect3, numPerms)
+if size(idVect1,1) == 1
+    idVect1 = repmat(idVect1, [size(curUniFR,1),1]);
+end
+if size(idVect2,1) == 1
+    idVect2 = repmat(idVect2, [size(curUniFR,1),1]);
+end
+if size(idVect3,1) == 1
+    idVect3 = repmat(idVect3, [size(curUniFR,1),1]);
+end
+
+fVectRaw = nan(1,size(curUniFR,1));
+parfor t = 1:size(curUniFR,1)
+    if mean(isnan(idVect3(t,:)))>0.5 || mean(isnan(idVect2(t,:)))>0.5 || mean(isnan(idVect3(t,:)))>0.5
+        continue;
+    else
+        [~,table,~] = anovan(curUniFR(t,:)', {idVect1(t,:), idVect2(t,:), idVect3(t,:)}, 'model', [1 1 1], 'sstype', 'h', 'display', 'off')
+        if ~isempty(table{2,5})
+            fVectRaw(t) = table{2,6};
+        else
+            fVectRaw(t) = 1;
+        end
+    end
+end
+fVectRaw(isnan(fVectRaw)) = 1;
+fVectPerm = nan(numPerms, size(curUniFR,1));
+for r = 1:numPerms
+    idVect1ShflVect = randperm(size(idVect1,2));
+    idVect1Shfl = idVect1(:,idVect1ShflVect);
+    idVect2ShflVect = randperm(size(idVect2,2));
+    idVect2Shfl = idVect2(:,idVect2ShflVect);
+    idVect3ShflVect = randperm(size(idVect3,2));
+    idVect3Shfl = idVect1(:,idVect3ShflVect);
+    parfor t = 1:size(curUniFR,1)
+        if mean(isnan(idVect1Shfl(t,:)))>0.5 || mean(isnan(idVect2Shfl(t,:)))>0.5 || mean(isnan(idVect3Shfl(t,:)))>0.5
+        continue;
+        else
+            [~,table,~] = anovan(curUniFR(t,:)', {idVect1Shfl(t,:), idVect2Shfl(t,:), idVect3Shfl(t,:)}, 'model', [1 1 1], 'sstype', 'h', 'display', 'off')
+            if ~isempty(table{2,5})
+                fVectPerm(r,t) = table{2,6};
+            else
+                fVectPerm(r,t) = 1;
+            end
         end
     end
 end
