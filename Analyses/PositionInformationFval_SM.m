@@ -123,13 +123,20 @@ pokeOutTSs = behavMatrix(pokeOutTrialMatrix(1).TrialLogVect,1)-behavMatrix(pokeO
 % Create Trial Logical Vectors
 corrTrlLog = [pokeInTrialMatrix.Performance];
 isLog = [pokeInTrialMatrix.TranspositionDistance]==0;
-posIDsISC = [pokeInTrialMatrix(corrTrlLog & isLog).Position];
+pos1log = [pokeInTrialMatrix.Position]==1;
+trialLog = (corrTrlLog & isLog & ~pos1log);
+seqType = 'All InSeq Correct Except Position 1';
+% trialLog = (corrTrlLog & isLog);
+% seqType = 'All InSeq Correct Trials';
+% trialLog = (corrTrlLog);
+% seqType = 'All Correct Trials';
+posIDsISC = [pokeInTrialMatrix(trialLog).Position];
 
 % Pull out spiking activity
 pokeInFR = ExtractTrialData_SM(pokeInTrialMatrix, uniInstFR); %#ok<*NODEF>
-pokeInFRisc = cell2mat(reshape(pokeInFR(corrTrlLog & isLog), [1,1,sum(corrTrlLog & isLog)]));
+pokeInFRisc = cell2mat(reshape(pokeInFR(trialLog), [1,1,sum(trialLog)]));
 pokeOutFR = ExtractTrialData_SM(pokeOutTrialMatrix, uniInstFR);
-pokeOutFRisc = cell2mat(reshape(pokeOutFR(corrTrlLog & isLog), [1,1,sum(corrTrlLog & isLog)]));
+pokeOutFRisc = cell2mat(reshape(pokeOutFR(trialLog), [1,1,sum(trialLog)]));
 
 % Pull out and interpolate positional information
 pokeInOrientation = ExtractTrialData_SM(pokeInTrialMatrix, orientMatrix); %#ok<*NODEF>
@@ -196,11 +203,11 @@ for trl = 1:length(pokeInOrientation)
     orientBinValsPI{trl} = tempPIndxVals;
     orientBinValsPO{trl} = tempPOndxVals;
 end    
-pokeInOrientISC = cell2mat(reshape(pokeInOrientationInterp(corrTrlLog & isLog), [1,1,sum(corrTrlLog & isLog)]));
-pokeOutOrientISC = cell2mat(reshape(pokeOutOrientationInterp(corrTrlLog & isLog), [1,1,sum(corrTrlLog & isLog)]));
+pokeInOrientISC = cell2mat(reshape(pokeInOrientationInterp(trialLog), [1,1,sum(trialLog)]));
+pokeOutOrientISC = cell2mat(reshape(pokeOutOrientationInterp(trialLog), [1,1,sum(trialLog)]));
 
-pokeInOrientBinsISC = cell2mat(reshape(orientBinValsPI(corrTrlLog & isLog), [1,1,sum(corrTrlLog & isLog)]));
-pokeOutOrientBinsISC = cell2mat(reshape(orientBinValsPO(corrTrlLog & isLog), [1,1,sum(corrTrlLog & isLog)]));
+pokeInOrientBinsISC = cell2mat(reshape(orientBinValsPI(trialLog), [1,1,sum(trialLog)]));
+pokeOutOrientBinsISC = cell2mat(reshape(orientBinValsPO(trialLog), [1,1,sum(trialLog)]));
 
 %% Run Sliding F-Ratio Analysis
 for uni = 1:length(ensembleUnitSummaries)
@@ -288,7 +295,7 @@ for uni = 1:length(ensembleUnitSummaries)
     
     linkaxes([sp1, sp2], 'y');
     annotation('textbox', [0.05 0.9 0.9 0.1], 'String', ensembleMatrixColIDs{uni+1}, 'linestyle', 'none', 'FontSize', 20);
-    annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
+    annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('%s Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', seqType, spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
     annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
     
     orient(gcf, 'tall');
