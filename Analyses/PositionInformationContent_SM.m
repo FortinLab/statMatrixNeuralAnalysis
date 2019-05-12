@@ -13,8 +13,8 @@ fileNames = {dirContents.name};
 
 %% Define Standard Variables
 timeBinSize = 0.025;
-slideWindowSize = 30;
-spatialBinSize = 2;
+slideWindowSize = 100;
+spatialBinSize = 5;
 
 %% Load Relevant Data
 load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))});
