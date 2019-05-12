@@ -102,9 +102,9 @@ instFRgauss = gausswin(slideWindowSize);
 instFRgauss = instFRgauss/(length(instFRgauss)*mode(diff(behavMatrix(:,1))));
 
 % Convolve Gaussian with Binary Spike Trains
-uniInstFR = [ensembleMatrix(:,1), nan(size(ensembleMatrix,1), size(ensembleMatrix,2)-1)];
+uniInstFR = nan(size(ensembleMatrix,1), size(ensembleMatrix,2)-1);
 for uni = 2:size(ensembleMatrix,2)
-    uniInstFR(:,uni) = conv(ensembleMatrix(:,uni), instFRgauss, 'same');
+    uniInstFR(:,uni-1) = conv(ensembleMatrix(:,uni), instFRgauss, 'same');
 end
 % 
 % % Alternatively, just bin the firing rates
@@ -143,6 +143,12 @@ pokeInOrientation = ExtractTrialData_SM(pokeInTrialMatrix, orientMatrix); %#ok<*
 pokeInOrientationInterp = cell(size(pokeInOrientation));
 pokeOutOrientation = ExtractTrialData_SM(pokeOutTrialMatrix, orientMatrix);
 pokeOutOrientationInterp = cell(size(pokeOutOrientation));
+
+%% Remove Units with low firing rates
+uniFRthreshLog = max([max(mean(pokeInFRisc,3)); max(mean(pokeOutFRisc,3))])<1;
+pokeInFRisc(:,uniFRthreshLog,:) = [];
+pokeOutFRisc(:,uniFRthreshLog,:) = [];
+goodUniNames = {ensembleUnitSummaries(~uniFRthreshLog).UnitName};
 
 %% Pre-Process the positional data v2
 % First thing to do is nan out the pre trial periods that don't have
@@ -209,12 +215,60 @@ pokeOutOrientISC = cell2mat(reshape(pokeOutOrientationInterp(trialLog), [1,1,sum
 pokeInOrientBinsISC = cell2mat(reshape(orientBinValsPI(trialLog), [1,1,sum(trialLog)]));
 pokeOutOrientBinsISC = cell2mat(reshape(orientBinValsPO(trialLog), [1,1,sum(trialLog)]));
 
+trialOrientBinsISC = [pokeInOrientBinsISC; pokeOutOrientBinsISC];
+
 fValsPI = cell(4,length(ensembleUnitSummaries));
 fValsPO = cell(4,length(ensembleUnitSummaries));
+
+%% Calculate each unit's FR map and positional firing rates and such...
+for uni = 1:length(goodUniNames)
+    curUniFR = [pokeInFRisc(:,uni,:); pokeOutFRisc(:,uni,:)];
+    tempHeadFRmap = nan(length(headYbins)-1, length(headXbins)-1);
+    for headNdx = 1:((length(headXbins)-1)*(length(headYbins)-1))
+        tempHeadFRmap(headNdx) = mean(curUniFR(trialOrientBinsISC(:,1,:)==headNdx));
+    end
+    tempTailFRmap = nan(length(tailYbins)-1, length(tailXbins)-1);
+    for tailNdx = 1:((length(tailXbins)-1)*(length(tailYbins)-1))
+        tempTailFRmap(tailNdx) = mean(curUniFR(trialOrientBinsISC(:,2,:)==tailNdx));
+    end
+    
+    figure;
+    sp1 = subplot(1,2,1);
+    imagesc(tempHeadFRmap)
+    set(gca, 'ydir', 'normal');
+    title('Head Occupancy');
+    cb = colorbar('southoutside');
+    cb.Label.String = 'Mean Firing Rate (spk/s)';
+    z = colormap('jet');
+    z(1,:) = [1 1 1];
+    colormap(z);
+    set(gca, 'clim', [-0.01, max(get(gca, 'clim'))]);
+    sp2 = subplot(1,2,2);
+    imagesc(tempTailFRmap);
+    set(gca, 'ydir', 'normal');
+    title('Head Position FR');
+    cb = colorbar('southoutside');
+    cb.Label.String = 'Mean Firing Rate (spk/s)';
+    colormap(z);
+    set(sp1, 'clim', [-0.01, max([get(sp1, 'clim'), get(sp2, 'clim')])]);
+    set(sp2, 'clim', [-0.01, max([get(sp1, 'clim'), get(sp2, 'clim')])]);
+    annotation('textbox', [0.05 0.9 0.9 0.1], 'String', goodUniNames{uni}, 'linestyle', 'none', 'FontSize', 20);
+    annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('%s Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', seqType, spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
+    annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+    
+    orient(gcf, 'tall');
+    orient(gcf, 'landscape');
+    print('-painters', gcf, '-dpdf', sprintf('%s_FiringRateLocationMaps', goodUniNames{uni}));
+
+    %*****************Make these figures broken down by sequence position
+    % Then do a comparison of FR maps across sequence position to look for
+    % modifications in FR maps by sequence position.
+end
+
 %% Run Sliding F-Ratio Analysis
-for uni = 1:length(ensembleUnitSummaries)
-    curUniPokeInFR = reshape(pokeInFRisc(:,uni+1,:), [size(pokeInFRisc,1), size(pokeInFRisc,3), 1]);
-    curUniPokeOutFR = reshape(pokeOutFRisc(:,uni+1,:), [size(pokeOutFRisc,1), size(pokeOutFRisc,3), 1]);
+for uni = 1:length(goodUniNames)
+    curUniPokeInFR = reshape(pokeInFRisc(:,uni,:), [size(pokeInFRisc,1), size(pokeInFRisc,3), 1]);
+    curUniPokeOutFR = reshape(pokeOutFRisc(:,uni,:), [size(pokeOutFRisc,1), size(pokeOutFRisc,3), 1]);
     
     % Poke In Oriented
     [curUniPIfvalPOS, curUniPIfvalPOSz] = SlidingFvalCalc(curUniPokeInFR, posIDsISC, numPerms);
@@ -229,23 +283,23 @@ for uni = 1:length(ensembleUnitSummaries)
         reshape(pokeInOrientBinsISC(:,2,:), [size(pokeInOrientBinsISC,1), size(pokeInOrientBinsISC,3), 1]),...
         numPerms);
     fValsPI{4,uni} = curUniPIfvalInteractZ;
-
-
-%     
-%     [curUniPIfvalHeadX, curUniPIfvalHeadXz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headXcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     [curUniPIfvalHeadY, curUniPIfvalHeadYz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headYcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     
-%     [curUniPIfvalTailX, curUniPIfvalTailXz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,tailXcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     [curUniPIfvalTailY, curUniPIfvalTailYz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,tailYcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     
-%     [curUniPIfvalPortAngle, curUniPIfvalPortAnglez] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,portAngleColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     [curUniPIfvalHeadAngle, curUniPIfvalHeadAnglez] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headAngleColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     [curUniPIfvalTailAngle, curUniPIfvalTailAnglez] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,tailAngleColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     
-%     [curUniPIfvalHeadTailDist, curUniPIfvalHeadTailDistZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,htLengthColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     [curUniPIfvalHeadPortDist, curUniPIfvalHeadPortDistZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,hpLengthColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     [curUniPIfvalTailPortDist, curUniPIfvalTailPortDistZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,ptLengthColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
-%     
+    
+    
+    %
+    %     [curUniPIfvalHeadX, curUniPIfvalHeadXz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headXcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %     [curUniPIfvalHeadY, curUniPIfvalHeadYz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headYcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %
+    %     [curUniPIfvalTailX, curUniPIfvalTailXz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,tailXcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %     [curUniPIfvalTailY, curUniPIfvalTailYz] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,tailYcolLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %
+    %     [curUniPIfvalPortAngle, curUniPIfvalPortAnglez] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,portAngleColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %     [curUniPIfvalHeadAngle, curUniPIfvalHeadAnglez] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,headAngleColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %     [curUniPIfvalTailAngle, curUniPIfvalTailAnglez] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,tailAngleColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %
+    %     [curUniPIfvalHeadTailDist, curUniPIfvalHeadTailDistZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,htLengthColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %     [curUniPIfvalHeadPortDist, curUniPIfvalHeadPortDistZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,hpLengthColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %     [curUniPIfvalTailPortDist, curUniPIfvalTailPortDistZ] = SlidingFvalCalc(curUniPokeInFR, reshape(pokeInOrientISC(:,ptLengthColLog,:), [size(pokeInOrientISC,1), size(pokeInOrientISC,3), 1]), numPerms);
+    %
     % Poke Out Oriented
     [curUniPOfvalPOS, curUniPOfvalPOSz] = SlidingFvalCalc(curUniPokeOutFR, posIDsISC, numPerms);
     fValsPO{1,uni} = curUniPOfvalPOSz;
@@ -253,48 +307,48 @@ for uni = 1:length(ensembleUnitSummaries)
     fValsPO{2,uni} = curUniPOfvalHeadLocZ;
     [curUniPOfvalTailLoc, curUniPOfvalTailLocZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientBinsISC(:,2,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]), numPerms);
     fValsPO{3,uni} = curUniPOfvalTailLocZ;
-
+    
     [curUniPOfvalInteract, curUniPOfvalInteractZ] = SlidingFvalCalcInteract(curUniPokeOutFR, posIDsISC,...
         reshape(pokeOutOrientBinsISC(:,1,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]),...
         reshape(pokeOutOrientBinsISC(:,2,:), [size(pokeOutOrientBinsISC,1), size(pokeOutOrientBinsISC,3), 1]),...
         numPerms);
     fValsPO{4,uni} = curUniPOfvalInteractZ;
-%     
-%     [curUniPOfvalHeadX, curUniPOfvalHeadXz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headXcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%     [curUniPOfvalHeadY, curUniPOfvalHeadYz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headYcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%     
-%     [curUniPOfvalTailX, curUniPOfvalTailXz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,tailXcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%     [curUniPOfvalTailY, curUniPOfvalTailYz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,tailYcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%     
-%     [curUniPOvalPortAngle, curUniPOfvalPortAnglez] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,portAngleColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%     [curUniPOfvalHeadAngle, curUniPOfvalHeadAnglez] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headAngleColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%     [curUniPOfvalTailAngle, curUniPOfvalTailAnglez] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,tailAngleColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%     
-%     [curUniPOfvalHeadTailDist, curUniPOfvalHeadTailDistZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,htLengthColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%     [curUniPOfvalHeadPortDist, curUniPOfvalHeadPortDistZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,hpLengthColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%     [curUniPOfvalTailPortDist, curUniPOfvalTailPortDistZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,ptLengthColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
-%         
-    figure; 
+    %
+    %     [curUniPOfvalHeadX, curUniPOfvalHeadXz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headXcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %     [curUniPOfvalHeadY, curUniPOfvalHeadYz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headYcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %
+    %     [curUniPOfvalTailX, curUniPOfvalTailXz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,tailXcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %     [curUniPOfvalTailY, curUniPOfvalTailYz] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,tailYcolLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %
+    %     [curUniPOvalPortAngle, curUniPOfvalPortAnglez] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,portAngleColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %     [curUniPOfvalHeadAngle, curUniPOfvalHeadAnglez] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,headAngleColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %     [curUniPOfvalTailAngle, curUniPOfvalTailAnglez] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,tailAngleColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %
+    %     [curUniPOfvalHeadTailDist, curUniPOfvalHeadTailDistZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,htLengthColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %     [curUniPOfvalHeadPortDist, curUniPOfvalHeadPortDistZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,hpLengthColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %     [curUniPOfvalTailPortDist, curUniPOfvalTailPortDistZ] = SlidingFvalCalc(curUniPokeOutFR, reshape(pokeOutOrientISC(:,ptLengthColLog,:), [size(pokeOutOrientISC,1), size(pokeOutOrientISC,3), 1]), numPerms);
+    %
+    figure;
     sp1 = subplot(2,1,1);
     plot(pokeInTSs, curUniPIfvalPOSz,'linewidth', 2);
-    hold on;    
+    hold on;
     plot(pokeInTSs, curUniPIfvalHeadLocZ, 'k');
     plot(pokeInTSs, curUniPIfvalTailLocZ, '--k');
     plot(pokeInTSs, curUniPIfvalInteractZ, 'r');
-%     plot(pokeInTSs, curUniPIfvalHeadXz, 'k');
-%     plot(pokeInTSs, curUniPIfvalHeadYz, '--k');
-%     plot(pokeInTSs, curUniPIfvalTailXz, 'r');
-%     plot(pokeInTSs, curUniPIfvalTailYz, '--r');
-%     plot(pokeInTSs, curUniPIfvalPortAnglez, 'g');
-%     plot(pokeInTSs, curUniPIfvalHeadAnglez, '--g');
-%     plot(pokeInTSs, curUniPIfvalTailAnglez, '.g');
-%     plot(pokeInTSs, curUniPIfvalHeadTailDistZ, 'c');
-%     plot(pokeInTSs, curUniPIfvalHeadPortDistZ, '--c');
-%     plot(pokeInTSs, curUniPIfvalTailPortDistZ, '.c');
+    %     plot(pokeInTSs, curUniPIfvalHeadXz, 'k');
+    %     plot(pokeInTSs, curUniPIfvalHeadYz, '--k');
+    %     plot(pokeInTSs, curUniPIfvalTailXz, 'r');
+    %     plot(pokeInTSs, curUniPIfvalTailYz, '--r');
+    %     plot(pokeInTSs, curUniPIfvalPortAnglez, 'g');
+    %     plot(pokeInTSs, curUniPIfvalHeadAnglez, '--g');
+    %     plot(pokeInTSs, curUniPIfvalTailAnglez, '.g');
+    %     plot(pokeInTSs, curUniPIfvalHeadTailDistZ, 'c');
+    %     plot(pokeInTSs, curUniPIfvalHeadPortDistZ, '--c');
+    %     plot(pokeInTSs, curUniPIfvalTailPortDistZ, '.c');
     title('Poke In Aligned')
     axis tight
     legend('Sequence Position', 'Head', 'Tail', 'Interaction', 'location', 'best');
-%     legend('Sequence Position', 'Head Loc X', 'Head Loc Y', 'Tail Loc X', 'Tail Loc Y', 'Port Angle', 'Head Angle', 'Tail Angle', 'Head-Tail', 'Head-Port', 'Tail-Port', 'location', 'best');
+    %     legend('Sequence Position', 'Head Loc X', 'Head Loc Y', 'Tail Loc X', 'Tail Loc Y', 'Port Angle', 'Head Angle', 'Tail Angle', 'Head-Tail', 'Head-Port', 'Tail-Port', 'location', 'best');
     
     sp2 = subplot(2,1,2);
     plot(pokeOutTSs, curUniPOfvalPOSz, 'linewidth', 2);
@@ -302,29 +356,216 @@ for uni = 1:length(ensembleUnitSummaries)
     plot(pokeOutTSs, curUniPOfvalHeadLocZ, 'k');
     plot(pokeOutTSs, curUniPOfvalTailLocZ, '--k');
     plot(pokeOutTSs, curUniPOfvalInteractZ, 'r');
-%     plot(pokeOutTSs, curUniPOfvalHeadXz, 'k');
-%     plot(pokeOutTSs, curUniPOfvalHeadYz, '--k');
-%     plot(pokeOutTSs, curUniPOfvalTailXz, 'r');
-%     plot(pokeOutTSs, curUniPOfvalTailYz, '--r');
-%     plot(pokeOutTSs, curUniPOfvalPortAnglez, 'g');
-%     plot(pokeOutTSs, curUniPOfvalHeadAnglez, '--g');
-%     plot(pokeOutTSs, curUniPOfvalTailAnglez, '.g');
-%     plot(pokeOutTSs, curUniPOfvalHeadTailDistZ, 'c');
-%     plot(pokeOutTSs, curUniPOfvalHeadPortDistZ, '--c');
-%     plot(pokeOutTSs, curUniPOfvalTailPortDistZ, '.c');    
+    %     plot(pokeOutTSs, curUniPOfvalHeadXz, 'k');
+    %     plot(pokeOutTSs, curUniPOfvalHeadYz, '--k');
+    %     plot(pokeOutTSs, curUniPOfvalTailXz, 'r');
+    %     plot(pokeOutTSs, curUniPOfvalTailYz, '--r');
+    %     plot(pokeOutTSs, curUniPOfvalPortAnglez, 'g');
+    %     plot(pokeOutTSs, curUniPOfvalHeadAnglez, '--g');
+    %     plot(pokeOutTSs, curUniPOfvalTailAnglez, '.g');
+    %     plot(pokeOutTSs, curUniPOfvalHeadTailDistZ, 'c');
+    %     plot(pokeOutTSs, curUniPOfvalHeadPortDistZ, '--c');
+    %     plot(pokeOutTSs, curUniPOfvalTailPortDistZ, '.c');
     title('Poke Out Aligned');
     axis tight
     
     linkaxes([sp1, sp2], 'y');
-    annotation('textbox', [0.05 0.9 0.9 0.1], 'String', ensembleMatrixColIDs{uni+1}, 'linestyle', 'none', 'FontSize', 20);
+    annotation('textbox', [0.05 0.9 0.9 0.1], 'String', goodUniNames{uni}, 'linestyle', 'none', 'FontSize', 20);
     annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('%s Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', seqType, spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
     annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
     
     orient(gcf, 'tall');
     orient(gcf, 'landscape');
-%     print
-    print('-painters', gcf, '-dpdf', sprintf('%s_OrientFvalInfo_Summary', ensembleMatrixColIDs{uni+1}));        
+    %     print
+    print('-painters', gcf, '-dpdf', sprintf('%s_OrientFvalInfo_Summary', goodUniNames{uni}));
 end
+
+%% Now summarize the population data
+% Row 1 = Position vs Head Location
+% Row 2 = Position vs Tail Location
+% Row 3 = Head vs Tail Location
+piCorr = nan(3,length(goodUniNames));
+poCorr = nan(3,length(goodUniNames));
+allCorr = nan(3,length(goodUniNames));
+for uni = 1:length(goodUniNames)
+    curPIcorr = corr(cell2mat(fValsPI(:,uni))');
+    piCorr(1,uni) = curPIcorr(2,1);
+    piCorr(2,uni) = curPIcorr(3,1);
+    piCorr(3,uni) = curPIcorr(3,2);
+    
+    curPOcorr = corr(cell2mat(fValsPO(:,uni))');
+    poCorr(1,uni) = curPOcorr(2,1);
+    poCorr(2,uni) = curPOcorr(3,1);
+    poCorr(3,uni) = curPOcorr(3,2);
+    
+    curAllCorr = corr([cell2mat(fValsPI(:,uni)), cell2mat(fValsPO(:,uni))]');
+    allCorr(1,uni) = curAllCorr(2,1);
+    allCorr(2,uni) = curAllCorr(3,1);
+    allCorr(3,uni) = curAllCorr(3,2);
+end
+figure; 
+sp1 = subplot(3,3,1);
+histogram(piCorr(1,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(piCorr(1,:)) nanmean(piCorr(1,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PI: Position vs. Head');
+sp2 = subplot(3,3,2);
+histogram(piCorr(2,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(piCorr(2,:)) nanmean(piCorr(2,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PI: Position vs. Tail');
+sp3 = subplot(3,3,3);
+histogram(piCorr(3,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(piCorr(3,:)) nanmean(piCorr(3,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PI: Head vs. Tail');
+sp4 = subplot(3,3,4);
+histogram(poCorr(1,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(poCorr(1,:)) nanmean(poCorr(1,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PO: Position vs. Head');
+sp5 = subplot(3,3,5);
+histogram(poCorr(2,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(poCorr(2,:)) nanmean(poCorr(2,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PO: Position vs. Tail');
+sp6 = subplot(3,3,6);
+histogram(poCorr(3,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(poCorr(3,:)) nanmean(poCorr(3,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PO: Head vs. Tail');
+sp7 = subplot(3,3,7);
+histogram(allCorr(1,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(allCorr(1,:)) nanmean(allCorr(1,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('All: Position vs. Head');
+sp8 = subplot(3,3,8);
+histogram(allCorr(2,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(allCorr(2,:)) nanmean(allCorr(2,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('All: Position vs. Tail');
+sp9 = subplot(3,3,9);
+histogram(allCorr(3,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(allCorr(3,:)) nanmean(allCorr(3,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('All: Head vs. Tail');
+
+linkaxes([sp1, sp2, sp2, sp3, sp4, sp5, sp6, sp7, sp8, sp9], 'y');
+annotation('textbox', [0.05 0.9 0.9 0.1], 'String', 'All Timepoints', 'linestyle', 'none', 'FontSize', 20);
+annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('%s Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', seqType, spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+%% Now run a thresholded version
+% Row 1 = Position vs Head Location
+% Row 2 = Position vs Tail Location
+% Row 3 = Head vs Tail Location
+piCorr = nan(3,length(goodUniNames));
+poCorr = nan(3,length(goodUniNames));
+allCorr = nan(3,length(goodUniNames));
+for uni = 1:length(goodUniNames)
+    curPIphCorr = corrcoef(fValsPI{1,uni}(fValsPI{1,uni}>1 | fValsPI{2,uni}>1), fValsPI{2,uni}(fValsPI{1,uni}>1 | fValsPI{2,uni}>1));
+    piCorr(1,uni) = curPIphCorr(2,1);
+    curPIptCorr = corrcoef(fValsPI{1,uni}(fValsPI{1,uni}>1 | fValsPI{3,uni}>1), fValsPI{3,uni}(fValsPI{1,uni}>1 | fValsPI{3,uni}>1));
+    piCorr(2,uni) = curPIptCorr(2,1);
+    curPIhtCorr = corrcoef(fValsPI{2,uni}(fValsPI{2,uni}>1 | fValsPI{3,uni}>1), fValsPI{3,uni}(fValsPI{2,uni}>1 | fValsPI{3,uni}>1));
+    piCorr(3,uni) = curPIhtCorr(2,1);
+    
+    curPOphCorr = corrcoef(fValsPO{1,uni}(fValsPO{1,uni}>1 | fValsPO{2,uni}>1), fValsPO{2,uni}(fValsPO{1,uni}>1 | fValsPO{2,uni}>1));
+    poCorr(1,uni) = curPOphCorr(2,1);
+    curPOptCorr = corrcoef(fValsPO{1,uni}(fValsPO{1,uni}>1 | fValsPO{3,uni}>1), fValsPO{3,uni}(fValsPO{1,uni}>1 | fValsPO{3,uni}>1));
+    poCorr(2,uni) = curPOptCorr(2,1);
+    curPOhtCorr = corrcoef(fValsPO{2,uni}(fValsPO{2,uni}>1 | fValsPO{3,uni}>1), fValsPO{3,uni}(fValsPO{2,uni}>1 | fValsPO{3,uni}>1));
+    poCorr(3,uni) = curPOhtCorr(2,1);
+    
+    curAllPosF = [fValsPI{1,uni}, fValsPO{1,uni}];
+    curAllHeadF = [fValsPI{2,uni}, fValsPO{2,uni}];
+    curAllTailF = [fValsPI{3,uni}, fValsPO{3,uni}];
+    curALLphCorr = corrcoef(curAllPosF(curAllPosF>1 | curAllHeadF>1), curAllHeadF(curAllPosF>1 | curAllHeadF>1));
+    allCorr(1,uni) = curALLphCorr(2,1);
+    curALLptCorr = corrcoef(curAllPosF(curAllPosF>1 | curAllTailF>1), curAllTailF(curAllPosF>1 | curAllTailF>1));
+    allCorr(2,uni) = curALLptCorr(2,1);
+    curALLhtCorr = corrcoef(curAllHeadF(curAllHeadF>1 | curAllTailF>1), curAllTailF(curAllHeadF>1 | curAllTailF>1));
+    allCorr(3,uni) = curALLhtCorr(2,1);
+    
+end
+figure; 
+sp1 = subplot(3,3,1);
+histogram(piCorr(1,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(piCorr(1,:)) nanmean(piCorr(1,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PI: Position vs. Head');
+sp2 = subplot(3,3,2);
+histogram(piCorr(2,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(piCorr(2,:)) nanmean(piCorr(2,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PI: Position vs. Tail');
+sp3 = subplot(3,3,3);
+histogram(piCorr(3,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(piCorr(3,:)) nanmean(piCorr(3,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PI: Head vs. Tail');
+sp4 = subplot(3,3,4);
+histogram(poCorr(1,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(poCorr(1,:)) nanmean(poCorr(1,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PO: Position vs. Head');
+sp5 = subplot(3,3,5);
+histogram(poCorr(2,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(poCorr(2,:)) nanmean(poCorr(2,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PO: Position vs. Tail');
+sp6 = subplot(3,3,6);
+histogram(poCorr(3,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(poCorr(3,:)) nanmean(poCorr(3,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('PO: Head vs. Tail');
+sp7 = subplot(3,3,7);
+histogram(allCorr(1,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(allCorr(1,:)) nanmean(allCorr(1,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('All: Position vs. Head');
+sp8 = subplot(3,3,8);
+histogram(allCorr(2,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(allCorr(2,:)) nanmean(allCorr(2,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('All: Position vs. Tail');
+sp9 = subplot(3,3,9);
+histogram(allCorr(3,:), -1:0.1:1);
+hold on;
+line(gca, [nanmean(allCorr(3,:)) nanmean(allCorr(3,:))], get(gca, 'ylim'), 'color','r', 'linewidth', 2);
+title('All: Head vs. Tail');
+
+linkaxes([sp1, sp2, sp2, sp3, sp4, sp5, sp6, sp7, sp8, sp9], 'y');
+annotation('textbox', [0.05 0.9 0.9 0.1], 'String', 'Threshold Fz>1', 'linestyle', 'none', 'FontSize', 20);
+annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('%s Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', seqType, spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+
+%% Examine the relationship between the peak FR and peak IC
+fVals = cellfun(@(a,b)[a,b], fValsPI, fValsPO, 'uniformoutput', 0);
+frMean = [mean(pokeInFRisc,3); mean(pokeOutFRisc,3)];
+fvMaxNdx = nan(3,length(goodUniNames));
+frMaxNdx = nan(1,length(goodUniNames));
+for uni = 1:length(goodUniNames)
+    fvMaxNdx(1,uni) = find(fVals{1,uni}==max(fVals{1,uni}),1,'first');
+    fvMaxNdx(2,uni) = find(fVals{2,uni}==max(fVals{2,uni}),1,'first');
+    fvMaxNdx(3,uni) = find(fVals{3,uni}==max(fVals{3,uni}),1,'first');    
+    frMaxNdx(uni) = find(frMean(:,uni)==max(frMean(:,uni)),1,'first');
+end
+
+figure;
+subplot(1,3,1)
+corrScatPlot(fvMaxNdx(1,:)', frMaxNdx', 'Index of Max Seq Pos Info', 'Index of Max Firing Rate', []);
+subplot(1,3,2)
+corrScatPlot(fvMaxNdx(2,:)', frMaxNdx', 'Index of Max Head Loc Info', 'Index of Max Firing Rate', []);
+subplot(1,3,3)
+corrScatPlot(fvMaxNdx(3,:)', frMaxNdx', 'Index of Max Tail Loc Info', 'Index of Max Firing Rate', []);
+
+figure; 
+BarPlotErrorbars([mean(abs(fvMaxNdx(1,:) - frMaxNdx)), mean(abs(fvMaxNdx(2,:) - frMaxNdx)), mean(abs(fvMaxNdx(3,:) - frMaxNdx))],...
+    [std(fvMaxNdx(1,:) - frMaxNdx)/sqrt(length(goodUniNames)-1), std(fvMaxNdx(2,:) - frMaxNdx)/sqrt(length(goodUniNames)-1), std(fvMaxNdx(3,:) - frMaxNdx)/sqrt(length(goodUniNames)-1)]);
+set(gca, 'xticklabel', {'Position', 'Head', 'Tail'});
+title('Temporal Difference From Max Firing Rate');
+ylabel('Time (ms)');
+
 
 %%
 function [fVectRaw, fVectZ] = SlidingFvalCalc(curUniFR, idVect, numPerms)
