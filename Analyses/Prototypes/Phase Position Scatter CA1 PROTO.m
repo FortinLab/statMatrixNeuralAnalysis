@@ -1,10 +1,10 @@
-[unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, trialInfo] = EpochExtraction_SM('PokeIn', -0.5, 1.5, 'lfpBand', 'Theta', 'lfpData', 'Both');
+[unitEpoch, unitIDs, lfpEpoch, lfpIDs, trialTimeBins, eventTimeBins, trialInfo] = EpochExtraction_SM('PokeIn', -0.5, 1.5, 'lfpBand', 'All', 'lfpData', 'Both');
 
 % Parse trials and do selection etc
 iscLog = trialInfo(:,1)==1 & trialInfo(:,2)==1;
 
 % Extract the reference LFP values
-lfpRef = rad2deg(lfpEpoch(:,:,strcmp('T14_LFP_Theta_HilbVals', lfpIDs)));
+lfpRef = rad2deg(lfpEpoch(:,:,strcmp('T14_LFP_LowGamma_HilbVals', lfpIDs)));
 timeMtx = repmat(eventTimeBins', [size(lfpRef,1), 1]);
 for u = 1:size(unitEpoch,3)
     curUni = logical(unitEpoch(:,:,u));
