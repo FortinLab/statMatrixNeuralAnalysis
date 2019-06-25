@@ -88,7 +88,7 @@ statDiffPerTetPERF = cell(length(tetsWithUnits),1);
 statDiffPerTetTC = cell(length(tetsWithUnits),1);
 %% Unit Summary Overall
 % Plot stuff here
-for t = 2:length(tetsWithUnits)
+for t = 1:length(tetsWithUnits)
     %% Find the relevant statMatrix data file in order to grab the relevant
     % LFP data
     curTet = tetsWithUnits{t};
