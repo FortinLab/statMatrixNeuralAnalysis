@@ -167,7 +167,8 @@ if term
 end
 % The number of double buzzer activations should match the number of
 % sequences recorded in the ssnData structure
-if ~(length(sequenceBlockInitiationTimes)==length(unique([ssnData.SequenceNumber])))
+if ~(length(sequenceBlockInitiationTimes)==length(unique([ssnData.SequenceNumber]))) &&...
+        ~(length(sequenceBlockInitiationTimes)-1==length(unique([ssnData.SequenceNumber])))
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
     fprintf(outfile, 'Number of Sequences don''t match, check files and code for source of discrepancy\n PLX Count = %i\n MAT Count = %i\n', length(sequenceBlockInitiationTimes), length(unique([ssnData.SequenceNumber])));
@@ -178,7 +179,7 @@ end
 % (reflecting sequence start), minus the number of error trials that
 % occurred, should equal the total number of trials that occurred
 if ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)) &&...
-    ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0) == length(ssnData)-1)     
+    ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0)-1 == length(ssnData))     
     fprintf('PLX file = %s\n', plxFile);
     fprintf('MAT file = %s\n', matFile);
     fprintf(outfile, 'Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy\n PLX Count = %i\n MAT Count = %i\n', length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0), length(ssnData));

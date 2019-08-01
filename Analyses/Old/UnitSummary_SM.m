@@ -97,7 +97,7 @@ for t = 2:length(tetsWithUnits)
     
     curUnis = statMatrixColIDs(cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '-U([0-9]*)')));
     unitSummaryUnis = {unitSummary.UnitName};
-    clear curTetStatDiffPERF curTetStatDiffTC 
+%     clear curTetStatDiffPERF curTetStatDiffTC 
     
     %% Plot Per-Tetrode Spectrograms
     % Performance
@@ -114,11 +114,11 @@ for t = 2:length(tetsWithUnits)
     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
         tcCorrLogs, tcCorrLogIDs,...
         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
-    
-    % Temporal Context - Incorrect
-    PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
-        tcInCorrLogs, tcInCorrLogIDs,...
-        statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
+%     
+%     % Temporal Context - Incorrect
+%     PlotTrialEventSpect_SM(curTet, behEventData, behEventDataIDs,...
+%         tcInCorrLogs, tcInCorrLogIDs,...
+%         statMatrix, statMatrixColIDs, eventWindow, spectFreqWindow, printYN);
     %% Spike Phase Relationship Stuff
     PlotSpikePhaseRelations_SM(statMatrix, statMatrixColIDs,...
         trialAlignedBehavMatrix,...
@@ -138,7 +138,7 @@ for t = 2:length(tetsWithUnits)
         % Figure 1: Overall Unit Summary
         fig1 = figure('Name', [curUnit ' Summary'], 'NumberTitle', 'off');
         PlotUnitFeatures_SM(curUnitSummary, curUniSpikeTimes, fig1, printYN);
-        
+%         
         %% Performance PEHs
         % Overall
         overallPerf = PlotTrialEventPEH_SM(curUnit, behEventData, behEventDataIDs,...
@@ -158,7 +158,7 @@ for t = 2:length(tetsWithUnits)
             curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % F-Ratio Analysis Odor vs Position
-        curTetStatDiffPERF(uni) = FratioAnalysis_SM(curUnit, perfByOdor, perfByPosition); %#ok<AGROW>
+%         curTetStatDiffPERF(uni) = FratioAnalysis_SM(curUnit, perfByOdor, perfByPosition); %#ok<AGROW>
                 
         %% Temporal Context PEH
         % Overall
@@ -179,7 +179,7 @@ for t = 2:length(tetsWithUnits)
             curUniSpikeLog, eventWindow, pehBinSize, printYN);
         
         % F-Ratio Analysis Odor vs Position
-        curTetStatDiffTC(uni) = FratioAnalysis_SM(curUnit, tcByOdor, tcByPosition); %#ok<AGROW>
+%         curTetStatDiffTC(uni) = FratioAnalysis_SM(curUnit, tcByOdor, tcByPosition); %#ok<AGROW>
         
         %% Temporal Context X Performance PEH
         % Overall InSeq v OutSeq Corr
@@ -226,7 +226,7 @@ for t = 2:length(tetsWithUnits)
         %%
         close all
     end
-    statDiffPerTetPERF{t} = curTetStatDiffPERF;
-    statDiffPerTetTC{t} = curTetStatDiffTC;
+%     statDiffPerTetPERF{t} = curTetStatDiffPERF;
+%     statDiffPerTetTC{t} = curTetStatDiffTC;
 end
 %%

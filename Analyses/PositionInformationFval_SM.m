@@ -451,9 +451,13 @@ line(gca, [nanmean(allCorr(3,:)) nanmean(allCorr(3,:))], get(gca, 'ylim'), 'colo
 title('All: Head vs. Tail');
 
 linkaxes([sp1, sp2, sp2, sp3, sp4, sp5, sp6, sp7, sp8, sp9], 'y');
+
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
 annotation('textbox', [0.05 0.9 0.9 0.1], 'String', 'All Timepoints', 'linestyle', 'none', 'FontSize', 20);
 annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('%s Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', seqType, spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
 annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+print('-painters', gcf, '-dpdf', 'LocationVsPositionCorrelationSummary(All)');
 %% Now run a thresholded version
 % Row 1 = Position vs Head Location
 % Row 2 = Position vs Tail Location
@@ -535,10 +539,13 @@ line(gca, [nanmean(allCorr(3,:)) nanmean(allCorr(3,:))], get(gca, 'ylim'), 'colo
 title('All: Head vs. Tail');
 
 linkaxes([sp1, sp2, sp2, sp3, sp4, sp5, sp6, sp7, sp8, sp9], 'y');
+
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
 annotation('textbox', [0.05 0.9 0.9 0.1], 'String', 'Threshold Fz>1', 'linestyle', 'none', 'FontSize', 20);
 annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('%s Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', seqType, spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
 annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
-
+print('-painters', gcf, '-dpdf', 'LocationVsPositionCorrelationSummary(Thresholded)');
 %% Examine the relationship between the peak FR and peak IC
 fVals = cellfun(@(a,b)[a,b], fValsPI, fValsPO, 'uniformoutput', 0);
 frMean = [mean(pokeInFRisc,3); mean(pokeOutFRisc,3)];
@@ -559,6 +566,13 @@ corrScatPlot(fvMaxNdx(2,:)', frMaxNdx', 'Index of Max Head Loc Info', 'Index of 
 subplot(1,3,3)
 corrScatPlot(fvMaxNdx(3,:)', frMaxNdx', 'Index of Max Tail Loc Info', 'Index of Max Firing Rate', []);
 
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
+annotation('textbox', [0.05 0.9 0.9 0.1], 'String', 'FR vs FZ correlation', 'linestyle', 'none', 'FontSize', 20);
+annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('%s Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', seqType, spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+print('-painters', gcf, '-dpdf', 'FzVsFRcorr');
+
 figure; 
 BarPlotErrorbars([mean(abs(fvMaxNdx(1,:) - frMaxNdx)), mean(abs(fvMaxNdx(2,:) - frMaxNdx)), mean(abs(fvMaxNdx(3,:) - frMaxNdx))],...
     [std(fvMaxNdx(1,:) - frMaxNdx)/sqrt(length(goodUniNames)-1), std(fvMaxNdx(2,:) - frMaxNdx)/sqrt(length(goodUniNames)-1), std(fvMaxNdx(3,:) - frMaxNdx)/sqrt(length(goodUniNames)-1)]);
@@ -566,7 +580,11 @@ set(gca, 'xticklabel', {'Position', 'Head', 'Tail'});
 title('Temporal Difference From Max Firing Rate');
 ylabel('Time (ms)');
 
-
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
+annotation('textbox', [0.2 0.9 0.8 0.1], 'String', sprintf('%s Spatial Bin = %.02fmm Gaussian = %.02fms Number of Permutations = %i', seqType, spatialBinSize*1.7, slideWindowSize, numPerms), 'HorizontalAlignment', 'right', 'linestyle', 'none', 'FontSize', 12);
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string', sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+print('-painters', gcf, '-dpdf', 'PeakInfoFiringRateLatency');
 %%
 function [fVectRaw, fVectZ] = SlidingFvalCalc(curUniFR, idVect, numPerms)
 % UniFR here is organized as a 2-D matrix where each column is a trial and

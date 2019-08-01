@@ -21,6 +21,7 @@ trlWindow = [round(trialLims(1)*sampleRate) round(trialLims(2)*sampleRate)];
 %% Extract Trial Indexes & Poke Events
 % separate out odor and position columns 
 odorTrlMtx = behavMatrix(:,cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'Odor')));
+odorVals = cell2mat(cellfun(@(b)str2double(b(5:end)), behavMatrixColIDs(cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'Odor'))), 'uniformoutput', 0));
 positionTrlMtx = behavMatrix(:,cellfun(@(a)~isempty(a), regexp(behavMatrixColIDs, 'Position[1-9]$')));
 % Sum them on 2d to extract trial indices
 trialVect = sum(odorTrlMtx,2);
@@ -66,7 +67,7 @@ seq = 0;
 for trl = 1:numTrials
     trialNum{trl} = trl;
     % Identify Trial/Position/Descriptors
-    curTrlOdor = find(odorTrlMtx(trialIndices(trl),:)==1);
+    curTrlOdor = odorVals(odorTrlMtx(trialIndices(trl),:)==1);
     curTrlPos = find(positionTrlMtx(trialIndices(trl),:)==1);
     curTrlPerf = trialPerfVect(trialIndices(trl))==1;
     curTrlInSeqLog = inSeqLog(trialIndices(trl))==1;
@@ -87,8 +88,13 @@ for trl = 1:numTrials
         trialItmItmDist{trl} = 1;
         trialTransDist{trl} = 0;
     else
-        trialTransDist{trl} = curTrlPos - curTrlOdor;
-        trialItmItmDist{trl} = curTrlOdor - curTrlPos + 1;
+        if curTrlOdor < 10
+            trialTransDist{trl} = curTrlPos - curTrlOdor;
+            trialItmItmDist{trl} = curTrlOdor - curTrlPos + 1;
+        else
+            trialTransDist{trl} = curTrlPos+10 - curTrlOdor;
+            trialItmItmDist{trl} = curTrlOdor - (curTrlPos+10) + 1;
+        end
     end
     seqNum{trl} = seq;
     

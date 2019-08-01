@@ -253,7 +253,7 @@ else
 end
 load(smFile,'statMatrix')
 
-goodDataTrace = statMatrix(:,2);
+goodDataTrace = statMatrix(:,10);
 % Enable the following to filter the data
 [b1, a1] = butter(2, [59/500 61/500], 'stop');                      %% Remove 60hz Harmonic (noise)
 goodDataTrace = filtfilt(b1, a1, goodDataTrace);                    %% Apply Filter

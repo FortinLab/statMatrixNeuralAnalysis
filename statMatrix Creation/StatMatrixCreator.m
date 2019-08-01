@@ -175,15 +175,15 @@ if rig==1 || rig==2
         end
     end
     if rig==1
-        multiListCheck = questdlg('Use a different .plx file for behavioral events?', 'Event Check', 'Yes', 'No', 'Yes');
-        switch multiListCheck
+        diffPLXflBehavChck = questdlg('Use a different .plx file for behavioral events?', 'Event Check', 'Yes', 'No', 'Yes');
+        switch diffPLXflBehavChck
             case 'Yes'
-                multiList = 1;
+                diffPLXflBehav = 1;
                  [fileName, filePath] = uigetfile('.plx', 'Identify the ORIGINAL .plx file');
                  plxFileBehav = [filePath '\' fileName];
                  fprintf(outfile, '     Plexon File used for behavior = %s\n', plxFileBehav);
             case 'No'
-                multiList = 0;
+                diffPLXflBehav = 0;
         end
     end                
 elseif rig==3 || rig==4 || rig==5
@@ -204,7 +204,7 @@ fprintf(outfile, '********************************************************\n');
 %% Now create the statMatrix files
 %% Create Behavior Matrix
 if rig == 1                                                                 % Irvine .plx files
-     if multiList
+     if diffPLXflBehav
          [plxData] = SummarizePLXevents_SD(plxFileBehav, [], outfile);
          summary = plxData.Summary;
          summary.PLXfileBehav = summary.PLXfile;
@@ -496,7 +496,7 @@ function CreateNeuralMatrixPLX(exp, data, rig, loc, tsVect, summary, outputFileN
     % Now run through each channel individually to identify things
     % tetLFPchanNames
     % tetsWithUnits
-    for chan = 6:length(tetLFPchanNames)
+    for chan = 1:length(tetLFPchanNames)
         if rig == 1 || rig == 2
             curADchan = tetLFPchanNames{chan};
             curTet = curADchan(1:end-2);
