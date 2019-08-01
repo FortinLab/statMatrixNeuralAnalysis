@@ -1,5 +1,5 @@
 %% Runtime variables
-binSize = 100;
+binSize = 200;
 dsRate = 5;
 
 %%
@@ -70,6 +70,14 @@ imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
 title('Odor A');
 xlabel('Decoded Time');
 ylabel('True Time');
+curDir = cd;
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+colormap jet
+axesHandles = findobj(get(gcf,'Children'), 'flat','Type','axes');
+axis(axesHandles,'square')
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
 drawnow
 
 corrNonBisMtx = mean(spkMtx(:,:,perfLog & inSeqLog & odorBlog),3);             % All B InSeq Correct Trials
@@ -79,6 +87,13 @@ imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
 title('Odor B');
 xlabel('Decoded Time');
 ylabel('True Time');
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+colormap jet
+axesHandles = findobj(get(gcf,'Children'), 'flat','Type','axes');
+axis(axesHandles,'square')
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
 drawnow
 
 corrNonCisMtx = mean(spkMtx(:,:,perfLog & inSeqLog & odorClog),3);             % All C InSeq Correct Trials
@@ -88,6 +103,13 @@ imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
 title('Odor C');
 xlabel('Decoded Time');
 ylabel('True Time');
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+colormap jet
+axesHandles = findobj(get(gcf,'Children'), 'flat','Type','axes');
+axis(axesHandles,'square')
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
 drawnow
 
 corrNonDisMtx = mean(spkMtx(:,:,perfLog & inSeqLog & odorDlog),3);             % All D InSeq Correct Trials
@@ -97,6 +119,13 @@ imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
 title('Odor D');
 xlabel('Decoded Time');
 ylabel('True Time');
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+colormap jet
+axesHandles = findobj(get(gcf,'Children'), 'flat','Type','axes');
+axis(axesHandles,'square')
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
 drawnow
 
 
