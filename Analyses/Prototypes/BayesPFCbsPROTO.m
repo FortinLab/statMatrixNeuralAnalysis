@@ -1,5 +1,5 @@
 %% Runtime variables
-binSize = 20;
+binSize = 100;
 dsRate = 5;
 
 %%
@@ -16,7 +16,7 @@ load([smPath '\' nsmblMatFile]);
 smFileList = fileNames(cellfun(@(a)~isempty(a), regexp(fileNames, '_SM\>')))';
 
 %% Extract Behavioral Periods
-trialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.5 1.5], 'PokeIn');
+trialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.5 1.4], 'PokeIn');
 trialEnsemble = ExtractTrialData_SM(trialPeriodTD, ensembleMatrix(:,2:end)); %#ok<*NODEF>
 trialEnsembleMtx = cell2mat(reshape(trialEnsemble, [1 1 length(trialEnsemble)]));
 
@@ -62,19 +62,51 @@ spkMtx = spikeMatrix;
 spkMtx(:,uniFRthreshLog,:) = [];
 goodUniNames = {ensembleUnitSummaries(~uniFRthreshLog).UnitName};
 %%
-corrISmtx = mean(spkMtx(:,:,perfLog & inSeqLog),3);
+% corrISmtx = mean(spkMtx(:,:,perfLog & inSeqLog),3);                         % All InSeq Correct Trials
+corrNonAisMtx = mean(spkMtx(:,:,perfLog & inSeqLog & odorAlog),3);             % All A InSeq Correct Trials
+[postMtx] = CalculatePostProb(corrNonAisMtx, spkMtx(:,:,perfLog & inSeqLog & odorAlog), binSize);
+figure;
+imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
+title('Odor A');
+xlabel('Decoded Time');
+ylabel('True Time');
+drawnow
 
+corrNonBisMtx = mean(spkMtx(:,:,perfLog & inSeqLog & odorBlog),3);             % All B InSeq Correct Trials
+[postMtx] = CalculatePostProb(corrNonBisMtx, spkMtx(:,:,perfLog & inSeqLog & odorBlog), binSize);
+figure;
+imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
+title('Odor B');
+xlabel('Decoded Time');
+ylabel('True Time');
+drawnow
 
+corrNonCisMtx = mean(spkMtx(:,:,perfLog & inSeqLog & odorClog),3);             % All C InSeq Correct Trials
+[postMtx] = CalculatePostProb(corrNonCisMtx, spkMtx(:,:,perfLog & inSeqLog & odorClog), binSize);
+figure;
+imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
+title('Odor C');
+xlabel('Decoded Time');
+ylabel('True Time');
+drawnow
+
+corrNonDisMtx = mean(spkMtx(:,:,perfLog & inSeqLog & odorDlog),3);             % All D InSeq Correct Trials
+[postMtx] = CalculatePostProb(corrNonDisMtx, spkMtx(:,:,perfLog & inSeqLog & odorDlog), binSize);
+figure;
+imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
+title('Odor D');
+xlabel('Decoded Time');
+ylabel('True Time');
+drawnow
 
 
 
 %%
-function [postMtx] = CalculatePostProb(meanFR, trialFR)
+function [postMtx] = CalculatePostProb(meanFR, trialFR, binSize)
 propVect = CalculateProportionalConstant(meanFR);
 post = nan(size(trialFR,1), size(trialFR,1), size(trialFR,3));
 
 for trl = 1:size(trialFR,3)
-    tic
     for i1 = 1:size(trialFR,1)
         curPopVect = trialFR(i1,:,trl);
         curPopVectFact = factorial(curPopVect);
@@ -85,21 +117,28 @@ for trl = 1:size(trialFR,3)
                 condProbSpkPerUni(uni) = (((binSize/1000 * curMeanFR(uni))^curPopVect(uni))/curPopVectFact(uni)) * exp(-(binSize/1000*curMeanFR(uni)));
             end
             post(i1,i2,trl) = propVect(i1)*prod(condProbSpkPerUni);
+%             pois1 = nan(size(curMeanFR));
+%             pois2 = nan(size(curMeanFR));
+%             for uni = 1:size(trialFR,2)
+%                 pois1(uni) = (((binSize/1000 * curMeanFR(uni))^curPopVect(uni))/curPopVectFact(uni));
+%                 pois2(uni) =  exp(-(binSize/1000*curMeanFR(uni)));
+%             end
+%             post(i1,i2,trl) = propVect(i1)*prod(pois1)*sum(pois2);
         end
+        post(i1,:,trl) = post(i1,:,trl)./max(post(i1,:,trl));
     end
-    toc
 end
-
+postMtx = post;
 end
 
 %%
 function [propConst] = CalculateProportionalConstant(rateMtx)
-% propConstMtx = nan(size(rateMtx));
+% propConst = nan(size(rateMtx));
 % for u = 1:size(rateMtx,2)
 %     propConstMtx(:,u) = 1./(rateMtx(:,u).*sum(rateMtx(:,u)~=0));
 % end
-% propConstMtx(isinf(propConstMtx)) = 0;
+% propConst(isinf(propConstMtx)) = 0;
 
 % sum(rateMtx'.*(1./sum(rateMtx')))
-propConstMtx = 1./sum(rateMtx');
+propConst = 1./sum(rateMtx,2);
 end
