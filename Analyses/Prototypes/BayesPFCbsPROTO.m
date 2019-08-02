@@ -111,16 +111,9 @@ goodUniNames = {ensembleUnitSummaries(~uniFRthreshLog).UnitName};
 nonAIStrials = spkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog);
 nonAISodors = [trialPeriodTD(perfLog & inSeqLog & ~fullInSeqLog).Odor];
 corrAisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorAlog),3);             % All A InSeq Correct Trials Prior
-[~, aPriorAllPostRaw] = CalculatePostProb(corrAisMtx, nonAIStrials, binSize);
-
 corrBisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorBlog),3);             % All B InSeq Correct Trials Prior
-[~, bPriorAllPostRaw] = CalculatePostProb(corrBisMtx, nonAIStrials, binSize);
-
 corrCisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorClog),3);             % All C InSeq Correct Trials Prior
-[~, cPriorAllPostRaw] = CalculatePostProb(corrCisMtx, nonAIStrials, binSize);
-
 corrDisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorDlog),3);             % All D InSeq Correct Trials Prior
-[~, dPriorAllPostRaw] = CalculatePostProb(corrDisMtx, nonAIStrials, binSize);
 
 figure;
 oAfr = subplot(4,4,1);
@@ -174,6 +167,11 @@ orient(gcf, 'tall');
 orient(gcf, 'landscape');
 drawnow;
 
+
+[~, aPriorAllPostRaw] = CalculatePostProb(corrAisMtx, nonAIStrials, binSize);
+[~, bPriorAllPostRaw] = CalculatePostProb(corrBisMtx, nonAIStrials, binSize);
+[~, cPriorAllPostRaw] = CalculatePostProb(corrCisMtx, nonAIStrials, binSize);
+[~, dPriorAllPostRaw] = CalculatePostProb(corrDisMtx, nonAIStrials, binSize);
 nonFISaLog = perfLog & inSeqLog & odorAlog & ~fullInSeqLog;
 nonFISbLog = perfLog & inSeqLog & odorBlog & ~fullInSeqLog;
 nonFIScLog = perfLog & inSeqLog & odorClog & ~fullInSeqLog;
