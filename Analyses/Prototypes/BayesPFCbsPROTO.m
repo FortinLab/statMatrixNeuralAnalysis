@@ -116,6 +116,7 @@ axesHandles = findobj(get(gcf,'Children'), 'flat','Type','axes');
 axis(axesHandles,'square')
 orient(gcf, 'tall');
 orient(gcf, 'landscape');
+
 %%
 function cAx = PlotPostMtx(trialTimes, postMtx, id)
 imagesc(trialTimes, trialTimes, nanmean(postMtx,3)');
@@ -129,47 +130,29 @@ end
 
 
 %%
-function [postMtx] = CalculatePostProb(meanFR, trialFR, binSize)
+function [postNorm, postRaw] = CalculatePostProb(meanFR, trialFR, binSize)
 propVect = CalculateProportionalConstant(meanFR);
-post = nan(size(trialFR,1), size(trialFR,1), size(trialFR,3));
-% 
-% for trl = 1:size(trialFR,3)
-%     for i1 = 1:size(trialFR,1)
-%         curPopVect = trialFR(i1,:,trl);
-%         curPopVectFact = factorial(curPopVect);
-%         for i2 = 1:size(trialFR,1)
-%             curMeanFR = meanFR(i2,:);
-%             condProbSpkPerUni = nan(size(curMeanFR));
-%             for uni = 1:size(trialFR,2)
-%                 condProbSpkPerUni(uni) = (((binSize/1000 * curMeanFR(uni))^curPopVect(uni))/curPopVectFact(uni)) * exp(-(binSize/1000*curMeanFR(uni)));
-%             end
-%             post(i1,i2,trl) = propVect(i1)*prod(condProbSpkPerUni);
-%         end
-%         post(i1,:,trl) = post(i1,:,trl)./max(post(i1,:,trl));
-%     end
-% end
-% postMtx = post;
-
-postPE = nan(size(trialFR,1), size(trialFR,1), size(trialFR,3));
+postNorm = nan(size(trialFR,1), size(trialFR,1), size(trialFR,3));
+postRaw = nan(size(trialFR,1), size(trialFR,1), size(trialFR,3));
 for trl = 1:size(trialFR,3)
     for t = 1:size(meanFR,1)
         p = nan(size(meanFR));
-%         e = nan(size(meanFR));
+%         e = nan(size(meanFR));  % I think this is wrong
         curPopVect = trialFR(t,:,trl);
         curPopFact = factorial(curPopVect);
         for u = 1:size(meanFR,2)
             curAvgUniFR = meanFR(:,u);
             p(:,u) = (((binSize/1000)*curAvgUniFR).^curPopVect(u))./curPopFact(u);
-%             e(:,u) = exp(-(binSize/1000*curAvgUniFR));
+%             e(:,u) = exp(-(binSize/1000*curAvgUniFR));  % I think this is wrong
         end        
         pp = prod(p,2);
-%         ee = sum(e,2);
+%         ee = sum(e,2);  % I think this is wrong
         ee = exp(-(binSize/1000*sum(meanFR,2)));
         tempPost = propVect.*pp.*ee;
-        postPE(t,:,trl) = tempPost./max(tempPost);
+        postRaw(t,:,trl) = tempPost;
+        postNorm(t,:,trl) = tempPost./max(tempPost);
     end
 end
-postMtx = postPE;
 
 end
 
