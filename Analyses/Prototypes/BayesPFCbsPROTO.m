@@ -244,7 +244,11 @@ orient(gcf, 'landscape');
 drawnow;
 
 %% Compare Trial Before with Trial After OutSeq Trial
+nonAIStrials = spkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog);
+nonAIStrialData = trialPeriodTD(perfLog & inSeqLog & ~fullInSeqLog);
+nonAISodors = [nonAIStrialData.Odor];
 nonAIStrialNums = [nonAIStrialData.TrialNum];
+
 preOStrial = false(size(nonAIStrialNums));
 postOStrial = false(size(nonAIStrialNums));
 for trl = 1:length(nonAIStrialNums)
@@ -256,19 +260,19 @@ for trl = 1:length(nonAIStrialNums)
             if curTrl.Position - prevTrial.Position == 1 && prevTrial.TranspositionDistance ~= 0
                 postOStrial(trl) = true;
                 preOStrial(trl-2) = true;
-%             elseif nextTrial.Position - curTrl.Position == 1 && nextTrial.TranspositionDistance ~=0 && nextTrial.Performance == 1
-%                 preOStrial(trl) = true;
             end
         end
    end
 end
+postPostOS = post(:,:,postOStrial);
+postPreOS = post(:,:,preOStrial);
 
 figure;
 subplot(1,2,1)
-PlotPostMtx(trialTimes, post(:,:,preOStrial), 'Trial Before OutSeq');
+PlotPostMtx(trialTimes, postPreOS, 'Trial Before OutSeq');
 
 subplot(1,2,2)
-PlotPostMtx(trialTimes, post(:,:,postOStrial), 'Trial After OutSeq');
+PlotPostMtx(trialTimes, postPostOS, 'Trial After OutSeq');
 
 annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
     'linestyle', 'none', 'horizontalalignment', 'right');
