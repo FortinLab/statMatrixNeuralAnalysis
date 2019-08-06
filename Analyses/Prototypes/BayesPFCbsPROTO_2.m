@@ -86,13 +86,13 @@ goodUniNames = {ensembleUnitSummaries(~uniFRthreshLog).UnitName};
 %%
 figure
 corrISmtxPI = mean(pokeInSpkMtx(:,:,perfLog & fullInSeqLog),3);                         % All InSeq Correct Trials
-[postPI] = CalculatePostProb(corrISmtxPI, pokeInSpkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog & ~odorAlog), binSize);
+[postPI] = CalculatePostProb(corrISmtxPI, pokeInSpkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog), binSize);
 subplot(4,4,[1,2,5,6])
 PlotPostMtx(trialTimePI, postPI, 'InSeq Correct Trials (Poke In)');
 set(gca, 'clim', [0 0.5]);
 
 corrISmtxPO = mean(pokeOutSpkMtx(:,:,perfLog & fullInSeqLog),3);
-[postPO] = CalculatePostProb(corrISmtxPO, pokeOutSpkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog & ~odorAlog), binSize);
+[postPO] = CalculatePostProb(corrISmtxPO, pokeOutSpkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog), binSize);
 subplot(4,4,[9,10,13,14])
 PlotPostMtx(trialTimePO, postPO, 'InSeq Correct Trials (Poke Out)');
 set(gca, 'clim', [0 0.5]);
