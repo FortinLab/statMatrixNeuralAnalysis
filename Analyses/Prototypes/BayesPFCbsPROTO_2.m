@@ -23,15 +23,15 @@ smFileList = fileNames(cellfun(@(a)~isempty(a), regexp(fileNames, '_SM\>')))';
 
 %% Extract Behavioral Periods
 % Taking 1/2 the binSize on either end to get rid of edge effects.
-% pokeInTrialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [pokeInWindows(1)-(binSize/2/1000) pokeInWindows(2)+(binSize/2/1000)], 'PokeIn');
-% pokeInTimes = behavMatrix(pokeInTrialPeriodTD(1).TrialLogVect,1) - behavMatrix(pokeInTrialPeriodTD(1).PokeInIndex,1);
-% pokeOutTrialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [pokeOutWindows(1)-(binSize/2/1000) pokeOutWindows(2)+(binSize/2/1000)], 'PokeOut');
-% pokeOutTimes = behavMatrix(pokeOutTrialPeriodTD(1).TrialLogVect,1) - behavMatrix(pokeOutTrialPeriodTD(1).PokeOutIndex,1);
-
-pokeInTrialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [pokeInWindows(1)-(binSize/1000) pokeInWindows(2)+(binSize/1000)], 'PokeIn');
+pokeInTrialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [pokeInWindows(1)-(binSize/2/1000) pokeInWindows(2)+(binSize/2/1000)], 'PokeIn');
 pokeInTimes = behavMatrix(pokeInTrialPeriodTD(1).TrialLogVect,1) - behavMatrix(pokeInTrialPeriodTD(1).PokeInIndex,1);
-pokeOutTrialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [pokeOutWindows(1)-(binSize/1000) pokeOutWindows(2)+(binSize/1000)], 'PokeOut');
+pokeOutTrialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [pokeOutWindows(1)-(binSize/2/1000) pokeOutWindows(2)+(binSize/2/1000)], 'PokeOut');
 pokeOutTimes = behavMatrix(pokeOutTrialPeriodTD(1).TrialLogVect,1) - behavMatrix(pokeOutTrialPeriodTD(1).PokeOutIndex,1);
+
+% pokeInTrialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [pokeInWindows(1)-(binSize/1000) pokeInWindows(2)+(binSize/1000)], 'PokeIn');
+% pokeInTimes = behavMatrix(pokeInTrialPeriodTD(1).TrialLogVect,1) - behavMatrix(pokeInTrialPeriodTD(1).PokeInIndex,1);
+% pokeOutTrialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [pokeOutWindows(1)-(binSize/1000) pokeOutWindows(2)+(binSize/1000)], 'PokeOut');
+% pokeOutTimes = behavMatrix(pokeOutTrialPeriodTD(1).TrialLogVect,1) - behavMatrix(pokeOutTrialPeriodTD(1).PokeOutIndex,1);
 
 pokeInEnsemble = ExtractTrialData_SM(pokeInTrialPeriodTD, ensembleMatrix(:,2:end)); %#ok<*NODEF>
 pokeInEnsembleMtx = cell2mat(reshape(pokeInEnsemble, [1 1 length(pokeInEnsemble)]));
@@ -40,52 +40,52 @@ pokeOutEnsembleMtx = cell2mat(reshape(pokeOutEnsemble, [1 1 length(pokeOutEnsemb
 
 
 %% Bin the spiking data
-% % First convolve the entire trialEnsembleMtx with a square to bin the
-% % spikes
-% pokeInBinnedEnsembleMtx = nan(size(pokeInEnsembleMtx));
-% pokeOutBinnedEnsembleMtx = nan(size(pokeOutEnsembleMtx));
-% for t = 1:size(pokeInEnsembleMtx,3)
-%     for u = 1:size(pokeInEnsembleMtx,2)
-%         pokeInBinnedEnsembleMtx(:,u,t) = conv(pokeInEnsembleMtx(:,u,t), ones(1,binSize)./(binSize/1000), 'same');
-%         pokeOutBinnedEnsembleMtx(:,u,t) = conv(pokeOutEnsembleMtx(:,u,t), ones(1,binSize)./(binSize/1000), 'same');
-%     end
-% end
-% % Now remove the binSize/2 padding
-% unPaddedPokeInBinnedEnsembleMtx = pokeInBinnedEnsembleMtx((binSize/2)+1:end-(binSize/2),:,:);
-% pokeInTimesUnpadded = pokeInTimes((binSize/2)+1:end-(binSize/2));
-% unPaddedPokeOutBinnedEnsembleMtx = pokeOutBinnedEnsembleMtx((binSize/2)+1:end-(binSize/2),:,:);
-% pokeOutTimesUnpadded = pokeOutTimes((binSize/2)+1:end-(binSize/2));
-% % Now downsample the binned matrix
-% dsVect = downsample(1:size(unPaddedPokeInBinnedEnsembleMtx,1), dsRate);
-% pokeInSpikeMatrix = unPaddedPokeInBinnedEnsembleMtx(dsVect,:,:);
-% pokeOutSpikeMatrix = unPaddedPokeOutBinnedEnsembleMtx(dsVect,:,:);
-% trialTimePI = pokeInTimesUnpadded(dsVect);
-% trialTimePO = pokeOutTimesUnpadded(dsVect);
-
-%% Alternative way to bin the spike data
-mansWin1 = 1:dsRate:size(pokeInEnsembleMtx,1)-binSize;
-mansWin2 = mansWin1+binSize;
-
-pokeInBinnedEnsembleMtx = nan(length(mansWin1), size(pokeInEnsembleMtx,2), size(pokeInEnsembleMtx,3));
-pokeOutBinnedEnsembleMtx = nan(length(mansWin1), size(pokeOutEnsembleMtx,2), size(pokeOutEnsembleMtx,3));
-for trl = 1:size(pokeInEnsembleMtx,3)
-    for u = 1:size(pokeInEnsembleMtx,2)        
-        curUniPI = pokeInEnsembleMtx(:,u,trl);
-        pokeInBinnedEnsembleMtx(:,u,trl) = cell2mat(arrayfun(@(a,b)sum(curUniPI(a:b)), mansWin1, mansWin2, 'uniformoutput', 0));
-        curUniPO = pokeOutEnsembleMtx(:,u,trl);
-        pokeOutBinnedEnsembleMtx(:,u,trl) = cell2mat(arrayfun(@(a,b)sum(curUniPO(a:b)), mansWin1, mansWin2, 'uniformoutput', 0));
+% First convolve the entire trialEnsembleMtx with a square to bin the
+% spikes
+pokeInBinnedEnsembleMtx = nan(size(pokeInEnsembleMtx));
+pokeOutBinnedEnsembleMtx = nan(size(pokeOutEnsembleMtx));
+for t = 1:size(pokeInEnsembleMtx,3)
+    for u = 1:size(pokeInEnsembleMtx,2)
+        pokeInBinnedEnsembleMtx(:,u,t) = conv(pokeInEnsembleMtx(:,u,t), ones(1,binSize)./(binSize/1000), 'same');
+        pokeOutBinnedEnsembleMtx(:,u,t) = conv(pokeOutEnsembleMtx(:,u,t), ones(1,binSize)./(binSize/1000), 'same');
     end
 end
-pokeInBinnedEnsembleMtx = pokeInBinnedEnsembleMtx./(binSize/1000);
-pokeOutBinnedEnsembleMtx = pokeOutBinnedEnsembleMtx./(binSize/1000);
-pokeInTimesDS = pokeInTimes(mansWin1);
-pokeInUnPadLog = pokeInTimesDS>=pokeInWindows(1) & pokeInTimesDS<=pokeInWindows(2);
-trialTimePI = pokeInTimesDS(pokeInUnPadLog);
-pokeInSpikeMatrix = pokeInBinnedEnsembleMtx(pokeInUnPadLog,:,:);
-pokeOutTimesDS = pokeOutTimes(mansWin1);
-pokeOutUnPadLog = pokeOutTimesDS>=pokeOutWindows(1) & pokeOutTimesDS<=pokeOutWindows(2);
-trialTimePO = pokeOutTimesDS(pokeOutUnPadLog);
-pokeOutSpikeMatrix = pokeOutBinnedEnsembleMtx(pokeOutUnPadLog,:,:);
+% Now remove the binSize/2 padding
+unPaddedPokeInBinnedEnsembleMtx = pokeInBinnedEnsembleMtx((binSize/2)+1:end-(binSize/2),:,:);
+pokeInTimesUnpadded = pokeInTimes((binSize/2)+1:end-(binSize/2));
+unPaddedPokeOutBinnedEnsembleMtx = pokeOutBinnedEnsembleMtx((binSize/2)+1:end-(binSize/2),:,:);
+pokeOutTimesUnpadded = pokeOutTimes((binSize/2)+1:end-(binSize/2));
+% Now downsample the binned matrix
+dsVect = downsample(1:size(unPaddedPokeInBinnedEnsembleMtx,1), dsRate);
+pokeInSpikeMatrix = unPaddedPokeInBinnedEnsembleMtx(dsVect,:,:);
+pokeOutSpikeMatrix = unPaddedPokeOutBinnedEnsembleMtx(dsVect,:,:);
+trialTimePI = pokeInTimesUnpadded(dsVect);
+trialTimePO = pokeOutTimesUnpadded(dsVect);
+
+%% Alternative way to bin the spike data
+% mansWin1 = 1:dsRate:size(pokeInEnsembleMtx,1)-binSize;
+% mansWin2 = mansWin1+binSize;
+% 
+% pokeInBinnedEnsembleMtx = nan(length(mansWin1), size(pokeInEnsembleMtx,2), size(pokeInEnsembleMtx,3));
+% pokeOutBinnedEnsembleMtx = nan(length(mansWin1), size(pokeOutEnsembleMtx,2), size(pokeOutEnsembleMtx,3));
+% for trl = 1:size(pokeInEnsembleMtx,3)
+%     for u = 1:size(pokeInEnsembleMtx,2)        
+%         curUniPI = pokeInEnsembleMtx(:,u,trl);
+%         pokeInBinnedEnsembleMtx(:,u,trl) = cell2mat(arrayfun(@(a,b)sum(curUniPI(a:b)), mansWin1, mansWin2, 'uniformoutput', 0));
+%         curUniPO = pokeOutEnsembleMtx(:,u,trl);
+%         pokeOutBinnedEnsembleMtx(:,u,trl) = cell2mat(arrayfun(@(a,b)sum(curUniPO(a:b)), mansWin1, mansWin2, 'uniformoutput', 0));
+%     end
+% end
+% pokeInBinnedEnsembleMtx = pokeInBinnedEnsembleMtx./(binSize/1000);
+% pokeOutBinnedEnsembleMtx = pokeOutBinnedEnsembleMtx./(binSize/1000);
+% pokeInTimesDS = pokeInTimes(mansWin1);
+% pokeInUnPadLog = pokeInTimesDS>=pokeInWindows(1) & pokeInTimesDS<=pokeInWindows(2);
+% trialTimePI = pokeInTimesDS(pokeInUnPadLog);
+% pokeInSpikeMatrix = pokeInBinnedEnsembleMtx(pokeInUnPadLog,:,:);
+% pokeOutTimesDS = pokeOutTimes(mansWin1);
+% pokeOutUnPadLog = pokeOutTimesDS>=pokeOutWindows(1) & pokeOutTimesDS<=pokeOutWindows(2);
+% trialTimePO = pokeOutTimesDS(pokeOutUnPadLog);
+% pokeOutSpikeMatrix = pokeOutBinnedEnsembleMtx(pokeOutUnPadLog,:,:);
 
 
 %% Create Logical Vectors
