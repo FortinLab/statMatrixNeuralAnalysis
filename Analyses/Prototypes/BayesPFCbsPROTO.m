@@ -109,122 +109,122 @@ goodUniNames = {ensembleUnitSummaries(~uniFRthreshLog).UnitName};
 % orient(gcf, 'landscape');
 
 %% Decode Trial Time and Odor Across Odors
-% nonAIStrials = spkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog);
-% nonAIStrialData = trialPeriodTD(perfLog & inSeqLog & ~fullInSeqLog);
-% nonAISodors = [nonAIStrialData.Odor];
-% corrAisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorAlog),3);             % All A InSeq Correct Trials Prior
-% corrBisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorBlog),3);             % All B InSeq Correct Trials Prior
-% corrCisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorClog),3);             % All C InSeq Correct Trials Prior
-% corrDisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorDlog),3);             % All D InSeq Correct Trials Prior
-% 
-% figure;
-% oAfr = subplot(4,4,1);
-% imagesc(trialTimes, 1:size(spkMtx,2), corrAisMtx');
-% title('Odor A');
-% abCorr = subplot(4,4,2);
-% corrScatPlot(corrAisMtx(:),corrBisMtx(:), 'A','B', 'markerStyle', '.', 'markerColor', 'k');
-% acCorr = subplot(4,4,3);
-% corrScatPlot(corrAisMtx(:),corrCisMtx(:), 'A','C', 'markerStyle', '.', 'markerColor', 'k');
-% adCorr = subplot(4,4,4);
-% corrScatPlot(corrAisMtx(:),corrDisMtx(:), 'A','B', 'markerStyle', '.', 'markerColor', 'k');
-% 
-% oBfr = subplot(4,4,6);
-% imagesc(trialTimes, 1:size(spkMtx,2), corrBisMtx');
-% title('Odor B');
-% bcCorr = subplot(4,4,7);
-% corrScatPlot(corrBisMtx(:),corrCisMtx(:), 'B','C', 'markerStyle', '.', 'markerColor', 'k');
-% bdCorr = subplot(4,4,8);
-% corrScatPlot(corrBisMtx(:),corrDisMtx(:), 'B','D', 'markerStyle', '.', 'markerColor', 'k');
-% 
-% oCfr = subplot(4,4,11);
-% imagesc(trialTimes, 1:size(spkMtx,2), corrCisMtx');
-% title('Odor C');
-% cdCorr = subplot(4,4,12);
-% corrScatPlot(corrCisMtx(:),corrDisMtx(:), 'C','D', 'markerStyle', '.', 'markerColor', 'k');
-% 
-% oDfr = subplot(4,4,16);
-% imagesc(trialTimes, 1:size(spkMtx,2), corrDisMtx');
-% title('Odor D');
-% 
-% frMapSPs = [oAfr, oBfr, oCfr, oDfr];
-% curCL = cell2mat(get(frMapSPs, 'clim'));
-% set(frMapSPs, 'clim', [min(curCL(:,1)), max(curCL(:,2))], 'ydir', 'normal');
-% corrSPs = [abCorr, acCorr, adCorr, bcCorr, bdCorr, cdCorr];
-% curXL = cell2mat(get(corrSPs, 'xlim'));
-% curYL = cell2mat(get(corrSPs, 'ylim'));
-% set(corrSPs, 'xlim', [0 max(curXL(:,2))], 'ylim', [0 max(curYL(:,2))]);
-% 
-% axesHandles = findobj(get(gcf,'Children'), 'flat','Type','axes');
-% axis(axesHandles,'square');
-% 
-% annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
-%     'linestyle', 'none', 'horizontalalignment', 'right');
-% annotation('textbox', 'position', [0.025 0.935 0.5 0.05], 'String', '\bf\fontsize{14}Priors',...
-%     'linestyle', 'none', 'horizontalalignment', 'left');
-% curDir = cd;
-% annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
-%     'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
-% colormap jet
-% orient(gcf, 'tall');
-% orient(gcf, 'landscape');
-% drawnow;
+nonAIStrials = spkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog);
+nonAIStrialData = trialPeriodTD(perfLog & inSeqLog & ~fullInSeqLog);
+nonAISodors = [nonAIStrialData.Odor];
+corrAisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorAlog),3);             % All A InSeq Correct Trials Prior
+corrBisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorBlog),3);             % All B InSeq Correct Trials Prior
+corrCisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorClog),3);             % All C InSeq Correct Trials Prior
+corrDisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorDlog),3);             % All D InSeq Correct Trials Prior
 
-% 
-% [~, aPriorAllPostRaw] = CalculatePostProb(corrAisMtx, nonAIStrials, binSize);
-% [~, bPriorAllPostRaw] = CalculatePostProb(corrBisMtx, nonAIStrials, binSize);
-% [~, cPriorAllPostRaw] = CalculatePostProb(corrCisMtx, nonAIStrials, binSize);
-% [~, dPriorAllPostRaw] = CalculatePostProb(corrDisMtx, nonAIStrials, binSize);
-% nonFISaLog = perfLog & inSeqLog & odorAlog & ~fullInSeqLog;
-% nonFISbLog = perfLog & inSeqLog & odorBlog & ~fullInSeqLog;
-% nonFIScLog = perfLog & inSeqLog & odorClog & ~fullInSeqLog;
-% nonFISdLog = perfLog & inSeqLog & odorDlog & ~fullInSeqLog;
-% 
-% allNonFISpost = [aPriorAllPostRaw, bPriorAllPostRaw, cPriorAllPostRaw, dPriorAllPostRaw];
-% for c = 1:size(allNonFISpost,1)
-%     allNonFISpost(c,:,:) = allNonFISpost(c,:,:)./max(allNonFISpost(c,:,:));
-% end
-% 
-% aPriorAllPostNorm = allNonFISpost(:,1:size(aPriorAllPostRaw,1),:);
-% bPriorAllPostNorm = allNonFISpost(:,size(aPriorAllPostRaw,1)+1:size(aPriorAllPostRaw,1)*2,:);
-% cPriorAllPostNorm = allNonFISpost(:,size(aPriorAllPostRaw,1)*2+1:size(aPriorAllPostRaw,1)*3,:);
-% dPriorAllPostNorm = allNonFISpost(:,size(aPriorAllPostRaw,1)*3+1:end,:);
-% 
-% figure;
-% cAx = nan(4,4,2);
-% for prior = 1:4
-%     switch prior
-%         case 1
-%             curPrior = aPriorAllPostNorm;
-%         case 2
-%             curPrior = bPriorAllPostNorm;
-%         case 3
-%             curPrior = cPriorAllPostNorm;
-%         case 4
-%             curPrior = dPriorAllPostNorm;
-%     end
-%     for post = 1:4
-%         curPostLog = nonAISodors == post;
-%         curDecode = curPrior(:,:,curPostLog);
-%         subplot(4,4,sub2ind([4 4], post, prior))        
-%         cAx(prior,post,:) = PlotPostMtx(trialTimes, curDecode, sprintf('Prior%i; Decode%i', prior, post));
-%     end
-% end
-% cAxs = [min(min(cAx(:,:,1))), max(max(cAx(:,:,2)))/3];
-% 
-% annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
-%     'linestyle', 'none', 'horizontalalignment', 'right');
-% annotation('textbox', 'position', [0.025 0.935 0.5 0.05], 'String', '\bf\fontsize{14}Decoding Trial and Odor Across Odors',...
-%     'linestyle', 'none', 'horizontalalignment', 'left');
-% curDir = cd;
-% annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
-%     'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
-% colormap jet
-% axesHandles = findobj(get(gcf,'Children'), 'flat','Type','axes');
-% axis(axesHandles,'square')
-% set(axesHandles, 'clim', cAxs);
-% orient(gcf, 'tall');
-% orient(gcf, 'landscape');
-% drawnow;
+figure;
+oAfr = subplot(4,4,1);
+imagesc(trialTimes, 1:size(spkMtx,2), corrAisMtx');
+title('Odor A');
+abCorr = subplot(4,4,2);
+corrScatPlot(corrAisMtx(:),corrBisMtx(:), 'A','B', 'markerStyle', '.', 'markerColor', 'k');
+acCorr = subplot(4,4,3);
+corrScatPlot(corrAisMtx(:),corrCisMtx(:), 'A','C', 'markerStyle', '.', 'markerColor', 'k');
+adCorr = subplot(4,4,4);
+corrScatPlot(corrAisMtx(:),corrDisMtx(:), 'A','B', 'markerStyle', '.', 'markerColor', 'k');
+
+oBfr = subplot(4,4,6);
+imagesc(trialTimes, 1:size(spkMtx,2), corrBisMtx');
+title('Odor B');
+bcCorr = subplot(4,4,7);
+corrScatPlot(corrBisMtx(:),corrCisMtx(:), 'B','C', 'markerStyle', '.', 'markerColor', 'k');
+bdCorr = subplot(4,4,8);
+corrScatPlot(corrBisMtx(:),corrDisMtx(:), 'B','D', 'markerStyle', '.', 'markerColor', 'k');
+
+oCfr = subplot(4,4,11);
+imagesc(trialTimes, 1:size(spkMtx,2), corrCisMtx');
+title('Odor C');
+cdCorr = subplot(4,4,12);
+corrScatPlot(corrCisMtx(:),corrDisMtx(:), 'C','D', 'markerStyle', '.', 'markerColor', 'k');
+
+oDfr = subplot(4,4,16);
+imagesc(trialTimes, 1:size(spkMtx,2), corrDisMtx');
+title('Odor D');
+
+frMapSPs = [oAfr, oBfr, oCfr, oDfr];
+curCL = cell2mat(get(frMapSPs, 'clim'));
+set(frMapSPs, 'clim', [min(curCL(:,1)), max(curCL(:,2))], 'ydir', 'normal');
+corrSPs = [abCorr, acCorr, adCorr, bcCorr, bdCorr, cdCorr];
+curXL = cell2mat(get(corrSPs, 'xlim'));
+curYL = cell2mat(get(corrSPs, 'ylim'));
+set(corrSPs, 'xlim', [0 max(curXL(:,2))], 'ylim', [0 max(curYL(:,2))]);
+
+axesHandles = findobj(get(gcf,'Children'), 'flat','Type','axes');
+axis(axesHandles,'square');
+
+annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
+    'linestyle', 'none', 'horizontalalignment', 'right');
+annotation('textbox', 'position', [0.025 0.935 0.5 0.05], 'String', '\bf\fontsize{14}Priors',...
+    'linestyle', 'none', 'horizontalalignment', 'left');
+curDir = cd;
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+colormap jet
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
+drawnow;
+
+
+[~, aPriorAllPostRaw] = CalculatePostProb(corrAisMtx, nonAIStrials, binSize);
+[~, bPriorAllPostRaw] = CalculatePostProb(corrBisMtx, nonAIStrials, binSize);
+[~, cPriorAllPostRaw] = CalculatePostProb(corrCisMtx, nonAIStrials, binSize);
+[~, dPriorAllPostRaw] = CalculatePostProb(corrDisMtx, nonAIStrials, binSize);
+nonFISaLog = perfLog & inSeqLog & odorAlog & ~fullInSeqLog;
+nonFISbLog = perfLog & inSeqLog & odorBlog & ~fullInSeqLog;
+nonFIScLog = perfLog & inSeqLog & odorClog & ~fullInSeqLog;
+nonFISdLog = perfLog & inSeqLog & odorDlog & ~fullInSeqLog;
+
+allNonFISpost = [aPriorAllPostRaw, bPriorAllPostRaw, cPriorAllPostRaw, dPriorAllPostRaw];
+for c = 1:size(allNonFISpost,1)
+    allNonFISpost(c,:,:) = allNonFISpost(c,:,:)./max(allNonFISpost(c,:,:));
+end
+
+aPriorAllPostNorm = allNonFISpost(:,1:size(aPriorAllPostRaw,1),:);
+bPriorAllPostNorm = allNonFISpost(:,size(aPriorAllPostRaw,1)+1:size(aPriorAllPostRaw,1)*2,:);
+cPriorAllPostNorm = allNonFISpost(:,size(aPriorAllPostRaw,1)*2+1:size(aPriorAllPostRaw,1)*3,:);
+dPriorAllPostNorm = allNonFISpost(:,size(aPriorAllPostRaw,1)*3+1:end,:);
+
+figure;
+cAx = nan(4,4,2);
+for prior = 1:4
+    switch prior
+        case 1
+            curPrior = aPriorAllPostNorm;
+        case 2
+            curPrior = bPriorAllPostNorm;
+        case 3
+            curPrior = cPriorAllPostNorm;
+        case 4
+            curPrior = dPriorAllPostNorm;
+    end
+    for post = 1:4
+        curPostLog = nonAISodors == post;
+        curDecode = curPrior(:,:,curPostLog);
+        subplot(4,4,sub2ind([4 4], post, prior))        
+        cAx(prior,post,:) = PlotPostMtx(trialTimes, curDecode, sprintf('Prior%i; Decode%i', prior, post));
+    end
+end
+cAxs = [min(min(cAx(:,:,1))), max(max(cAx(:,:,2)))/3];
+
+annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
+    'linestyle', 'none', 'horizontalalignment', 'right');
+annotation('textbox', 'position', [0.025 0.935 0.5 0.05], 'String', '\bf\fontsize{14}Decoding Trial and Odor Across Odors',...
+    'linestyle', 'none', 'horizontalalignment', 'left');
+curDir = cd;
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+colormap jet
+axesHandles = findobj(get(gcf,'Children'), 'flat','Type','axes');
+axis(axesHandles,'square')
+set(axesHandles, 'clim', cAxs);
+orient(gcf, 'tall');
+orient(gcf, 'landscape');
+drawnow;
             
 %%
 figure
