@@ -303,8 +303,10 @@ drawnow;
 %%
 function cAx = PlotPostMtx(trialTimes, postMtx, id)
 imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
-set(gca, 'ydir', 'normal')
 title(id);
+set(gca, 'ydir', 'normal')
+hold on;
+line(trialTimes, trialTimes, 'linestyle', ':', 'color', 'w', 'linewidth', 2);
 xlabel('True Time');
 ylabel('Decoded Time');
 drawnow
