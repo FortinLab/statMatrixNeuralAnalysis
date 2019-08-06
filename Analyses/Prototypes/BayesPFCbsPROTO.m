@@ -41,6 +41,7 @@ for t = 1:size(trialEnsembleMtx,3)
 end
 % Now remove the binSize/2 padding
 unPaddedBinnedEnsembleMtx = binnedEnsembleMtx((binSize/2)+1:end-(binSize/2),:,:);
+trialTimes = trialTimes((binSize/2)+1:end-(binSize/2));
 % Now downsample the binned matrix
 dsVect = downsample(1:size(unPaddedBinnedEnsembleMtx,1), dsRate);
 spikeMatrix = unPaddedBinnedEnsembleMtx(dsVect,:,:);
