@@ -3,10 +3,10 @@ clc
 clear all
 
 %% Runtime variables
-binSize = 250;
+binSize = 20;
 dsRate = 5;
-pokeInWindows = [-0.5 1.5];
-pokeOutWindows = [-1.5 0.5];
+pokeInWindows = [0 1.2];
+pokeOutWindows = [-1.2 0];
 
 %%
 smPath = uigetdir;
@@ -198,7 +198,7 @@ function cAx = PlotPostMtx(trialTimes, postMtx, id)
 imagesc(trialTimes, trialTimes, nanmean(postMtx,3));
 set(gca, 'ydir', 'normal')
 hold on;
-line(trialTimes, trialTimes, 'linestyle', ':', 'color', 'w', 'linewidth', 2);
+% line(trialTimes, trialTimes, 'linestyle', ':', 'color', 'w', 'linewidth', 2);
 title(id);
 xlabel('True Time');
 ylabel('Decoded Time');
@@ -224,7 +224,8 @@ for trl = 1:size(obsv,3)
         ee = exp(-(binSize/1000*sum(prior,2)));
         tempPost = propVect.*pp.*ee;
         postRaw(t,:,trl) = tempPost;
-        postNorm(t,:,trl) = tempPost./max(tempPost);
+%         postNorm(t,:,trl) = tempPost./max(tempPost);                       % Probably wrong
+        postNorm(t,:,trl) = tempPost==max(tempPost);
     end
 end
 end
