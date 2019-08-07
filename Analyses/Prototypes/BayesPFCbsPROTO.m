@@ -37,6 +37,7 @@ binnedEnsembleMtx = nan(size(trialEnsembleMtx));
 for t = 1:size(trialEnsembleMtx,3)
     for u = 1:size(trialEnsembleMtx,2)
         binnedEnsembleMtx(:,u,t) = conv(trialEnsembleMtx(:,u,t), ones(1,binSize)./(binSize/1000), 'same');
+%         binnedEnsembleMtx(:,u,t) = conv(trialEnsembleMtx(:,u,t), ones(1,binSize), 'same');
     end
 end
 % Now remove the binSize/2 padding
@@ -70,31 +71,31 @@ fullInSeqLog(inSeqSeqs(:)) = true;
 %% 
 uniFRthreshLog = max(mean(spikeMatrix,3))<1;
 spkMtx = spikeMatrix;
-% spkMtx(:,uniFRthreshLog,:) = [];
+spkMtx(:,uniFRthreshLog,:) = [];
 goodUniNames = {ensembleUnitSummaries(~uniFRthreshLog).UnitName};
 %% Decode Trial Time Across Odors
 figure;
 corrAisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorAlog),3);             % All A InSeq Correct Trials
 [postAnorm, postAraw] = CalculatePostProb(corrAisMtx, spkMtx(:,:,perfLog & inSeqLog & odorAlog & ~fullInSeqLog), binSize);
 subplot(2,2,1);
-aCaxis = PlotPostMtx(trialTimes, postAraw, 'Odor A');
+aCaxis = PlotPostMtx(trialTimes, postAnorm, 'Odor A');
 
 corrBisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorBlog),3);             % All B InSeq Correct Trials
 [postBnorm, postBraw] = CalculatePostProb(corrBisMtx, spkMtx(:,:,perfLog & inSeqLog & odorBlog & ~fullInSeqLog), binSize);
 subplot(2,2,2);
-bCaxis = PlotPostMtx(trialTimes, postBraw, 'Odor B');
+bCaxis = PlotPostMtx(trialTimes, postBnorm, 'Odor B');
 
 corrCisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorClog),3);             % All C InSeq Correct Trials
 [postCnorm, postCraw] = CalculatePostProb(corrCisMtx, spkMtx(:,:,perfLog & inSeqLog & odorClog & ~fullInSeqLog), binSize);
 subplot(2,2,3);
-cCaxis = PlotPostMtx(trialTimes, postCraw, 'Odor C');
+cCaxis = PlotPostMtx(trialTimes, postCnorm, 'Odor C');
 
 corrDisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorDlog),3);             % All D InSeq Correct Trials
 [postDnorm, postDraw] = CalculatePostProb(corrDisMtx, spkMtx(:,:,perfLog & inSeqLog & odorDlog & ~fullInSeqLog), binSize);
 subplot(2,2,4);
-dCaxis = PlotPostMtx(trialTimes, postDraw, 'Odor D');
+dCaxis = PlotPostMtx(trialTimes, postDnorm, 'Odor D');
 
-cAx = [min([aCaxis, bCaxis, cCaxis, dCaxis]), max([aCaxis, bCaxis, cCaxis, dCaxis])];
+cAx = [min([aCaxis, bCaxis, cCaxis, dCaxis]), max([aCaxis, bCaxis, cCaxis, dCaxis])/3];
 
 annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
     'linestyle', 'none', 'horizontalalignment', 'right');
@@ -322,19 +323,21 @@ postRaw = nan(size(obsv,1), size(obsv,1), size(obsv,3));
 for trl = 1:size(obsv,3)
     for t = 1:size(prior,1)
         p = nan(size(prior));
-        curPopVect = obsv(t,:,trl);
+        curPopVect = obsv(t,:,trl)./(1000/binSize);
         curPopFact = factorial(curPopVect);
         for u = 1:size(prior,2)
             curAvgUniFR = prior(:,u);
-            p(:,u) = (((binSize/1000)*curAvgUniFR).^curPopVect(u))./curPopFact(u);
+            p(:,u) = (((binSize/1000).*curAvgUniFR).^curPopVect(u))./curPopFact(u);
+%             p(:,u) = ((curAvgUniFR).^curPopVect(u))./curPopFact(u);
         end        
         pp = prod(p,2);
         ee = exp(-(binSize/1000*sum(prior,2)));
+%         ee = exp(-(sum(prior,2)));
 %         tempPost = propVect.*pp.*ee;                                        % Probably wrong
         tempPost = pp.*ee;
-        postRaw(t,:,trl) = tempPost.*sum(tempPost);
+        postRaw(t,:,trl) = tempPost;
 %         postNorm(t,:,trl) = tempPost./max(tempPost);                       % Probably wrong
-        postNorm(t,:,trl) = tempPost==max(tempPost);
+        postNorm(t,:,trl) = tempPost./sum(tempPost);
     end
 end
 end
