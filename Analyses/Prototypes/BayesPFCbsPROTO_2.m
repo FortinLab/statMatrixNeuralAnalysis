@@ -3,10 +3,10 @@ clc
 clear all
 
 %% Runtime variables
-binSize = 20;
+binSize = 200;
 dsRate = 5;
-pokeInWindows = [0 1.2];
-pokeOutWindows = [-1.2 0];
+pokeInWindows = [-0.5 1.5];
+pokeOutWindows = [-1.5 0.5];
 
 %%
 smPath = uigetdir;
@@ -119,17 +119,14 @@ goodUniNames = {ensembleUnitSummaries(~uniFRthreshLog).UnitName};
 %%
 figure
 corrISmtxPI = mean(pokeInSpkMtx(:,:,perfLog & fullInSeqLog),3);                         % All InSeq Correct Trials
-[postPI] = CalculatePostProb(corrISmtxPI, pokeInSpkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog), binSize);
-subplot(4,4,[1,2,5,6])
+[postPI, ~] = CalculatePostProb(corrISmtxPI, pokeInSpkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog), binSize);
+piPlot = subplot(4,4,[1,2,5,6]);
 PlotPostMtx(trialTimePI, postPI, 'InSeq Correct Trials (Poke In)');
-set(gca, 'clim', [0 0.5]);
 
 corrISmtxPO = mean(pokeOutSpkMtx(:,:,perfLog & fullInSeqLog),3);
-[postPO] = CalculatePostProb(corrISmtxPO, pokeOutSpkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog), binSize);
-subplot(4,4,[9,10,13,14])
+[postPO, ~] = CalculatePostProb(corrISmtxPO, pokeOutSpkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog), binSize);
+poPlot = subplot(4,4,[9,10,13,14]);
 PlotPostMtx(trialTimePO, postPO, 'InSeq Correct Trials (Poke Out)');
-set(gca, 'clim', [0 0.5]);
-
 
 nonAIStrialData = pokeInTrialPeriodTD(perfLog & inSeqLog & ~fullInSeqLog);
 nonAISodors = [nonAIStrialData.Odor];
@@ -152,31 +149,36 @@ for trl = 1:length(nonAIStrialNums)
 end
 
 preOSpi = postPI(:,:,preOStrialLog);
-subplot(4,4,3)
+prOsPIplt = subplot(4,4,3);
 PlotPostMtx(trialTimePI, preOSpi, 'Before OutSeq');
-set(gca, 'clim', [0 0.5]);
+
 postOSpi = postPI(:,:,postOStrialLog);
-subplot(4,4,7)
+poOsPIplt = subplot(4,4,7);
 PlotPostMtx(trialTimePI, postOSpi, 'After OutSeq');
-set(gca, 'clim', [0 0.5]);
+
 postPreDiffPI = postOSpi - preOSpi;
-subplot(4,4,4)
+piDiffPlt = subplot(4,4,4);
 PlotPostMtx(trialTimePI, postPreDiffPI, 'After-Before');
-set(gca, 'clim', [-0.25 0.25]);
 
 
 preOSpo = postPO(:,:,preOStrialLog);
-subplot(4,4,11)
+prOsPOplt = subplot(4,4,11);
 PlotPostMtx(trialTimePO, preOSpo, 'Before OutSeq');
-set(gca, 'clim', [0 0.5]);
+
 postOSpo = postPO(:,:,postOStrialLog);
-subplot(4,4,15)
+poOsPOplt = subplot(4,4,15);
 PlotPostMtx(trialTimePO, postOSpo, 'After OutSeq');
-set(gca, 'clim', [0 0.5]);
+
 postPreDiffPO = postOSpo - preOSpo;
-subplot(4,4,12)
+poDiffPlt = subplot(4,4,12);
 PlotPostMtx(trialTimePO, postPreDiffPO, 'After-Before');
-set(gca, 'clim', [-0.25 0.25]);
+
+cLimsDecode = get([piPlot, poPlot, prOsPIplt, poOsPIplt, prOsPOplt, poOsPOplt], 'clim');
+cLimsDiff = get([piDiffPlt, poDiffPlt], 'clim');
+
+set([piPlot, poPlot, prOsPIplt, poOsPIplt, prOsPOplt, poOsPOplt], 'clim', [0 max(max(cell2mat(cLimsDecode)))]);
+set([piDiffPlt, poDiffPlt], 'clim', [0 max(max(cell2mat(cLimsDiff)))]);
+colormap jet
 
 annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
     'linestyle', 'none', 'horizontalalignment', 'right');
@@ -208,24 +210,27 @@ end
 
 %%
 function [postNorm, postRaw] = CalculatePostProb(prior, obsv, binSize)
-propVect = 1./sum(prior,2);
+% propVect = 1./sum(prior,2);                                                 % Probably wrong
 postNorm = nan(size(obsv,1), size(obsv,1), size(obsv,3));
 postRaw = nan(size(obsv,1), size(obsv,1), size(obsv,3));
 for trl = 1:size(obsv,3)
     for t = 1:size(prior,1)
         p = nan(size(prior));
-        curPopVect = obsv(t,:,trl);
+        curPopVect = obsv(t,:,trl)*(binSize/1000);
         curPopFact = factorial(curPopVect);
         for u = 1:size(prior,2)
             curAvgUniFR = prior(:,u);
-            p(:,u) = (((binSize/1000)*curAvgUniFR).^curPopVect(u))./curPopFact(u);
+            p(:,u) = (((binSize/1000).*curAvgUniFR).^curPopVect(u))./curPopFact(u);
+%             p(:,u) = ((curAvgUniFR).^curPopVect(u))./curPopFact(u);
         end        
         pp = prod(p,2);
-        ee = exp(-(binSize/1000*sum(prior,2)));
-        tempPost = propVect.*pp.*ee;
+        ee = exp(-((binSize/1000)*sum(prior,2)));
+%         ee = exp(-(sum(prior,2)));
+%         tempPost = propVect.*pp.*ee;                                        % Probably wrong
+        tempPost = pp.*ee;
         postRaw(t,:,trl) = tempPost;
 %         postNorm(t,:,trl) = tempPost./max(tempPost);                       % Probably wrong
-        postNorm(t,:,trl) = tempPost==max(tempPost);
+        postNorm(t,:,trl) = tempPost./sum(tempPost);
     end
 end
 end
