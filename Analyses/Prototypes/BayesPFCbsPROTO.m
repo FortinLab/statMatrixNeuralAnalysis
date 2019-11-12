@@ -100,6 +100,7 @@ corrDisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorDlog),3);             
 subplot(2,2,4);
 dCaxis = PlotPostMtx(trialTimes, postDnorm, 'Odor D');
 
+
 cAx = [min([aCaxis, bCaxis, cCaxis, dCaxis]), max([aCaxis, bCaxis, cCaxis, dCaxis])/3];
 
 annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
