@@ -3,7 +3,7 @@ clc
 clear all
 
 %% Runtime variables
-binSize = 20;
+binSize = 100;
 dsRate = 5;
 
 %%
@@ -21,7 +21,8 @@ smFileList = fileNames(cellfun(@(a)~isempty(a), regexp(fileNames, '_SM\>')))';
 
 %% Extract Behavioral Periods
 % Taking 1/2 the binSize on either end to get rid of edge effects.
-trialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0-(binSize/2/1000) 1.2+(binSize/2/1000)], 'PokeIn');
+trialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0-(binSize/2/1000) 0.5+(binSize/2/1000)], 'PokeIn');
+trialPeriodTD = trialPeriodTD(1:end-1);
 % trialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-1.5-(binSize/2/1000) 0.5+(binSize/2/1000)], 'PokeOut');
 trialEnsemble = ExtractTrialData_SM(trialPeriodTD, ensembleMatrix(:,2:end)); %#ok<*NODEF>
 trialEnsembleMtx = cell2mat(reshape(trialEnsemble, [1 1 length(trialEnsemble)]));
@@ -29,7 +30,7 @@ trialEnsembleMtx = cell2mat(reshape(trialEnsemble, [1 1 length(trialEnsemble)]))
 trialTimes = behavMatrix(trialPeriodTD(1).TrialLogVect,1) - behavMatrix(trialPeriodTD(1).PokeInIndex,1);
 % trialTimes = behavMatrix(trialPeriodTD(1).TrialLogVect,1) - behavMatrix(trialPeriodTD(1).PokeOutIndex,1);
 
-
+clear behavMatrix ensembleMatrix
 %% Bin the spiking data
 % First convolve the entire trialEnsembleMtx with a square to bin the
 % spikes
@@ -48,6 +49,7 @@ dsVect = downsample(1:size(unPaddedBinnedEnsembleMtx,1), dsRate);
 spikeMatrix = unPaddedBinnedEnsembleMtx(dsVect,:,:);
 trialTime = trialTimes(dsVect);
 
+clear trialEnsembleMtx binnedEnsembleMtx unPaddedBinnedEnsembleMtx
 %% Create Logical Vectors
 perfLog = [trialPeriodTD.Performance];
 inSeqLog = [trialPeriodTD.TranspositionDistance]==0;
@@ -68,11 +70,14 @@ end
 fullInSeqLog = false(1,length(trialPeriodTD));
 fullInSeqLog(inSeqSeqs(:)) = true;
 
+nonAIStrialData = trialPeriodTD(perfLog & inSeqLog & ~fullInSeqLog);
 %% 
 uniFRthreshLog = max(mean(spikeMatrix,3))<1;
 spkMtx = spikeMatrix;
 spkMtx(:,uniFRthreshLog,:) = [];
 goodUniNames = {ensembleUnitSummaries(~uniFRthreshLog).UnitName};
+
+clear spikeMatrix
 %% Decode Trial Time Across Odors
 figure;
 corrAisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorAlog),3);             % All A InSeq Correct Trials
@@ -111,7 +116,6 @@ orient(gcf, 'landscape');
 
 %% Decode Trial Time and Odor Across Odors
 nonAIStrials = spkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog);
-nonAIStrialData = trialPeriodTD(perfLog & inSeqLog & ~fullInSeqLog);
 nonAISodors = [nonAIStrialData.Odor];
 corrAisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorAlog),3);             % All A InSeq Correct Trials Prior
 corrBisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorBlog),3);             % All B InSeq Correct Trials Prior
@@ -247,7 +251,6 @@ drawnow;
 
 %% Compare Trial Before with Trial After OutSeq Trial
 % nonAIStrials = spkMtx(:,:,perfLog & inSeqLog & ~fullInSeqLog);
-% nonAIStrialData = trialPeriodTD(perfLog & inSeqLog & ~fullInSeqLog);
 % nonAISodors = [nonAIStrialData.Odor];
 % nonAIStrialNums = [nonAIStrialData.TrialNum];
 % 
@@ -316,22 +319,22 @@ end
 
 
 %%
-function [postNorm, postRaw] = CalculatePostProb(prior, obsv, binSize)
+function [postNorm, postRaw] = CalculatePostProb(likely, obsv, binSize)
 % propVect = 1./sum(prior,2);                                                 % Probably wrong
-postNorm = nan(size(obsv,1), size(obsv,1), size(obsv,3));
-postRaw = nan(size(obsv,1), size(obsv,1), size(obsv,3));
+postNorm = nan(size(obsv,1), size(likely,1), size(obsv,3));
+postRaw = nan(size(obsv,1), size(likely,1), size(obsv,3));
 for trl = 1:size(obsv,3)
-    for t = 1:size(prior,1)
-        p = nan(size(prior));
+    for t = 1:size(obsv,1)
+        p = nan(size(likely));
         curPopVect = obsv(t,:,trl)./(1000/binSize);
         curPopFact = factorial(curPopVect);
-        for u = 1:size(prior,2)
-            curAvgUniFR = prior(:,u);
+        for u = 1:size(likely,2)
+            curAvgUniFR = likely(:,u);
             p(:,u) = (((binSize/1000).*curAvgUniFR).^curPopVect(u))./curPopFact(u);
 %             p(:,u) = ((curAvgUniFR).^curPopVect(u))./curPopFact(u);
         end        
         pp = prod(p,2);
-        ee = exp(-(binSize/1000*sum(prior,2)));
+        ee = exp(-(binSize/1000*sum(likely,2)));
 %         ee = exp(-(sum(prior,2)));
 %         tempPost = propVect.*pp.*ee;                                        % Probably wrong
         tempPost = pp.*ee;
