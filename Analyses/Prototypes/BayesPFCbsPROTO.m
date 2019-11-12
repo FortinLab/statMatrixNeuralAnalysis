@@ -21,9 +21,9 @@ smFileList = fileNames(cellfun(@(a)~isempty(a), regexp(fileNames, '_SM\>')))';
 
 %% Extract Behavioral Periods
 % Taking 1/2 the binSize on either end to get rid of edge effects.
-trialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0-(binSize/2/1000) 0.5+(binSize/2/1000)], 'PokeIn');
-trialPeriodTD = trialPeriodTD(1:end-1);
-% trialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-1.5-(binSize/2/1000) 0.5+(binSize/2/1000)], 'PokeOut');
+% trialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0-(binSize/2/1000) 1.5+(binSize/2/1000)], 'PokeIn');
+% trialPeriodTD = trialPeriodTD(1:end-1);
+trialPeriodTD = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-1.5-(binSize/2/1000) 0.5+(binSize/2/1000)], 'PokeOut');
 trialEnsemble = ExtractTrialData_SM(trialPeriodTD, ensembleMatrix(:,2:end)); %#ok<*NODEF>
 trialEnsembleMtx = cell2mat(reshape(trialEnsemble, [1 1 length(trialEnsemble)]));
 
