@@ -4,11 +4,11 @@ function SequenceNeuralViewer_SM
 % Histogram bins for peak FR latency decision
 histBins = 0:0.1:1.2;
 % FR threshold for trial period firing for inclusion in plot
-trialFRthresh = 1;
+trialFRthresh = 0.1;
 % Spike width threshold for PC determination
-widthThresh = 0.45;
+widthThresh = 0.6;
 % Spike rate threshold for PC determination
-spkRtThresh = 5;
+spkRtThresh = 4;
 % LFP Band to plot
 band2plot = 'Raw';
 %% Load data

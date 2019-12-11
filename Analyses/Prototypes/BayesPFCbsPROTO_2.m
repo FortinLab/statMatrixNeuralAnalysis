@@ -176,7 +176,7 @@ PlotPostMtx(trialTimePO, postPreDiffPO, 'After-Before');
 cLimsDecode = get([piPlot, poPlot, prOsPIplt, poOsPIplt, prOsPOplt, poOsPOplt], 'clim');
 cLimsDiff = get([piDiffPlt, poDiffPlt], 'clim');
 
-set([piPlot, poPlot, prOsPIplt, poOsPIplt, prOsPOplt, poOsPOplt], 'clim', [0 max(max(cell2mat(cLimsDecode)))]);
+set([piPlot, poPlot, prOsPIplt, poOsPIplt, prOsPOplt, poOsPOplt], 'clim', [0 max(max(cell2mat(cLimsDecode)))\2]);
 set([piDiffPlt, poDiffPlt], 'clim', [0 max(max(cell2mat(cLimsDiff)))]);
 colormap jet
 
