@@ -29,7 +29,7 @@ trialEnsembleMtx = cell2mat(reshape(trialEnsemble, [1 1 length(trialEnsemble)]))
 trialTimes = behavMatrix(trialPeriodTD(1).TrialLogVect,1) - behavMatrix(trialPeriodTD(1).PokeInIndex,1);
 % trialTimes = behavMatrix(trialPeriodTD(1).TrialLogVect,1) - behavMatrix(trialPeriodTD(1).PokeOutIndex,1);
 
-
+clear behavMatrix ensembleMatrix
 %% Bin the spiking data
 % First convolve the entire trialEnsembleMtx with a square to bin the
 % spikes
@@ -48,6 +48,7 @@ dsVect = downsample(1:size(unPaddedBinnedEnsembleMtx,1), dsRate);
 spikeMatrix = unPaddedBinnedEnsembleMtx(dsVect,:,:);
 trialTime = trialTimes(dsVect);
 
+clear trialEnsembleMtx binnedEnsembleMtx unPaddedBinnedEnsembleMtx
 %% Create Logical Vectors
 perfLog = [trialPeriodTD.Performance];
 inSeqLog = [trialPeriodTD.TranspositionDistance]==0;
@@ -68,11 +69,14 @@ end
 fullInSeqLog = false(1,length(trialPeriodTD));
 fullInSeqLog(inSeqSeqs(:)) = true;
 
+nonAIStrialData = trialPeriodTD(perfLog & inSeqLog & ~fullInSeqLog);
 %% 
 uniFRthreshLog = max(mean(spikeMatrix,3))<1;
 spkMtx = spikeMatrix;
 spkMtx(:,uniFRthreshLog,:) = [];
 goodUniNames = {ensembleUnitSummaries(~uniFRthreshLog).UnitName};
+
+clear spikeMatrix
 %% Decode Trial Time Across Odors
 figure;
 corrAisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorAlog),3);             % All A InSeq Correct Trials
@@ -95,7 +99,7 @@ corrDisMtx = mean(spkMtx(:,:,perfLog & fullInSeqLog & odorDlog),3);             
 subplot(2,2,4);
 dCaxis = PlotPostMtx(trialTimes, postDnorm, 'Odor D');
 
-cAx = [min([aCaxis, bCaxis, cCaxis, dCaxis]), max([aCaxis, bCaxis, cCaxis, dCaxis])*.5];
+cAx = [min([aCaxis, bCaxis, cCaxis, dCaxis]), max([aCaxis, bCaxis, cCaxis, dCaxis])/3];
 
 annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
     'linestyle', 'none', 'horizontalalignment', 'right');
@@ -289,8 +293,6 @@ orient(gcf, 'landscape');
 % orient(gcf, 'tall');
 % orient(gcf, 'landscape');
 % drawnow;
-% 
-
  
 %% Comment in if you want to display each trial individually
 % figure;
@@ -317,27 +319,22 @@ end
 
 
 %%
-function [postNorm, postRaw] = CalculatePostProb(prior, obsv, binSize)
-% propVect = 1./sum(prior,2);                                                 % Probably wrong
-postNorm = nan(size(obsv,1), size(obsv,1), size(obsv,3));
-postRaw = nan(size(obsv,1), size(obsv,1), size(obsv,3));
+function [postNorm, postRaw] = CalculatePostProb(likely, obsv, binSize)
+postNorm = nan(size(obsv,1), size(likely,1), size(obsv,3));
+postRaw = nan(size(obsv,1), size(likely,1), size(obsv,3));
 for trl = 1:size(obsv,3)
-    for t = 1:size(prior,1)
-        p = nan(size(prior));
-        curPopVect = obsv(t,:,trl)*(binSize/1000);
+    for t = 1:size(obsv,1)
+        p = nan(size(likely));
+        curPopVect = obsv(t,:,trl)./(1000/binSize);
         curPopFact = factorial(curPopVect);
-        for u = 1:size(prior,2)
-            curAvgUniFR = prior(:,u);
+        for u = 1:size(likely,2)
+            curAvgUniFR = likely(:,u);
             p(:,u) = (((binSize/1000).*curAvgUniFR).^curPopVect(u))./curPopFact(u);
-%             p(:,u) = ((curAvgUniFR).^curPopVect(u))./curPopFact(u);
         end        
         pp = prod(p,2);
-        ee = exp(-((binSize/1000)*sum(prior,2)));
-%         ee = exp(-(sum(prior,2)));
-%         tempPost = propVect.*pp.*ee;                                        % Probably wrong
+        ee = exp(-(binSize/1000*sum(likely,2)));
         tempPost = pp.*ee;
         postRaw(t,:,trl) = tempPost;
-%         postNorm(t,:,trl) = tempPost./max(tempPost);                       % Probably wrong
         postNorm(t,:,trl) = tempPost./sum(tempPost);
     end
 end
