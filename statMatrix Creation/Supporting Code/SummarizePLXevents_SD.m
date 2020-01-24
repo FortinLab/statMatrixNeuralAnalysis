@@ -17,6 +17,7 @@ if ~(nargin == 2)
         plxFile = [path fileName];
         [path, fileName] = fileparts(plxFile);
         path = [path '\'];
+        cd(path);
         flContents = dir(path);
         fileNames = {flContents.name};
         matFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, [fileName '_([0-9]*)-([A-Z | a-z]*)-([0-9]*).mat']));
@@ -59,6 +60,7 @@ else
 end
 plxSummary.MATfile = matFileName;
 plxSummary.PLXfile = [fileName '.plx'];
+plxSummary.Dir = path;
 
 fprintf(outfile, '\n****Beginning behavioral analysis using SummarizePLXevents_SD.m. ****\n     Mat File = %s\n     Plx File = %s\n', plxSummary.MATfile, plxSummary.PLXfile);
 %% Load Data
