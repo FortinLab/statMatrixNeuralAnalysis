@@ -89,6 +89,11 @@ else
     %%% event timestamps.
 %     error('This data was collected with an old version of the code that didn''t allow declaration of buffer duration, please use an older plxAnalysis script for it');
 end
+if isfield(ssnData(1).Settings, 'GracePeriodDur')
+    graceDur = arrayfun(@(a)a.Settings.GracePeriodDur, ssnData);
+else
+    graceDur = repmat(0, size(ssnData));
+end
 sequenceLength = ssnData(1).Settings.SequenceLength;
 % Now extract event data from the .plx file
 [numChans, chanNames] = plx_event_names(plxFile);
@@ -506,31 +511,46 @@ for trl = 1:size(odorPresSsn,1)
                 if plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 0
                     break
                 elseif plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 1
-                    msgbox(sprintf('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
-%                     error('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct', trl);
-                    fprintf(outfile, 'Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct\n', trl);
-                    tempPokeNum = tempPokeNum+1;
-                    tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                    if plxSession(trl).TargetDuration - tempPokeDur < graceDur(trl)
+                        break
+                    else
+%                         msgbox(sprintf('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
+%                         error('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct', trl);
+%                         fprintf(outfile, 'Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct\n', trl);
+%                         tempPokeNum = tempPokeNum+1;
+%                         tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                        plxData.Summary.Errors = [plxSummary.Errors; 
+                            ['Trial #' num2str(trl) ': InSeq trial where buffer was triggered and buffer duration elapsed but it was counted as correct']];   
+                        break
+                    end
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 1
                     break
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 0
                     if tempPokeDur < 0.2
                         tempPokeNum = tempPokeNum+1;
                         tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                    elseif plxSession(trl).TargetDuration - tempPokeDur < graceDur(trl)
+                        break
                     else
-                        msgbox(sprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
-                        error('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
+%                         msgbox(sprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
+%                         error('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
 %                         fprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n', trl);
-                        tempPokeNum = tempPokeNum+1;
-                        tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+%                         tempPokeNum = tempPokeNum+1;
+%                         tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                        plxData.Summary.Errors = [plxSummary.Errors; 
+                            ['Trial #' num2str(trl) ': OutSeq trial where buffer was triggered and buffer duration elapsed but it was counted as incorrect']];   
+                        break                    
                     end
                 end
-            elseif tempPokeNum > sum(trialPokesLog)
+            elseif tempPokeNum > sum(trialPokesLog) || plxSession(trl).TargetDuration - tempPokeDur < graceDur(trl)
                 break
             else
                 tempPokeNum = tempPokeNum+1;
                 tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
             end
+        end
+        if sum(trialPokeDurations) + sum(trialInterPokeIntervals(1:end-1)) == ssnData(trl).PokeDuration
+            tempPokeDur = sum(trialPokeDurations) + sum(trialInterPokeIntervals(1:end-1));
         end
         plxSession(trl).PokeDuration = tempPokeDur;
     elseif sum(trialPokesLog)==0
