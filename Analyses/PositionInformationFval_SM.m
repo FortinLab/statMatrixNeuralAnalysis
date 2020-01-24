@@ -13,7 +13,7 @@ fileNames = {dirContents.name};
 %% Define Standard Variables
 slideWindowSize = 100;
 spatialBinSize = 5;
-numPerms = 50;
+numPerms = 100;
 
 %% Load Relevant Data
 load(fileNames{cellfun(@(a)~isempty(a), strfind(fileNames, 'BehaviorMatrix'))});
@@ -115,9 +115,9 @@ end
 
 %% Organize Trial Data
 % Create Extraction Matrices
-pokeInTrialMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.2 0.5], 'PokeIn');
+pokeInTrialMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.5 0.5], 'PokeIn');
 pokeInTSs = behavMatrix(pokeInTrialMatrix(1).TrialLogVect,1)-behavMatrix(pokeInTrialMatrix(1).PokeInIndex,1);
-pokeOutTrialMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.5 0.2], 'PokeOut');
+pokeOutTrialMatrix = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [-0.5 0.5], 'PokeOut');
 pokeOutTSs = behavMatrix(pokeOutTrialMatrix(1).TrialLogVect,1)-behavMatrix(pokeOutTrialMatrix(1).PokeOutIndex,1);
 
 % Create Trial Logical Vectors
@@ -236,7 +236,7 @@ for uni = 1:length(goodUniNames)
     sp1 = subplot(1,2,1);
     imagesc(tempHeadFRmap)
     set(gca, 'ydir', 'normal');
-    title('Head Occupancy');
+    title('Head Firing Rate Map');
     cb = colorbar('southoutside');
     cb.Label.String = 'Mean Firing Rate (spk/s)';
     z = colormap('jet');
@@ -246,7 +246,7 @@ for uni = 1:length(goodUniNames)
     sp2 = subplot(1,2,2);
     imagesc(tempTailFRmap);
     set(gca, 'ydir', 'normal');
-    title('Head Position FR');
+    title('Tail Firing Rate Map');
     cb = colorbar('southoutside');
     cb.Label.String = 'Mean Firing Rate (spk/s)';
     colormap(z);
