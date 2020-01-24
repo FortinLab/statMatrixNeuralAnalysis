@@ -144,16 +144,16 @@ allTrialIDvals = cell2mat(cellfun(@(a,b)b(~isnan(a(:,2)),1), orientationTrialDat
 allOrientData = cell2mat(cellfun(@(a)a(~isnan(a(:,2)),:), orientationTrialData, 'uniformoutput', 0)');
 % Head Position: Head X/Y
 headXcolLog = strcmp(orientMatrixColIDs, 'HeadX');
-headXbins = 30:spatialBinSize:90;
+headXbins = floor(min(allOrientData(:,headXcolLog))/10)*10:spatialBinSize:ceil(max(allOrientData(:,headXcolLog))/10)*10;
 headYcolLog = strcmp(orientMatrixColIDs, 'HeadY');
-headYbins = 240:spatialBinSize:300;
+headYbins = floor(min(allOrientData(:,headYcolLog))/10)*10:spatialBinSize:ceil(max(allOrientData(:,headYcolLog))/10)*10;
 headOccupancyMatrix = histcounts2(allOrientData(:,headXcolLog), allOrientData(:,headYcolLog), headXbins, headYbins, 'Normalization', 'probability')';
 headOccupancyMatrix(headOccupancyMatrix==0) = nan;
 % Tail Position: Tail X/Y
 tailXcolLog = strcmp(orientMatrixColIDs, 'TailX');
-tailXbins = 60:spatialBinSize:180;
+tailXbins = floor(min(allOrientData(:,tailXcolLog))/10)*10:spatialBinSize:ceil(max(allOrientData(:,tailXcolLog))/10)*10;
 tailYcolLog = strcmp(orientMatrixColIDs, 'TailY');
-tailYbins = 180:spatialBinSize:264;
+tailYbins = floor(min(allOrientData(:,tailYcolLog))/10)*10:spatialBinSize:ceil(max(allOrientData(:,tailYcolLog))/10)*10;
 tailOccupancyMatrix = histcounts2(allOrientData(:,tailXcolLog), allOrientData(:,tailYcolLog), tailXbins, tailYbins, 'Normalization', 'probability')';
 tailOccupancyMatrix(tailOccupancyMatrix==0) = nan;
 % Head Angle: Angle at the head between the port and the tail
