@@ -309,11 +309,11 @@ if ~(length(pokeInitiationTimes) == length(pokeEndTimes))
     elseif ~isempty(pokeChanRep)
         if allPokes(pokeChanRep,2)==2
             pokeOutChanNumLog = pokeEndTimes==allPokes(pokeChanRep+1,1);
-            plxSummary.Errors = [plxSummary.Errors; {'More pokes ended than initiated @' num2str(pokeEndTimes(pokeOutChanNumLog))}];
+            plxSummary.Errors = [plxSummary.Errors; sprintf('More pokes ended than initiated @%f', pokeEndTimes(pokeOutChanNumLog))];
             pokeEndTimes(pokeOutChanNumLog) = [];
         elseif allPokes(pokeChanRep,2)==1
             pokeInitiationTimeLog = pokeInitiationTimes==allPokes(pokeChanRep,1);
-            plxSummary.Errors = [plxSummary.Errors; {'More pokes initiated than ended @' num2str(pokeInitiationTimes(pokeInitiationTimeLog))}];
+            plxSummary.Errors = [plxSummary.Errors; sprintf('More pokes initiated than ended @%f', pokeInitiationTimes(pokeInitiationTimeLog))];
             pokeInitiationTimes(pokeInitiationTimeLog) = [];
         end
     end
