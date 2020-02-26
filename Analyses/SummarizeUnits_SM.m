@@ -285,8 +285,10 @@ for u = 1:length(unitIDs)
     curEpochCorrTable(1,5) = prR(2);
     curEpochSigTable(1,5) = prS(2);
     [peR, peS] = corrcoef(curUniPreTrialActivity(~correctTrialLog & inSeqTrialLog), curUniErrTrlActivity(~correctTrialLog & inSeqTrialLog));
-    curEpochCorrTable(1,6) = peR(2);
-    curEpochSigTable(1,6) = peS(2);
+    if ~isnan(peR) && length(peR)>1
+        curEpochCorrTable(1,6) = peR(2);
+        curEpochSigTable(1,6) = peS(2);
+    end
     %   Early-Trial lead
     [elR, elS] = corrcoef(curUniErlyTrialActivity(correctTrialLog & inSeqTrialLog), curUniLtTrialActivity(correctTrialLog & inSeqTrialLog));
     curEpochCorrTable(2,3) = elR(2);
@@ -298,8 +300,10 @@ for u = 1:length(unitIDs)
     curEpochCorrTable(2,5) = erR(2);
     curEpochSigTable(2,5) = erS(2);
     [eeR, eeS] = corrcoef(curUniErlyTrialActivity(~correctTrialLog & inSeqTrialLog), curUniErrTrlActivity(~correctTrialLog & inSeqTrialLog));
-    curEpochCorrTable(2,6) = eeR(2);
-    curEpochSigTable(2,6) = eeS(2);
+    if ~isnan(eeR) && length(eeR)>1
+        curEpochCorrTable(2,6) = eeR(2);
+        curEpochSigTable(2,6) = eeS(2);
+    end
     %   Late-Trial lead
     [lpR, lpS] = corrcoef(curUniLtTrialActivity(correctTrialLog & inSeqTrialLog), curUniPstTrlActivity(correctTrialLog & inSeqTrialLog));  
     curEpochCorrTable(3,4) = lpR(2);
@@ -308,15 +312,19 @@ for u = 1:length(unitIDs)
     curEpochCorrTable(3,5) = lrR(2);
     curEpochSigTable(3,5) = lrS(2);
     [leR, leS] = corrcoef(curUniLtTrialActivity(~correctTrialLog & inSeqTrialLog), curUniErrTrlActivity(~correctTrialLog & inSeqTrialLog));
-    curEpochCorrTable(3,6) = leR(2);
-    curEpochSigTable(3,6) = leS(2);
+    if ~isnan(leR) && length(leR)>1
+        curEpochCorrTable(3,6) = leR(2);
+        curEpochSigTable(3,6) = leS(2);
+    end
     %   Post-Trial lead
     [prR, prS] = corrcoef(curUniPstTrlActivity(correctTrialLog & inSeqTrialLog), curUniRwdTrlActivity(correctTrialLog & inSeqTrialLog));
     curEpochCorrTable(4,5) = prR(2);
     curEpochSigTable(4,5) = prS(2);
     [peR, peS] = corrcoef(curUniPstTrlActivity(~correctTrialLog & inSeqTrialLog), curUniErrTrlActivity(~correctTrialLog & inSeqTrialLog));
-    curEpochCorrTable(4,6) = peR(2);
-    curEpochSigTable(4,6) = peS(2);
+    if ~isnan(peR) && length(peR)>1
+        curEpochCorrTable(4,6) = peR(2);
+        curEpochSigTable(4,6) = peS(2);
+    end
     
     unitInfo(u).TrialEpochStats.EpochCorrelations.R = curEpochCorrTable;
     unitInfo(u).TrialEpochStats.EpochCorrelations.P = curEpochSigTable;
