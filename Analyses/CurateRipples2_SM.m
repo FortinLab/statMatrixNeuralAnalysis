@@ -3,7 +3,7 @@ global plotData
 plotData.listSel = 1;        % Used to keep track of which list is being selected from for ripple viewing
 plotData.Window = 50;
 %% Parameters
-%     envProc = 'RMS';
+% envProc = 'RMS';
 envProc = 'HILB';           
 powThresh = [0 4];
 durThresh = 15;             
@@ -25,6 +25,19 @@ annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
     sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
     'linestyle', 'none');
 
+PlotRipFeatsByTrlType(rips, trialRips)
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    'linestyle', 'none');
+
+PlotRipFeatsByOdor(rips, trialRips)
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    'linestyle', 'none');
 
 %% Create Figure
 plotData.PowThresh = rips.FileInfo.PowerThreshold;
