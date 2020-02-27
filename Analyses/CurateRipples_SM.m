@@ -127,8 +127,8 @@ listSel = 1;
 kids = get(get(source, 'Parent'), 'Children');
 tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
 axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50),...
-    source.UserData(source.Value,2)+(50)]);
+set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(0.05),...
+    source.UserData(source.Value,2)+(0.05)]);
 end
 
 function SelectTrlRip(source,event)
@@ -137,8 +137,8 @@ listSel = 2;
 kids = get(get(source, 'Parent'), 'Children');
 tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
 axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50),...
-    source.UserData(source.Value,2)+(50)]);
+set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(0.05),...
+    source.UserData(source.Value,2)+(0.05)]);
 end
 
 function NextRip(source,event)
@@ -153,8 +153,8 @@ tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
 lstTag = strcmp(tags, lstTarg);
 kids(lstTag).Value = kids(lstTag).Value+1;
 axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [kids(lstTag).UserData(kids(lstTag).Value,1)-(50),...
-    kids(lstTag).UserData(kids(lstTag).Value,2)+(50)]);
+set(kids(axTag), 'xLim', [kids(lstTag).UserData(kids(lstTag).Value,1)-(0.05),...
+    kids(lstTag).UserData(kids(lstTag).Value,2)+(0.05)]);
 end
 
 function PrevRip(source,event)
@@ -169,8 +169,8 @@ tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
 lstTag = strcmp(tags, lstTarg);
 kids(lstTag).Value = kids(lstTag).Value-1;
 axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [kids(lstTag).UserData(kids(lstTag).Value,1)-(50),...
-    kids(lstTag).UserData(kids(lstTag).Value,2)+(50)]);
+set(kids(axTag), 'xLim', [kids(lstTag).UserData(kids(lstTag).Value,1)-(0.05),...
+    kids(lstTag).UserData(kids(lstTag).Value,2)+(0.05)]);
 end
 
 function ZoomOut(source,event)
@@ -178,8 +178,8 @@ kids = get(get(source, 'Parent'), 'Children');
 tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
 axTag = strcmp(tags, 'Raw_Axes');
 curX = get(kids(axTag), 'xLim');
-set(kids(axTag), 'xLim', [curX(1)-(10),...
-    curX(2)+(10)]);
+set(kids(axTag), 'xLim', [curX(1)-(0.01),...
+    curX(2)+(0.01)]);
 end
 
 function ZoomIn(source,event)
@@ -187,6 +187,6 @@ kids = get(get(source, 'Parent'), 'Children');
 tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
 axTag = strcmp(tags, 'Raw_Axes');
 curX = get(kids(axTag), 'xLim');
-set(kids(axTag), 'xLim', [curX(1)+(10),...
-    curX(2)-(10)]);
+set(kids(axTag), 'xLim', [curX(1)+(0.01),...
+    curX(2)-(0.01)]);
 end
