@@ -1,10 +1,11 @@
-%% CurateRipples(rips, trialRips)
+%% CurateRipples
 global plotData
 plotData.listSel = 1;        % Used to keep track of which list is being selected from for ripple viewing
+plotData.Window = 50;
 %%
-rips = RippleDetection_SM;
-[trialRips] = ExtractTrialEventRips_SM(rips, [500 700]);
-allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));
+% rips = RippleDetection_SM('HILB', [0 3], 0, 15, 0, 10, 21);
+% [trialRips] = ExtractTrialEventRips_SM(rips, [500 700]);
+% allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));
 %% Create Figure
 plotData.ripCure = figure;
 set(plotData.ripCure, 'UserData', rips.TimeStamps);
@@ -21,7 +22,9 @@ set(ssnRipTitleAx, 'xlim', [-0.5 0.5], 'ylim', [0 0.5]);
 text(ssnRipTitleAx, 0,0, 'Session Rips', 'horizontalalignment', 'center', 'verticalalignment', 'bottom');
 axis(ssnRipTitleAx, 'off');
 plotData.ssnRipList = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'listbox', 'String', 1:size(rips.Ripples.Events,1),...
-    'Position', [0.825, 0.55, 0.15, 0.375], 'Callback', @SelectSsnRip, 'userData', rips.Ripples.Events);
+    'Position', [0.825, 0.62, 0.15, 0.3], 'Callback', @SelectSsnRip, 'userData', rips.Ripples.Events);
+plotData.ssnRipExport = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Export Session Rips',...
+    'Position', [0.825, 0.55, 0.15, 0.05], 'Callback', @ExportSsnRips);
 
 % Trial Ripple List
 trlRipTitleAx = axes(plotData.ripCure, 'position', [0.825, 0.5, 0.11, 0.05]);
@@ -29,7 +32,9 @@ set(trlRipTitleAx, 'xlim', [-0.5 0.5], 'ylim', [0 0.5]);
 text(trlRipTitleAx, 0,0, 'Trial Rips', 'horizontalalignment', 'center', 'verticalalignment', 'bottom');
 axis(trlRipTitleAx, 'off');
 plotData.trlRipList = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'listbox', 'String', 1:size(allTrialRips,1),...
-    'Position', [0.825, 0.2, 0.15, 0.300], 'Callback', @SelectTrlRip, 'userData', allTrialRips);
+    'Position', [0.825, 0.25, 0.15, 0.25], 'Callback', @SelectTrlRip, 'userData', allTrialRips);
+plotData.trlRipExport = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Export Trial Rips',...
+    'Position', [0.825, 0.195, 0.15, 0.05], 'Callback', @ExportTrlRips);
 
 % Zoom In
 zoomOutBtn = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Zm-',...
@@ -89,22 +94,26 @@ if plotData.listSel == 1
 else
     curNdx = plotData.trlRipList.UserData(plotData.trlRipList.Value,:);
 end
-rawData = plotData.rawAxes.UserData(curNdx(1)-50:curNdx(2)+50,:);
-bpfData = plotData.bpfAxes.UserData(curNdx(1)-50:curNdx(2)+50,:);
-spkData = plotData.spkAxes.UserData(curNdx(1)-50:curNdx(2)+50,:);
-[spkX, spkY] = find(spkData~=0);
-curTS = plotData.ripCure.UserData(curNdx(1)-50:curNdx(2)+50,:);
+rawData = plotData.rawAxes.UserData;
+bpfData = plotData.bpfAxes.UserData;
+spkData = plotData.spkAxes.UserData;
+tmpSpkData = spkData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:);
+[spkX, spkY] = find(tmpSpkData~=0);
+curTS = plotData.ripCure.UserData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:);
 
 if ~isfield('rawPlot', plotData)    
-    plotData.rawPlot = plot(plotData.rawAxes, curTS, rawData, 'color', 'k');
+    plotData.rawPlot = plot(plotData.rawAxes, curTS, rawData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:), 'color', 'k');
+    plotData.rawAxes.UserData = rawData;
     for r = 1:length(plotData.rawPlot)
         plotData.rawPlot(r).Color(4) = 0.2;
     end    
-    plotData.bpfPlot = plot(plotData.bpfAxes, curTS, bpfData, 'color', 'k');
+    plotData.bpfPlot = plot(plotData.bpfAxes, curTS, bpfData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:), 'color', 'k');
+    plotData.bpfAxes.UserData = bpfData;
     for b = 1:length(plotData.bpfPlot)
         plotData.bpfPlot(b).Color(4) = 0.2;
     end    
     plotData.spkRasts = scatter(plotData.spkAxes, curTS(spkX),spkY, '*k');
+    plotData.spkAxes.UserData = spkData;
     xlabel(plotData.spkAxes, 'Time (s)');
     
     linkaxes([plotData.spkAxes, plotData.bpfAxes, plotData.rawAxes], 'x');
@@ -117,90 +126,128 @@ if ~isfield('rawPlot', plotData)
     plotData.FigLims.BPF = repmat(get(plotData.bpfAxes,'ylim'),[2,1]);
     spkLim = repmat(get(plotData.spkAxes,'ylim'),[2,1]);
     plotData.FigLims.Spk = [spkLim(:,1)-1, spkLim(:,2)+1];
+    
+    curRipX = [plotData.ripCure.UserData(curNdx); flipud(plotData.ripCure.UserData(curNdx))]';
+    plotData.RipPatch.Raw = patch(plotData.rawAxes, 'XData', curRipX,...
+        'YData', plotData.FigLims.Raw(:),...
+        'FaceColor', 'y', 'FaceAlpha', 0.15,...
+        'EdgeColor', 'y', 'EdgeAlpha', 0.5);
+    plotData.RipPatch.BPF = patch(plotData.bpfAxes, 'XData', curRipX,...
+        'YData', plotData.FigLims.BPF(:),...
+        'FaceColor', 'y', 'FaceAlpha', 0.15,...
+        'EdgeColor', 'y', 'EdgeAlpha', 0.5);
+    plotData.RipPatch.Spk = patch(plotData.spkAxes, 'XData', curRipX,...
+        'YData', plotData.FigLims.Spk(:),...
+        'FaceColor', 'y', 'FaceAlpha', 0.15,...
+        'EdgeColor', 'y', 'EdgeAlpha', 0.5);
 else
     for r = 1:length(plotData.rawPlot)
-        plotData.rawPlot(r).XData = curTS;  
-        plotData.rawPlot(r).YData = rawData(r,:);
+        set(plotData.rawPlot(r), 'XData', curTS, 'YData', rawData(r,:));
     end
     for b = 1:length(plotData.bpfPlot)
-        plotData.bpfPlot(b).XData = curTS;
-        plotData.bpfPlot(b).YData = bpfData(r,:);
+        set(plotData.bpfPlot(b), 'XData', curTS, 'YData', bpfData(r,:));
     end
     set(plotData.spkRasts, 'XData', curTS(spkX), 'YData', spkY);
 end       
-refreshdata(plotData.ripCure);
+title(plotData.spkAxes, sprintf('Duration = %i(ms)', diff(curNdx)));
+% refreshdata(plotData.ripCure);
 end
 
 function SelectSsnRip(source,event)
 global plotData
 plotData.listSel = 1;
-kids = get(get(source, 'Parent'), 'Children');
-tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
-axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50/60000),...
-    source.UserData(source.Value,2)+(50/60000)]);
+SetPlots
 end
 
 function SelectTrlRip(source,event)
 global plotData
 plotData.listSel = 2;
-kids = get(get(source, 'Parent'), 'Children');
-tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
-axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50/60000),...
-    source.UserData(source.Value,2)+(50/60000)]);
+SetPlots
 end
 
 function NextRip(source,event)
 global plotData
 if plotData.listSel == 1
-    lstTarg = 'ssnRip_Lst';
+    plotData.ssnRipList.Value = plotData.ssnRipList.Value + 1;
 else
-    lstTarg = 'trlRip_Lst';
+    plotData.trlRipList.Value = plotData.trlRipList.Value + 1;
 end
-kids = get(get(source, 'Parent'), 'Children');
-tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
-lstTag = strcmp(tags, lstTarg);
-kids(lstTag).Value = kids(lstTag).Value+1;
-axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [kids(lstTag).UserData(kids(lstTag).Value,1)-(50/60000),...
-    kids(lstTag).UserData(kids(lstTag).Value,2)+(50/60000)]);
+SetPlots
 end
 
 function PrevRip(source,event)
 global plotData
 if plotData.listSel == 1
-    lstTarg = 'ssnRip_Lst';
+    plotData.ssnRipList.Value = plotData.ssnRipList.Value - 1;
 else
-    lstTarg = 'trlRip_Lst';
+    plotData.trlRipList.Value = plotData.trlRipList.Value - 1;
 end
-kids = get(get(source, 'Parent'), 'Children');
-tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
-lstTag = strcmp(tags, lstTarg);
-kids(lstTag).Value = kids(lstTag).Value-1;
-axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [kids(lstTag).UserData(kids(lstTag).Value,1)-(50/60000),...
-    kids(lstTag).UserData(kids(lstTag).Value,2)+(50/60000)]);
+SetPlots
 end
 
 function ZoomOut(source,event)
-kids = get(get(source, 'Parent'), 'Children');
-tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
-axTag = strcmp(tags, 'Raw_Axes');
-curX = get(kids(axTag), 'xLim');
-set(kids(axTag), 'xLim', [curX(1)-(10/60000),...
-    curX(2)+(10/60000)]);
+global plotData
+plotData.Window = plotData.Window+100;
+SetPlots
 end
 
 function ZoomIn(source,event)
-kids = get(get(source, 'Parent'), 'Children');
-tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
-axTag = strcmp(tags, 'Raw_Axes');
-curX = get(kids(axTag), 'xLim');
-set(kids(axTag), 'xLim', [curX(1)+(10/60000),...
-    curX(2)-(10/60000)]);
+global plotData
+plotData.Window = plotData.Window-100;
+if plotData.Window < 50
+    plotData.Window = 50;
+end
+SetPlots
 end
 
+function RmvRip(source,event)
+global plotData
+if plotData.listSel == 1
+    curNdx = plotData.ssnRipList.UserData(plotData.ssnRipList.Value,:);
+else
+    curNdx = plotData.trlRipList.UserData(plotData.trlRipList.Value,:);
+end
+ssnList = plotData.ssnRipList.UserData;
+ssnList(ssnList(:,1)==curNdx(1),:) = [];
+trlList = plotData.ssnRipList.UserData;
+trlList(trlList(:,1)==curNdx(1),:) = [];
+
+plotData.ssnRipList.UserData = ssnList;
+plotData.ssnRipList.String = 1:size(ssnList,1);
+plotData.trlRipList.UserData = trlList;
+plotData.trlRipList.String = 1:size(trlList,1);
+
+if plotData.listSel == 1
+    if plotData.ssnRipList.Value == 1
+        plotData.ssnRipList.Value = 1;
+    elseif plotData.ssnRipList.Value == size(ssnList,1)+1
+        plotData.ssnRipList.Value = size(ssnList,1);
+    end
+else
+    if plotData.trlRipList.Value == 1
+        plotData.trlRipList.Value = 1;
+    elseif plotData.trlRipList.Value == size(ssnList,1)+1
+        plotData.trlRipList.Value = size(ssnList,1);
+    end
+end
+SetPlots
+end
+
+function ExportSsnRips(source, event)
+global plotData
+exportData = plotData.ssnRipList.UserData;
+save('SessionRips.mat', 'exportData');
+msgbox('Session Ripple Indices Saved');
+end
+
+function ExportTrlRips(source, event)
+global plotData
+exportData = plotData.trlRipList.UserData;
+save('TrialRips.mat', 'exportData');
+msgbox('Trial Ripple Indices Saved');
+end
+
+%% Data Organization Functions
 function [rips] = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin)
 %% RippleDetection_SM
 %   Inputs:
