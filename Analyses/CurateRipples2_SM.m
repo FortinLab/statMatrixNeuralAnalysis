@@ -7,9 +7,13 @@ rips = RippleDetection_SM;
 allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));
 %% Create Figure
 ripCure = figure;
+set(ripCure, 'UserData', rips.TimeStamps);
 rawAxes = axes(ripCure, 'position', [0.1, 0.75, 0.7, 0.2]);
+set(rawAxes, 'UserData', rips.SessionData.RawLFP);
 bpfAxes = axes(ripCure, 'position', [0.1, 0.55, 0.7, 0.2]);
+set(bpfAxes, 'UserData', rips.SessionData.RipBPF);
 spkAxes = axes(ripCure, 'position', [0.1, 0.2, 0.7, 0.3]);
+set(spkAxes, 'UserData', rips.SessionData.Spikes);
 linkaxes([spkAxes, bpfAxes, rawAxes], 'x');
 
 % Overall Ripple List
@@ -48,14 +52,19 @@ removeRipBtn = uicontrol(ripCure, 'Units', 'Normalized', 'Style', 'pushbutton', 
 
 %% Plot Stuff
 % Plot Raw LFP Traces
-[xVals, yVals] = GetVals(rips.TimeStamps, rips.SessionData.RawLFP, rips.Ripples.Events(1,:));
-rawPlot = plot(rawAxes, xVals, yVals, 'color', 'k');
+rawPlaceHolder = nan(size(rips.SessionData.RawLFP));
+rawPlaceHolder(1,1) = max(max(rips.SessionData.RawLFP));
+rawPlaceHolder(end,end) = min(min(rips.SessionData.RawLFP));
+rawPlot = plot(rawAxes, rips.TimeStamps, rawPlaceHolder, 'color', 'k');
 for r = 1:length(rawPlot)
     rawPlot(r).Color(4) = 0.2;
 end
 set(rawAxes, 'Tag', 'Raw_Axes');
 % Plot Ripple Band LFP Traces
-bpfPlot = plot(bpfAxes, rips.TimeStamps, rips.SessionData.RipBPF, 'color', 'k');
+bpfPlaceHolder = nan(size(rips.SessionData.RipBPF));
+bpfPlaceHolder(1,1) = max(max(rips.SessionData.RipBPF));
+bpfPlaceHolder(end,end) = max(max(rips.SessionData.RipBPF));
+bpfPlot = plot(bpfAxes, rips.TimeStamps, bpfPlaceHolder, 'color', 'k');
 for b = 1:length(bpfPlot)
     bpfPlot(b).Color(4) = 0.2;
 end
