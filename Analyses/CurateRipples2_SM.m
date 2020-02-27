@@ -2,13 +2,34 @@
 global plotData
 plotData.listSel = 1;        % Used to keep track of which list is being selected from for ripple viewing
 plotData.Window = 50;
+%% Parameters
+%     envProc = 'RMS';
+envProc = 'HILB';           
+powThresh = [0 4];
+durThresh = 15;             
+durThreshMrg = 15;
+syncThresh = 0;
+syncWin = 10;
+smoothWin = 21;
+
 %%
-% rips = RippleDetection_SM('HILB', [0 3], 0, 15, 0, 10, 21);
-% [trialRips] = ExtractTrialEventRips_SM(rips, [500 700]);
-% allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));
+rips = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin);
+[trialRips] = ExtractTrialEventRips_SM(rips, [500 700]);
+allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));
+
+%% Plot Descriptives
+PlotNearTrialRipStats(trialRips)
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    'linestyle', 'none');
+
+
 %% Create Figure
+plotData.PowThresh = rips.FileInfo.PowerThreshold;
 plotData.ripCure = figure;
-set(plotData.ripCure, 'UserData', rips.TimeStamps);
+set(plotData.ripCure, 'UserData', [rips.TimeStamps, mean(rips.SessionData.RipEnv,2)]);
 plotData.rawAxes = axes(plotData.ripCure, 'position', [0.1, 0.75, 0.7, 0.2]);
 set(plotData.rawAxes, 'UserData', rips.SessionData.RawLFP);
 plotData.bpfAxes = axes(plotData.ripCure, 'position', [0.1, 0.55, 0.7, 0.2]);
@@ -54,6 +75,12 @@ nextRipBtn = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'pushbu
 removeRipBtn = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Remove Ripple',...
     'Position', [0.425, 0.075, 0.2, 0.05], 'Callback', @RmvRip);
 
+
+annotation('textbox', 'position', [0.01 0.005 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    'linestyle', 'none');
 %% Initialize Things
 SetPlots;
 
@@ -97,9 +124,10 @@ end
 rawData = plotData.rawAxes.UserData;
 bpfData = plotData.bpfAxes.UserData;
 spkData = plotData.spkAxes.UserData;
+envData = plotData.ripCure.UserData(:,2);
 tmpSpkData = spkData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:);
 [spkX, spkY] = find(tmpSpkData~=0);
-curTS = plotData.ripCure.UserData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:);
+curTS = plotData.ripCure.UserData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,1);
 
 if ~isfield('rawPlot', plotData)    
     plotData.rawPlot = plot(plotData.rawAxes, curTS, rawData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:), 'color', 'k');
@@ -108,6 +136,14 @@ if ~isfield('rawPlot', plotData)
         plotData.rawPlot(r).Color(4) = 0.2;
     end    
     plotData.bpfPlot = plot(plotData.bpfAxes, curTS, bpfData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:), 'color', 'k');
+    hold(plotData.bpfAxes, 'on');
+    plotData.envPlot = plot(plotData.bpfAxes, curTS, envData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:), 'color', 'r', 'linewidth', 2);
+    plotData.envTH1 = plot(plotData.bpfAxes, curTS,...
+        ones(1,length(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window))*(mean(plotData.ripCure.UserData(:,2)) + (plotData.PowThresh (1)*std(plotData.ripCure.UserData(:,2)))),...
+        'color', 'k', 'linestyle','--', 'linewidth', 2);
+    plotData.envTH2 = plot(plotData.bpfAxes, curTS,...
+        ones(1,length(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window))*(mean(plotData.ripCure.UserData(:,2)) + (plotData.PowThresh (2)*std(plotData.ripCure.UserData(:,2)))),...
+        'color', 'k', 'linestyle','-', 'linewidth', 2);
     plotData.bpfAxes.UserData = bpfData;
     for b = 1:length(plotData.bpfPlot)
         plotData.bpfPlot(b).Color(4) = 0.2;
@@ -127,7 +163,7 @@ if ~isfield('rawPlot', plotData)
     spkLim = repmat(get(plotData.spkAxes,'ylim'),[2,1]);
     plotData.FigLims.Spk = [spkLim(:,1)-1, spkLim(:,2)+1];
     
-    curRipX = [plotData.ripCure.UserData(curNdx); flipud(plotData.ripCure.UserData(curNdx))]';
+    curRipX = [plotData.ripCure.UserData(curNdx,1); flipud(plotData.ripCure.UserData(curNdx,1))]';
     plotData.RipPatch.Raw = patch(plotData.rawAxes, 'XData', curRipX,...
         'YData', plotData.FigLims.Raw(:),...
         'FaceColor', 'y', 'FaceAlpha', 0.15,...
@@ -148,6 +184,13 @@ else
         set(plotData.bpfPlot(b), 'XData', curTS, 'YData', bpfData(r,:));
     end
     set(plotData.spkRasts, 'XData', curTS(spkX), 'YData', spkY);
+    set(plotData.envPlot, 'XData', curTS, 'YData', envData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:));
+    set(plotData.envTH1, 'XData', curTS, 'YData', ones(1,length(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window))*(mean(plotData.ripCure.UserData(:,2)) + (plotData.PowThresh (1)*std(plotData.ripCure.UserData(:,2)))));
+    set(plotData.envTH2, 'XData', curTS, 'YData', ones(1,length(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window))*(mean(plotData.ripCure.UserData(:,2)) + (plotData.PowThresh (2)*std(plotData.ripCure.UserData(:,2)))));
+    curRipX = [plotData.ripCure.UserData(curNdx,1); flipud(plotData.ripCure.UserData(curNdx,1))]';
+    set(plotData.RipPatch.Raw, 'XData', curRipX);
+    set(plotData.RipPatch.BPF, 'XData', curRipX);
+    set(plotData.RipPatch.Spk, 'XData', curRipX);
 end       
 title(plotData.spkAxes, sprintf('Duration = %i(ms)', diff(curNdx)));
 % refreshdata(plotData.ripCure);
@@ -389,26 +432,32 @@ spkMtx = ensembleMatrix(:,2:end);
 sortedSpkCountsAndIndices = sortrows([sum(spkMtx); 1:size(spkMtx,2)]');
 spkMtxSorted = spkMtx(:,sortedSpkCountsAndIndices(:,2));
 
+%% Evaluate Ensemble Activity
+epocNsmblAct = nan(size(epocWindows,1),1);
+for epoc = 1:size(epocWindows,1)
+    tempSpkMtx = ensembleMatrix(epocWindows(epoc,1):epocWindows(epoc,2),2:end);
+    epocNsmblAct(epoc) = mean(sum(tempSpkMtx)>=1);
+end
 
 %% Organize Data Output
 rips = struct(...
     'TimeStamps', statMatrix(:,1),...
     'Ripples', struct('Events', epocWindows, 'Duration', epocDur,...
-    'Synchrony', epocSync),...
+        'Synchrony', epocSync, 'EnsembleActivity', epocNsmblAct),...
     'SessionData', struct('RawLFP', ripVolts, 'RipBPF', ripBPF,...
-    'RipEnv', ripRMS, 'RipPhase', ripHilb, 'TetIDs', {ripTetIDs},...
-    'Spikes', spkMtxSorted),...
+        'RipEnv', ripRMS, 'RipPhase', ripHilb, 'TetIDs', {ripTetIDs},...
+        'Spikes', spkMtxSorted),...
     'TrialInfo', struct('Perf', [behavMatrixTrialStruct.Performance]==1,...
-    'TransDist', [behavMatrixTrialStruct.TranspositionDistance],...
-    'OdorVect', [behavMatrixTrialStruct.Odor],...
-    'PositionVect', [behavMatrixTrialStruct.Position],...
-    'TrialPokes', [[behavMatrixTrialStruct.PokeInIndex]', [behavMatrixTrialStruct.PokeOutIndex]'],...
-    'TrialRewards', [behavMatrixTrialStruct.RewardIndex]),...
+        'TransDist', [behavMatrixTrialStruct.TranspositionDistance],...
+        'OdorVect', [behavMatrixTrialStruct.Odor],...
+        'PositionVect', [behavMatrixTrialStruct.Position],...
+        'TrialPokes', [[behavMatrixTrialStruct.PokeInIndex]', [behavMatrixTrialStruct.PokeOutIndex]'],...
+        'TrialRewards', [behavMatrixTrialStruct.RewardIndex]),...
     'FileInfo', struct('Directory', cd, 'EnvelopeProcedure', envProc,...
-    'PowerThreshold', powThresh, 'DurationThreshold', durThresh,...
-    'DurationMergeThreshold', durThreshMrg,...
-    'SynchronyThreshold', syncThresh, 'SynchronyWindow', syncWin,...
-    'GaussianDuration', smoothWin));
+        'PowerThreshold', powThresh, 'DurationThreshold', durThresh,...
+        'DurationMergeThreshold', durThreshMrg,...
+        'SynchronyThreshold', syncThresh, 'SynchronyWindow', syncWin,...
+        'GaussianDuration', smoothWin));
 end
 
 function [trialRipStruct] = ExtractTrialEventRips_SM(rips, trialWin)
@@ -430,25 +479,31 @@ trialRips = cell(size(trialPokeTimes,1),3);
 trialRipLat = cell(size(trialPokeTimes,1),3);
 trialRipsDur = cell(size(trialPokeTimes,1),3);
 trialRipsSync = cell(size(trialPokeTimes,1),3);
+trialRipsNsmblAct = cell(size(trialPokeTimes,1),3);
 for trl = 1:size(trialPokeTimes,1)
     preTrlLog = rips.Ripples.Events(:,1)>(trialPokeTimes(trl,1)-trialWin(1)) & rips.Ripples.Events(:,1)<trialPokeTimes(trl,1);
     trialRips{trl,1} = rips.Ripples.Events(preTrlLog,:);
     trialRipLat{trl,1} = rips.Ripples.Events(preTrlLog,1) - trialPokeTimes(trl,1);
     trialRipsDur{trl,1} = rips.Ripples.Duration(preTrlLog,:);
     trialRipsSync{trl,1} = rips.Ripples.Synchrony(preTrlLog,:);
+    trialRipsNsmblAct{trl,1} = rips.Ripples.EnsembleActivity(preTrlLog,:);
     
     trlLog = rips.Ripples.Events(:,1)>trialPokeTimes(trl,1) & rips.Ripples.Events(:,1)<trialPokeTimes(trl,2);
     trialRips{trl,2} = rips.Ripples.Events(trlLog,:);
     trialRipLat{trl,2} = rips.Ripples.Events(trlLog,1) - trialPokeTimes(trl,1);
     trialRipsDur{trl,2} = rips.Ripples.Duration(trlLog,:);
     trialRipsSync{trl,2} = rips.Ripples.Synchrony(trlLog,:);
+    trialRipsNsmblAct{trl,2} = rips.Ripples.EnsembleActivity(trlLog,:);
     
     pstTrlLog = rips.Ripples.Events(:,1)>trialPokeTimes(trl,2) & (rips.Ripples.Events(:,1)<trialPokeTimes(trl,2)+trialWin(2));
     trialRips{trl,3} = rips.Ripples.Events(pstTrlLog,:);
     trialRipLat{trl,3} = rips.Ripples.Events(pstTrlLog,1) - trialPokeTimes(trl,2);
     trialRipsDur{trl,3} = rips.Ripples.Duration(pstTrlLog,:);
     trialRipsSync{trl,3} = rips.Ripples.Synchrony(pstTrlLog,:);
+    trialRipsNsmblAct{trl,3} = rips.Ripples.EnsembleActivity(pstTrlLog,:);
 end
 
-trialRipStruct = struct('Events', {trialRips}, 'Latency', {trialRipLat}, 'Duration', {trialRipsDur}, 'Synchrony', {trialRipsSync});
+trialRipStruct = struct('Events', {trialRips}, 'Latency', {trialRipLat},...
+    'Duration', {trialRipsDur}, 'Synchrony', {trialRipsSync},...
+    'EnsembleAct', {trialRipsNsmblAct});
 end
