@@ -1,5 +1,6 @@
 %% CurateRipples(rips, trialRips)
-
+global listSel
+listSel = 1;        % Used to keep track of which list is being selected from for ripple viewing
 %%
 rips = RippleDetection_SM;
 [trialRips] = ExtractTrialEventRips_SM(rips, [500 700]);
@@ -51,15 +52,19 @@ raw = plot(rawAxes, rips.TimeStamps, rips.SessionData.RawLFP, 'color', 'k');
 for r = 1:length(raw)
     raw(r).Color(4) = 0.2;
 end
+set(rawAxes, 'Tag', 'Raw_Axes');
 % Plot Ripple Band LFP Traces
 bpf = plot(bpfAxes, rips.TimeStamps, rips.SessionData.RipBPF, 'color', 'k');
 for b = 1:length(bpf)
     bpf(b).Color(4) = 0.2;
 end
+set(bpfAxes, 'Tag', 'Bpf_Axes');
 % Plot Spiking Activity
 [spkX, spkY] = find(rips.SessionData.Spikes~=0);
 scatter(spkAxes, rips.TimeStamps(spkX),spkY, '*k');
+% line(spkAxes, rips.TimeStamps(spkX),spkY, 'marker', '*', 'linestyle', 'none', 'color', 'k');
 xlabel(spkAxes, 'Time (m)');
+set(spkAxes, 'Tag', 'Spk_Axes');
 
 % Fiddle with Axes
 set(rawAxes, 'color', 'none', 'ycolor', 'none', 'xcolor', 'none', 'xticklabel', [], 'box', 'off');
@@ -113,4 +118,76 @@ for rip = 1:size(rips.Ripples.Events,1)
         'YData', spkLim(:),...
         'FaceColor', 'y', 'FaceAlpha', 0.15,...
         'EdgeColor', 'y', 'EdgeAlpha', 0.5);    
+end
+
+clear rips
+%% Callbacks
+function SelectSsnRip(source,event)
+global listSel
+listSel = 1;
+kids = get(get(source, 'Parent'), 'Children');
+tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
+axTag = strcmp(tags, 'Raw_Axes');
+set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50/60000),...
+    source.UserData(source.Value,2)+(50/60000)]);
+end
+
+function SelectTrlRip(source,event)
+global listSel
+listSel = 2;
+kids = get(get(source, 'Parent'), 'Children');
+tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
+axTag = strcmp(tags, 'Raw_Axes');
+set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50/60000),...
+    source.UserData(source.Value,2)+(50/60000)]);
+end
+
+function NextRip(source,event)
+global listSel
+if listSel == 1
+    lstTarg = 'ssnRip_Lst';
+else
+    lstTarg = 'trlRip_Lst';
+end
+kids = get(get(source, 'Parent'), 'Children');
+tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
+lstTag = strcmp(tags, lstTarg);
+kids(lstTag).Value = kids(lstTag).Value+1;
+axTag = strcmp(tags, 'Raw_Axes');
+set(kids(axTag), 'xLim', [kids(lstTag).UserData(kids(lstTag).Value,1)-(50),...
+    kids(lstTag).UserData(kids(lstTag).Value,2)+(50)]);
+end
+
+function PrevRip(source,event)
+global listSel
+if listSel == 1
+    lstTarg = 'ssnRip_Lst';
+else
+    lstTarg = 'trlRip_Lst';
+end
+kids = get(get(source, 'Parent'), 'Children');
+tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
+lstTag = strcmp(tags, lstTarg);
+kids(lstTag).Value = kids(lstTag).Value-1;
+axTag = strcmp(tags, 'Raw_Axes');
+set(kids(axTag), 'xLim', [kids(lstTag).UserData(kids(lstTag).Value,1)-(50),...
+    kids(lstTag).UserData(kids(lstTag).Value,2)+(50)]);
+end
+
+function ZoomOut(source,event)
+kids = get(get(source, 'Parent'), 'Children');
+tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
+axTag = strcmp(tags, 'Raw_Axes');
+curX = get(kids(axTag), 'xLim');
+set(kids(axTag), 'xLim', [curX(1)-(10),...
+    curX(2)+(10)]);
+end
+
+function ZoomIn(source,event)
+kids = get(get(source, 'Parent'), 'Children');
+tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
+axTag = strcmp(tags, 'Raw_Axes');
+curX = get(kids(axTag), 'xLim');
+set(kids(axTag), 'xLim', [curX(1)+(10),...
+    curX(2)-(10)]);
 end
