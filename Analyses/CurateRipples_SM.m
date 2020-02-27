@@ -120,7 +120,6 @@ for rip = 1:size(rips.Ripples.Events,1)
         'EdgeColor', 'y', 'EdgeAlpha', 0.5);    
 end
 
-clear rips
 %% Callbacks
 function SelectSsnRip(source,event)
 global listSel
