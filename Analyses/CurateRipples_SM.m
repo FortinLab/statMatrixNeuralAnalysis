@@ -63,7 +63,7 @@ set(bpfAxes, 'Tag', 'Bpf_Axes');
 [spkX, spkY] = find(rips.SessionData.Spikes~=0);
 scatter(spkAxes, rips.TimeStamps(spkX),spkY, '*k');
 % line(spkAxes, rips.TimeStamps(spkX),spkY, 'marker', '*', 'linestyle', 'none', 'color', 'k');
-xlabel(spkAxes, 'Time (m)');
+xlabel(spkAxes, 'Time (ms)');
 set(spkAxes, 'Tag', 'Spk_Axes');
 
 % Fiddle with Axes
