@@ -127,8 +127,8 @@ listSel = 1;
 kids = get(get(source, 'Parent'), 'Children');
 tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
 axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50/60000),...
-    source.UserData(source.Value,2)+(50/60000)]);
+set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50),...
+    source.UserData(source.Value,2)+(50)]);
 end
 
 function SelectTrlRip(source,event)
@@ -137,8 +137,8 @@ listSel = 2;
 kids = get(get(source, 'Parent'), 'Children');
 tags = arrayfun(@(a)a.Tag, kids, 'uniformoutput',0);
 axTag = strcmp(tags, 'Raw_Axes');
-set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50/60000),...
-    source.UserData(source.Value,2)+(50/60000)]);
+set(kids(axTag), 'xLim', [source.UserData(source.Value,1)-(50),...
+    source.UserData(source.Value,2)+(50)]);
 end
 
 function NextRip(source,event)
