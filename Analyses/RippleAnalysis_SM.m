@@ -43,39 +43,39 @@ load(fileNames{behavFileLog});
 load(fileNames{ensembleFileLog});
 behavMatrixTrialStruct = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
 
-% poi = [behavMatrixTrialStruct.PokeOutIndex];
-% ri = [behavMatrixTrialStruct.RewardIndex];
-% if length(poi)~=length(ri)
-%     ri(end:end+(length(poi)-length(ri)))=nan;
-% end
-% dif = ri-poi;
-% perfLog = [behavMatrixTrialStruct.Performance]==1;
-% isLog = [behavMatrixTrialStruct.TranspositionDistance]==0;
-% iscLog = perfLog & isLog;
-% isiLog = ~perfLog & isLog;
-% oscLog = perfLog & ~isLog;
-% osiLog = ~perfLog & ~isLog;
-% 
-% figure; 
-% subplot(2,2,1); 
-% histogram(dif(iscLog)); 
-% title('InSeq Correct');
-% subplot(2,2,2); 
-% histogram(dif(isiLog)); 
-% title('InSeq Incorrect');
-% subplot(2,2,3); 
-% histogram(dif(osiLog)); 
-% title('OutSeq Incorrect');
-% subplot(2,2,4); 
-% histogram(dif(oscLog));
-% title('OutSeq Correct');
-% 
-% annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
-%     sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
-% 
-% annotation('textbox', 'position', [0.1 0.95 0.8 0.05], 'string',...
-%     '\bfReward Delivery Latency (relative to port withdrawal)', 'horizontalalignment', 'center',...
-%     'linestyle', 'none', 'fontsize', 15);
+poi = [behavMatrixTrialStruct.PokeOutIndex];
+ri = [behavMatrixTrialStruct.RewardIndex];
+if length(poi)~=length(ri)
+    ri(end:end+(length(poi)-length(ri)))=nan;
+end
+dif = ri-poi;
+perfLog = [behavMatrixTrialStruct.Performance]==1;
+isLog = [behavMatrixTrialStruct.TranspositionDistance]==0;
+iscLog = perfLog & isLog;
+isiLog = ~perfLog & isLog;
+oscLog = perfLog & ~isLog;
+osiLog = ~perfLog & ~isLog;
+
+figure; 
+subplot(2,2,1); 
+histogram(dif(iscLog)); 
+title('InSeq Correct');
+subplot(2,2,2); 
+histogram(dif(isiLog)); 
+title('InSeq Incorrect');
+subplot(2,2,3); 
+histogram(dif(osiLog)); 
+title('OutSeq Incorrect');
+subplot(2,2,4); 
+histogram(dif(oscLog));
+title('OutSeq Correct');
+
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+
+annotation('textbox', 'position', [0.1 0.95 0.8 0.05], 'string',...
+    '\bfReward Delivery Latency (relative to port withdrawal)', 'horizontalalignment', 'center',...
+    'linestyle', 'none', 'fontsize', 15);
 %% Extract Raw Values & Compute RMS Power
 ripBPF = nan(size(behavMatrix,1),size(tetFiles,1));
 ripVolts = nan(size(behavMatrix,1),size(tetFiles,1));
