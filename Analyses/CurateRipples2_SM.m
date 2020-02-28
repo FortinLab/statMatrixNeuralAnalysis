@@ -15,8 +15,8 @@ syncWin = 10;
 smoothWin = 21;
 
 %%
-rips = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin);
-[trialRips] = ExtractTrialEventRips_SM(rips, [0 500]);
+% rips = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin);
+% [trialRips] = ExtractTrialEventRips_SM(rips, [0 500]);
 % allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));       % Use for ALL (pre-trial, trial and post-trial) Trial Rips 
 allTrialRips = cell2mat(trialRips.Events(:,3));       % Use for ONLY Post-Trial Rips
 
