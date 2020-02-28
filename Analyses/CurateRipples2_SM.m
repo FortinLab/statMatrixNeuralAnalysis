@@ -1,4 +1,6 @@
 %% CurateRipples
+close all
+clear all
 global plotData
 plotData.listSel = 1;        % Used to keep track of which list is being selected from for ripple viewing
 plotData.Window = 50;
@@ -14,8 +16,9 @@ smoothWin = 21;
 
 %%
 rips = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin);
-[trialRips] = ExtractTrialEventRips_SM(rips, [500 700]);
-allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));
+[trialRips] = ExtractTrialEventRips_SM(rips, [500 500]);
+% allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));       % Use for ALL (pre-trial, trial and post-trial) Trial Rips 
+allTrialRips = trialRips.Events(:,3);       % Use for ONLY Post-Trial Rips
 
 %% Plot Descriptives
 PlotNearTrialRipStats(trialRips)
