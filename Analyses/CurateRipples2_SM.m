@@ -1,4 +1,6 @@
 %% CurateRipples
+clear all
+close all
 global plotData
 plotData.listSel = 1;        % Used to keep track of which list is being selected from for ripple viewing
 plotData.Window = 50;
