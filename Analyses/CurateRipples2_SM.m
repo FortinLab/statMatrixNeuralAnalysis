@@ -2,12 +2,12 @@
 clear all
 close all
 global plotData
-plotData.listSel = 1;        % Used to keep track of which list is being selected from for ripple viewing
+plotData.listSel = 2;        % Used to keep track of which list is being selected from for ripple viewing
 plotData.Window = 50;
 %% Parameters
 % envProc = 'RMS';
 envProc = 'HILB';           
-powThresh = [0 4];
+powThresh = [0 3];
 durThresh = 15;             
 durThreshMrg = 15;
 syncThresh = 0;
@@ -16,7 +16,7 @@ smoothWin = 21;
 
 %%
 rips = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin);
-[trialRips] = ExtractTrialEventRips_SM(rips, [500 500]);
+[trialRips] = ExtractTrialEventRips_SM(rips, [0 500]);
 % allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));       % Use for ALL (pre-trial, trial and post-trial) Trial Rips 
 allTrialRips = trialRips.Events(:,3);       % Use for ONLY Post-Trial Rips
 
