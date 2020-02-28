@@ -188,6 +188,7 @@ if ~isfield('rawPlot', plotData)
     plotData.envTH2 = plot(plotData.bpfAxes, curTS,...
         ones(1,length(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window))*(mean(plotData.ripCure.UserData(:,2)) + (plotData.PowThresh (2)*std(plotData.ripCure.UserData(:,2)))),...
         'color', 'k', 'linestyle','-', 'linewidth', 2);
+    hold(plotData.bpfAxes, 'off');
     plotData.bpfAxes.UserData = bpfData;
     for b = 1:length(plotData.bpfPlot)
         plotData.bpfPlot(b).Color(4) = 0.2;
