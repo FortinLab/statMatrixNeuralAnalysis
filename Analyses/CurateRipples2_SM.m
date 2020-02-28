@@ -1,13 +1,13 @@
 %% CurateRipples
-% clear all
-% close all
+clear all
+close all
 global plotData
 plotData.listSel = 2;        % Used to keep track of which list is being selected from for ripple viewing
 plotData.Window = 50;
 %% Parameters
 % envProc = 'RMS';
 envProc = 'HILB';           
-powThresh = [0 3];
+powThresh = [1 3];
 durThresh = 15;             
 durThreshMrg = 15;
 syncThresh = 0;
