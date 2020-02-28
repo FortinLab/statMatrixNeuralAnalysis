@@ -15,8 +15,8 @@ syncWin = 10;
 smoothWin = 21;
 
 %%
-% rips = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin);
-% [trialRips] = ExtractTrialEventRips_SM(rips, [0 500]);
+rips = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin);
+[trialRips] = ExtractTrialEventRips_SM(rips, [0 500]);
 % allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));       % Use for ALL (pre-trial, trial and post-trial) Trial Rips 
 allTrialRips = cell2mat(trialRips.Events(:,3));       % Use for ONLY Post-Trial Rips
 
@@ -225,12 +225,12 @@ else
         set(plotData.rawPlot(r), 'XData', curTS, 'YData', rawData(r,:));
     end
     for b = 1:length(plotData.bpfPlot)
-        set(plotData.bpfPlot(b), 'XData', curTS, 'YData', bpfData(r,:));
+        set(plotData.bpfPlot(b), 'XData', curTS, 'YData', bpfData(b,:));
     end
     set(plotData.spkRasts, 'XData', curTS(spkX), 'YData', spkY);
     set(plotData.envPlot, 'XData', curTS, 'YData', envData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:));
-    set(plotData.envTH1, 'XData', curTS, 'YData', ones(1,length(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window))*(mean(plotData.ripCure.UserData(:,2)) + (plotData.PowThresh (1)*std(plotData.ripCure.UserData(:,2)))));
-    set(plotData.envTH2, 'XData', curTS, 'YData', ones(1,length(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window))*(mean(plotData.ripCure.UserData(:,2)) + (plotData.PowThresh (2)*std(plotData.ripCure.UserData(:,2)))));
+    set(plotData.envTH1, 'XData', curTS, 'YData', ones(1,length(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window))*(mean(plotData.ripCure.UserData(:,2)) + (plotData.PowThresh(1)*std(plotData.ripCure.UserData(:,2)))));
+    set(plotData.envTH2, 'XData', curTS, 'YData', ones(1,length(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window))*(mean(plotData.ripCure.UserData(:,2)) + (plotData.PowThresh(2)*std(plotData.ripCure.UserData(:,2)))));
     curRipX = [plotData.ripCure.UserData(curNdx,1); flipud(plotData.ripCure.UserData(curNdx,1))]';
     set(plotData.RipPatch.Raw, 'XData', curRipX);
     set(plotData.RipPatch.BPF, 'XData', curRipX);
