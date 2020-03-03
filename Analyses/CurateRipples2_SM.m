@@ -486,19 +486,29 @@ end
 
 %% Evaluate Spectrogram
 ripSpect = cell(size(epocWindows,1),1);
+ripFreq = nan(size(epocWindows,1),1);
+ripMaxFreq = nan(size(epocWindows,1),1);
+freqs = [150 250];
+freqsVect = freqs(1):freqs(2);
 for e = 1:size(epocWindows,1)
-    tempSpect = nan(diff(epocWindows(e,:))+1,500,size(ripBPF,2));
+    tempSpect = nan(diff(epocWindows(e,:))+101,freqs(2)-freqs(1)+1,size(ripBPF,2));
     for t = 1:size(ripBPF,2)   
-        tempSpect(:,:,t) = MorletAG(ripBPF(epocWindows(e,1):epocWindows(e,2),t), 1/samp, 1, 500)';
+        tempSpect(:,:,t) = MorletAG(ripVolts(epocWindows(e,1)-50:epocWindows(e,2)+50,t), 1/samp, freqs(1), freqs(2))';
     end
     ripSpect{e} = tempSpect;
+    tempMax = mean(tempSpect(51:end-50,:,:),3);
+    [~,c] = find((tempMax./repmat(max(tempMax,[],2), [1,size(tempMax,2)]))==1);
+    ripFreq(e) = mean(freqsVect(c));
+    [~, cM] = find((tempMax./max(max(tempMax)))==1);
+    ripMaxFreq(e) = freqsVect(cM);
 end
 
 %% Organize Data Output
 rips = struct(...
     'TimeStamps', statMatrix(:,1),...
     'Ripples', struct('Events', epocWindows, 'Duration', epocDur,...
-        'Synchrony', epocSync, 'EnsembleActivity', epocNsmblAct),...
+        'Synchrony', epocSync, 'EnsembleActivity', epocNsmblAct,...
+        'MeanFrequency', ripFreq, 'MaxPowerFrequency', ripMaxFreq),...
     'SessionData', struct('RawLFP', ripVolts, 'RipBPF', ripBPF,...
         'RipEnv', ripRMS, 'RipPhase', ripHilb, 'TetIDs', {ripTetIDs},...
         'Spikes', spkMtxSorted),...
