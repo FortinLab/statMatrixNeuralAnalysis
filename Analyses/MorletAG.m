@@ -25,8 +25,12 @@ time = ((1:length(lfp))-ceil(length(lfp)/2))/sampleRate;            %% Length of
 freq = minFreq:maxFreq;                                             %% Frequency of Morlet Wavelet
 
 %% Bandstop 60Hz signal
-[b1, a1] = butter(2, [59/500 61/500], 'stop');                      %% Remove 60hz Harmonic (noise)
-bsData = filtfilt(b1, a1, lfp);    
+if minFreq<=60                                                      %% Remove 60hz Harmonic (noise) if necessary
+    [b1, a1] = butter(2, [59/500 61/500], 'stop');                      
+    bsData = filtfilt(b1, a1, lfp);
+else
+    bsData = lfp;
+end
 % bsData = lfp;
 freqPower = nan(length(freq),length(time));                         %% Create the data matrix
 dataX = fft(bsData', length(time)*2-1);                             %% Fast Fourier Transform of Data (correct length)
@@ -49,5 +53,5 @@ for fi = 1:length(freq)                                             %% Create Co
     
     power = abs(analytic_signal).^2;                                %% Extract Power
     power = (10*log10(power));                                      %% Convert to Logarithmic Scale
-    freqPower(fi, :) = power;                                       %% Add Data to Matrix
+    freqPower(fi, 1:length(power)) = power;                                       %% Add Data to Matrix
 end
