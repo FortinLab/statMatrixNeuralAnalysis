@@ -7,7 +7,7 @@ plotData.Window = 50;
 %% Parameters
 % envProc = 'RMS';
 envProc = 'HILB';           
-powThresh = [1 3];
+powThresh = [1 5];
 durThresh = 15;             
 durThreshMrg = 15;
 syncThresh = 0;
@@ -482,6 +482,16 @@ epocNsmblAct = nan(size(epocWindows,1),1);
 for epoc = 1:size(epocWindows,1)
     tempSpkMtx = ensembleMatrix(epocWindows(epoc,1):epocWindows(epoc,2),2:end);
     epocNsmblAct(epoc) = mean(sum(tempSpkMtx)>=1);
+end
+
+%% Evaluate Spectrogram
+ripSpect = cell(size(epocWindows,1),1);
+for e = 1:size(epocWindows,1)
+    tempSpect = nan(diff(epocWindows(e,:))+1,500,size(ripBPF,2));
+    for t = 1:size(ripBPF,2)   
+        tempSpect(:,:,t) = MorletAG(ripBPF(epocWindows(e,1):epocWindows(e,2),t), 1/samp, 1, 500)';
+    end
+    ripSpect{e} = tempSpect;
 end
 
 %% Organize Data Output
