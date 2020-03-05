@@ -7,8 +7,8 @@ plotData.Window = 50;
 %% Parameters
 % envProc = 'RMS';
 envProc = 'HILB';           
-powThresh = [1 5];
-durThresh = 15;             
+powThresh = [1 3];
+durThresh = 25;             
 durThreshMrg = 15;
 syncThresh = 0;
 syncWin = 10;
@@ -16,59 +16,111 @@ smoothWin = 21;
 
 %%
 rips = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin);
-[trialRips] = ExtractTrialEventRips_SM(rips, [0 500]);
+[trialRips] = ExtractTrialEventRips_SM(rips, [500 500]);
 % allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));       % Use for ALL (pre-trial, trial and post-trial) Trial Rips 
-allTrialRips = cell2mat(trialRips.Events(:,3));       % Use for ONLY Post-Trial Rips
+allTrialRips = cell2mat(trialRips.Events(:,3));                             % Use for ONLY Post-Trial Rips
+
+%% Toss Ripple Features into PlotData
+% Need to update the selection for TrialRips if not using only Post-Trial
+% Rips
+plotData.Rips = rips;
+plotData.SessionRips.Events = rips.Ripples.Events;
+plotData.SessionRips.Synchrony = rips.Ripples.Synchrony;
+plotData.SessionRips.EnsembleAct = rips.Ripples.EnsembleActivity;
+plotData.SessionRips.MaxPower = rips.Ripples.MaxPower;
+plotData.SessionRips.RipFreq = rips.Ripples.MaxPowerFrequency;
+plotData.TrialRips.Events = allTrialRips;
+plotData.TrialRips.Synchrony = cell2mat(trialRips.Synchrony(:,3));          % Use for ONLY Post-Trial Rips
+plotData.TrialRips.EnsembleAct = cell2mat(trialRips.EnsembleAct(:,3));      % Use for ONLY Post-Trial Rips
+plotData.TrialRips.MaxPower = cell2mat(trialRips.MaxPower(:,3));            % Use for ONLY Post-Trial Rips
+plotData.TrialRips.RipFreq = cell2mat(trialRips.RipFreq(:,3));              % Use for ONLY Post-Trial Rips
 
 %% Plot Descriptives
 PlotNearTrialRipStats(trialRips)
 annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
     sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
-    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
     'linestyle', 'none');
 
 PlotRipFeatCorr(rips.Ripples.Duration, rips.Ripples.Synchrony, 'Duration', 'Synchrony')
 annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
     sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
-    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
     'linestyle', 'none');
 
 PlotRipFeatCorr(rips.Ripples.Duration, rips.Ripples.EnsembleActivity, 'Duration', 'Ensemble Activity')
 annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
     sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
-    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
     'linestyle', 'none');
 
 PlotRipFeatCorr(rips.Ripples.Synchrony, rips.Ripples.EnsembleActivity, 'Synchrony', 'Ensemble Activity')
 annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
     sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
-    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
     'linestyle', 'none');
 
 PlotRipFeatsByTrlType(rips, trialRips)
 annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
     sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
-    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
     'linestyle', 'none');
 
 PlotRipFeatsByOdor(rips, trialRips)
 annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
     sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
-    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
     'linestyle', 'none');
 
 PlotRipCountsByEvent(rips)
 annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
     sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
-    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
     'linestyle', 'none');
+
+PlotRipFeatsByEvent(rips, 'Power')
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
+    'linestyle', 'none');
+
+PlotRipFeatsByEvent(rips, 'Synchrony')
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
+    'linestyle', 'none');
+
+PlotRipFeatsByEvent(rips, 'Spiking')
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
+    'linestyle', 'none');
+
+PlotRipFeatsByEvent(rips, 'Duration')
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
+    'linestyle', 'none');
+
+PlotRipFeatsByEvent(rips, 'MaxFreq')
+annotation('textbox', 'position', [0.01 0.01 0.9 0.05], 'string',...
+    sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
+annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
+    'linestyle', 'none');
+
+
 
 %% Create Figure
 plotData.PowThresh = rips.FileInfo.PowerThreshold;
@@ -119,11 +171,19 @@ nextRipBtn = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'pushbu
 removeRipBtn = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Remove Ripple',...
     'Position', [0.425, 0.075, 0.2, 0.05], 'Callback', @RmvRip);
 
+% Rip Playback
+playRipBtn = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'pushbutton', 'String', 'Play Ripple',...
+    'Position', [0.01, 0.9, 0.08, 0.05], 'Callback', @PlayRip);
+plotData.playRipLst = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'listbox', 'String', rips.SessionData.TetIDs,...
+    'Position', [0.01, 0.75, 0.08, 0.145], 'Callback', @HighlightTrace);
+plotData.dcOffsetRadio = uicontrol(plotData.ripCure, 'Units', 'Normalized', 'Style', 'radiobutton', 'String', 'DC Offset',...
+    'Position', [0.01, 0.7, 0.08, 0.05]);
+
 
 annotation('textbox', 'position', [0.01 0.005 0.9 0.05], 'string',...
     sprintf('%s', cd), 'linestyle', 'none', 'interpreter', 'none');
 annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
-    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge \\bfThreshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg),...
+    sprintf('\\bfThreshold: \\rm+%i(+%i)SD; \\bfEnvelope = \\rm%s; \\bfMerge Threshold = \\rm%i ms; \\bfDuration Threshold = \\rm%i ms', powThresh(1), powThresh(2), envProc, durThreshMrg, durThresh),...
     'linestyle', 'none');
 %% Initialize Things
 SetPlots;
@@ -179,6 +239,9 @@ if ~isfield('rawPlot', plotData)
     for r = 1:length(plotData.rawPlot)
         plotData.rawPlot(r).Color(4) = 0.2;
     end    
+    hold(plotData.rawAxes, 'on');
+    plotData.audMrk = line(plotData.rawAxes, [curTS(1) curTS(1)], get(plotData.rawAxes, 'ylim'), 'color', 'k', 'visible', 'off');
+    hold(plotData.rawAxes, 'off');
     plotData.bpfPlot = plot(plotData.bpfAxes, curTS, bpfData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:), 'color', 'k');
     hold(plotData.bpfAxes, 'on');
     plotData.envPlot = plot(plotData.bpfAxes, curTS, envData(curNdx(1)-plotData.Window:curNdx(2)+plotData.Window,:), 'color', 'r', 'linewidth', 2);
@@ -237,6 +300,7 @@ else
     set(plotData.RipPatch.BPF, 'XData', curRipX);
     set(plotData.RipPatch.Spk, 'XData', curRipX);
 end       
+HighlightTrace
 title(plotData.spkAxes, sprintf('Duration = %i(ms)', diff(curNdx)));
 % refreshdata(plotData.ripCure);
 end
@@ -256,21 +320,67 @@ end
 function NextRip(source,event)
 global plotData
 if plotData.listSel == 1
-    plotData.ssnRipList.Value = plotData.ssnRipList.Value + 1;
+    if plotData.ssnRipList.Value < size(plotData.ssnRipList.String,1)
+        plotData.ssnRipList.Value = plotData.ssnRipList.Value + 1;
+        SetPlots
+    else
+        plotData.ssnRipList.Value = size(plotData.ssnRipList.String,1);
+    end
 else
-    plotData.trlRipList.Value = plotData.trlRipList.Value + 1;
+    if plotData.trlRipList.Value < size(plotData.trlRipList.String,1)
+        plotData.trlRipList.Value = plotData.trlRipList.Value + 1;
+        SetPlots
+    else
+        plotData.trlRipList.Value = size(plotData.trlRipList.String,1);
+    end
 end
-SetPlots
 end
 
 function PrevRip(source,event)
 global plotData
 if plotData.listSel == 1
-    plotData.ssnRipList.Value = plotData.ssnRipList.Value - 1;
+  if plotData.ssnRipList.Value ~= 1
+      plotData.ssnRipList.Value = plotData.ssnRipList.Value - 1;
+      SetPlots
+  end
 else
-    plotData.trlRipList.Value = plotData.trlRipList.Value - 1;
+    if plotData.trlRipList.Value ~= 1
+        plotData.trlRipList.Value = plotData.trlRipList.Value - 1;
+      SetPlots
+    end
 end
-SetPlots
+end
+
+function PlayRip(source, event)
+global plotData
+tetID = plotData.playRipLst.Value;
+curWave = plotData.rawPlot(tetID).YData;
+if plotData.dcOffsetRadio.Value == 1
+    curWave = curWave-curWave(1);	% To reduce initial popping due to DC offset.
+end
+% if plotData.detrend.Value ==1 
+%     curWave = detrend(curWave);
+% end
+curSound = audioplayer(curWave, 1000);
+playblocking(curSound);
+% curWaveTime = plotData.rawPlot(tetID).XData;
+% for t = 1:length(curWaveTime)
+%     set(plotData.audMrk, 'XData', [curWaveTime(t) curWaveTime(t)]);
+% %     pause(1/1000);
+%     drawnow
+% end
+end
+
+function HighlightTrace(source, event)
+global plotData
+tetID = plotData.playRipLst.Value;
+for t = 1:size(plotData.playRipLst.String,1)
+    if t==tetID
+        plotData.rawPlot(t).Color = [1 0 0 1];
+    else
+        plotData.rawPlot(t).Color = [0 0 0 0.2];
+    end
+end
 end
 
 function ZoomOut(source,event)
@@ -296,9 +406,22 @@ else
     curNdx = plotData.trlRipList.UserData(plotData.trlRipList.Value,:);
 end
 ssnList = plotData.ssnRipList.UserData;
-ssnList(ssnList(:,1)==curNdx(1),:) = [];
-trlList = plotData.ssnRipList.UserData;
-trlList(trlList(:,1)==curNdx(1),:) = [];
+ssnListNdx = ssnList(:,1)==curNdx(1);
+ssnList(ssnListNdx,:) = [];
+plotData.SessionRips.Events(ssnListNdx,:) = [];
+plotData.SessionRips.Synchrony(ssnListNdx,:) = [];
+plotData.SessionRips.EnsembleAct(ssnListNdx,:) = [];
+plotData.SessionRips.MaxPower(ssnListNdx,:) = [];
+plotData.SessionRips.RipFreq(ssnListNdx,:) = [];
+
+trlList = plotData.trlRipList.UserData;
+trlListNdx = trlList(:,1)==curNdx(1);
+trlList(trlListNdx,:) = [];
+plotData.TrialRips.Events(trlListNdx,:) = [];
+plotData.TrialRips.Synchrony(trlListNdx,:) = [];
+plotData.TrialRips.EnsembleAct(trlListNdx,:) = [];
+plotData.TrialRips.MaxPower(trlListNdx,:) = [];
+plotData.TrialRips.RipFreq(trlListNdx,:) = [];
 
 plotData.ssnRipList.UserData = ssnList;
 plotData.ssnRipList.String = 1:size(ssnList,1);
@@ -314,8 +437,8 @@ if plotData.listSel == 1
 else
     if plotData.trlRipList.Value == 1
         plotData.trlRipList.Value = 1;
-    elseif plotData.trlRipList.Value == size(ssnList,1)+1
-        plotData.trlRipList.Value = size(ssnList,1);
+    elseif plotData.trlRipList.Value == size(trlList,1)+1
+        plotData.trlRipList.Value = size(trlList,1);
     end
 end
 SetPlots
@@ -323,15 +446,37 @@ end
 
 function ExportSsnRips(source, event)
 global plotData
-exportData = plotData.ssnRipList.UserData;
-save('SessionRips.mat', 'exportData');
+ripMatrix(:,1) = plotData.ripCure.UserData(:,1);
+ripMatrix(:,2) = false(size(ripMatrix,1),1);
+ripMatrixColIDs = [{'TimeBin'}, {'Session_Ripple_Log'}];
+ripFeats = [plotData.ssnRipList.UserData, plotData.SessionRips.Synchrony,...
+    plotData.SessionRips.EnsembleAct, plotData.SessionRips.MaxPower,...
+    plotData.SessionRips.RipFreq];
+ripFeatsColIDs = [{'RippleStartIndex'}, {'RippleEndIndex'},...
+    {'RippleSynchrony'}, {'RipplePercentActiveCells'}, {'RipplePower'},...
+    {'RippleFrequency'}];
+for e = 1:size(ripFeats, 1)
+    ripMatrix(ripFeats(e,1):ripFeats(e,2),2) = true;
+end
+save('SessionRipples.mat', 'ripMatrix', 'ripMatrixColIDs', 'ripFeats', 'ripFeatsColIDs');
 msgbox('Session Ripple Indices Saved');
 end
 
 function ExportTrlRips(source, event)
 global plotData
-exportData = plotData.trlRipList.UserData;
-save('TrialRips.mat', 'exportData');
+ripMatrix(:,1) = plotData.ripCure.UserData(:,1);
+ripMatrix(:,2) = false(size(ripMatrix,1),1);
+ripMatrixColIDs = [{'TimeBin'}, {'Trial_Ripple_Log'}];
+ripFeats = [plotData.trlRipList.UserData, plotData.TrialRips.Synchrony,...
+    plotData.TrialRips.EnsembleAct, plotData.TrialRips.MaxPower,...
+    plotData.TrialRips.RipFreq];
+ripFeatsColIDs = [{'RippleStartIndex'}, {'RippleEndIndex'},...
+    {'RippleSynchrony'}, {'RipplePercentActiveCells'}, {'RipplePower'},...
+    {'RippleFrequency'}];
+for e = 1:size(ripFeats, 1)
+    ripMatrix(ripFeats(e,1):ripFeats(e,2),2) = true;
+end
+save('TrialRipples.mat', 'ripMatrix', 'ripMatrixColIDs', 'ripFeats', 'ripFeatsColIDs');
 msgbox('Trial Ripple Indices Saved');
 end
 
@@ -419,6 +564,7 @@ end
 %% Calculate Thresholds
 % Aggregate Power
 aggPower = mean(ripRMS,2);                  % Mean envelope
+zAgg = zscore(aggPower);
 % aggPower = zscore(mean(ripRMS,2));          % Z-Score Mean envelope
 % aggPower = mean(zscore(ripRMS),2);          % Mean Z-Score envelope
 
@@ -449,27 +595,34 @@ mrgdNdxs = false(size(interEpocInterval));
 for slr = 1:length(shortLatRipls)
     nxtNdx = shortLatRipls(slr)+find(slrLog(shortLatRipls(slr)+1:end)==0,1,'first');
     epocWindows(shortLatRipls(slr),2) = epocWindows(nxtNdx,2);
-    mrgdNdxs(nxtNdx) = true;
+    mrgdNdxs(shortLatRipls(slr)+1:nxtNdx) = true;
 end
 epocWindows(mrgdNdxs,:) = [];
 
-%% Quantify & Extract Ripples
+% Threshold ripples based on duration
 % Determine the duration/timing of each event
 epocDur = diff(epocWindows,1,2);
+durThreshLog = epocDur<=durThresh;
+epocWindows(durThreshLog,:) = [];
+epocDur(durThreshLog,:) = [];
 
+%% Quantify & Extract Ripples
 % Determine the Synchrony of each event
 epocSync = nan(size(epocWindows,1),1);
 epocSyncConfMtx = cell(size(epocWindows,1),1);
+
 for epoc = 1:size(epocWindows,1)
     tempConfMtx = nan(size(ripHilb,2));
     for e1 = 1:size(ripHilb,2)
         for e2 = 1:size(ripHilb,2)
-            [tempConfMtx(e1,e2),~] = circ_corrcc(ripHilb(epocWindows(epoc,1):epocWindows(epoc,2),e1),...
-                ripHilb(epocWindows(epoc,1):epocWindows(epoc,2),e2));
+            if e2>e1
+                [tempConfMtx(e1,e2),~] = circ_corrcc(ripHilb(epocWindows(epoc,1):epocWindows(epoc,2),e1),...
+                    ripHilb(epocWindows(epoc,1):epocWindows(epoc,2),e2));
+            end
         end
     end
     epocSyncConfMtx{epoc} = tempConfMtx;
-    epocSync(epoc) = mean(tempConfMtx(triu(true(size(ripHilb,2)))));
+    epocSync(epoc) = mean(tempConfMtx(triu(true(size(ripHilb,2)),1)));
 end
 
 %% Organize Spiking Data Based on Total # Spikes
@@ -484,23 +637,28 @@ for epoc = 1:size(epocWindows,1)
     epocNsmblAct(epoc) = mean(sum(tempSpkMtx)>=1);
 end
 
-%% Evaluate Spectrogram
+%% Evaluate Spectrogram & Extract Max Power
+
 ripSpect = cell(size(epocWindows,1),1);
 ripFreq = nan(size(epocWindows,1),1);
 ripMaxFreq = nan(size(epocWindows,1),1);
+epocPow = nan(size(epocWindows,1),1);
 freqs = [150 250];
+padSize = 25;
 freqsVect = freqs(1):freqs(2);
 for e = 1:size(epocWindows,1)
-    tempSpect = nan(diff(epocWindows(e,:))+101,freqs(2)-freqs(1)+1,size(ripBPF,2));
+    curZagg = zAgg(epocWindows(e,1):epocWindows(e,2));
+    epocPow(e) = max(curZagg);
+    tempSpect = nan(diff(epocWindows(e,:))+(padSize*2+1),freqs(2)-freqs(1)+1,size(ripBPF,2));
     for t = 1:size(ripBPF,2)   
-        tempSpect(:,:,t) = MorletAG(ripVolts(epocWindows(e,1)-50:epocWindows(e,2)+50,t), 1/samp, freqs(1), freqs(2))';
+        tempSpect(:,:,t) = MorletAG(ripVolts(epocWindows(e,1)-padSize:epocWindows(e,2)+padSize,t), 1/samp, freqs(1), freqs(2))';
     end
-    ripSpect{e} = tempSpect;
-    tempMax = mean(tempSpect(51:end-50,:,:),3);
+    ripSpect{e} = tempSpect(padSize+1:end-padSize,:,:);
+    tempMax = mean(ripSpect{e},3);
     [~,c] = find((tempMax./repmat(max(tempMax,[],2), [1,size(tempMax,2)]))==1);
     ripFreq(e) = mean(freqsVect(c));
-    [~, cM] = find((tempMax./max(max(tempMax)))==1);
-    ripMaxFreq(e) = freqsVect(cM);
+    maxPowSpect = tempMax(curZagg==max(curZagg),:);
+    ripMaxFreq(e) = freqsVect(maxPowSpect==max(maxPowSpect));
 end
 
 %% Organize Data Output
@@ -508,6 +666,7 @@ rips = struct(...
     'TimeStamps', statMatrix(:,1),...
     'Ripples', struct('Events', epocWindows, 'Duration', epocDur,...
         'Synchrony', epocSync, 'EnsembleActivity', epocNsmblAct,...
+        'MaxPower', epocPow,...
         'MeanFrequency', ripFreq, 'MaxPowerFrequency', ripMaxFreq),...
     'SessionData', struct('RawLFP', ripVolts, 'RipBPF', ripBPF,...
         'RipEnv', ripRMS, 'RipPhase', ripHilb, 'TetIDs', {ripTetIDs},...
@@ -545,6 +704,8 @@ trialRipLat = cell(size(trialPokeTimes,1),3);
 trialRipsDur = cell(size(trialPokeTimes,1),3);
 trialRipsSync = cell(size(trialPokeTimes,1),3);
 trialRipsNsmblAct = cell(size(trialPokeTimes,1),3);
+trialRipsMaxPow = cell(size(trialPokeTimes,1),3);
+trialRipsMaxFreq = cell(size(trialPokeTimes,1),3);
 for trl = 1:size(trialPokeTimes,1)
     preTrlLog = rips.Ripples.Events(:,1)>(trialPokeTimes(trl,1)-trialWin(1)) & rips.Ripples.Events(:,1)<trialPokeTimes(trl,1);
     trialRips{trl,1} = rips.Ripples.Events(preTrlLog,:);
@@ -552,6 +713,8 @@ for trl = 1:size(trialPokeTimes,1)
     trialRipsDur{trl,1} = rips.Ripples.Duration(preTrlLog,:);
     trialRipsSync{trl,1} = rips.Ripples.Synchrony(preTrlLog,:);
     trialRipsNsmblAct{trl,1} = rips.Ripples.EnsembleActivity(preTrlLog,:);
+    trialRipsMaxPow{trl,1} = rips.Ripples.MaxPower(preTrlLog,:);
+    trialRipsMaxFreq{trl,1} = rips.Ripples.MaxPowerFrequency(preTrlLog,:);
     
     trlLog = rips.Ripples.Events(:,1)>trialPokeTimes(trl,1) & rips.Ripples.Events(:,1)<trialPokeTimes(trl,2);
     trialRips{trl,2} = rips.Ripples.Events(trlLog,:);
@@ -559,6 +722,8 @@ for trl = 1:size(trialPokeTimes,1)
     trialRipsDur{trl,2} = rips.Ripples.Duration(trlLog,:);
     trialRipsSync{trl,2} = rips.Ripples.Synchrony(trlLog,:);
     trialRipsNsmblAct{trl,2} = rips.Ripples.EnsembleActivity(trlLog,:);
+    trialRipsMaxPow{trl,2} = rips.Ripples.MaxPower(trlLog,:);
+    trialRipsMaxFreq{trl,2} = rips.Ripples.MaxPowerFrequency(trlLog,:);
     
     pstTrlLog = rips.Ripples.Events(:,1)>trialPokeTimes(trl,2) & (rips.Ripples.Events(:,1)<trialPokeTimes(trl,2)+trialWin(2));
     trialRips{trl,3} = rips.Ripples.Events(pstTrlLog,:);
@@ -566,9 +731,12 @@ for trl = 1:size(trialPokeTimes,1)
     trialRipsDur{trl,3} = rips.Ripples.Duration(pstTrlLog,:);
     trialRipsSync{trl,3} = rips.Ripples.Synchrony(pstTrlLog,:);
     trialRipsNsmblAct{trl,3} = rips.Ripples.EnsembleActivity(pstTrlLog,:);
+    trialRipsMaxPow{trl,3} = rips.Ripples.MaxPower(pstTrlLog,:);
+    trialRipsMaxFreq{trl,3} = rips.Ripples.MaxPowerFrequency(pstTrlLog,:);
 end
 
 trialRipStruct = struct('Events', {trialRips}, 'Latency', {trialRipLat},...
     'Duration', {trialRipsDur}, 'Synchrony', {trialRipsSync},...
-    'EnsembleAct', {trialRipsNsmblAct});
+    'EnsembleAct', {trialRipsNsmblAct}, 'MaxPower', {trialRipsMaxPow},...
+    'RipFreq', {trialRipsMaxFreq});
 end
