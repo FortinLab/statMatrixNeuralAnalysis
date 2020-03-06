@@ -1,6 +1,6 @@
 %% CurateRipples
 clear all
-close all
+% close all
 global plotData
 plotData.listSel = 2;        % Used to keep track of which list is being selected from for ripple viewing
 plotData.Window = 50;
@@ -594,6 +594,9 @@ shortLatRipls = find(slrLog);
 mrgdNdxs = false(size(interEpocInterval));
 for slr = 1:length(shortLatRipls)
     nxtNdx = shortLatRipls(slr)+find(slrLog(shortLatRipls(slr)+1:end)==0,1,'first');
+    if isempty(nxtNdx)
+        nxtNdx = shortLatRipls(slr) + 1;
+    end
     epocWindows(shortLatRipls(slr),2) = epocWindows(nxtNdx,2);
     mrgdNdxs(shortLatRipls(slr)+1:nxtNdx) = true;
 end
