@@ -532,9 +532,13 @@ fileNames = {dirContents.name};
 tetFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, '_T([0-9]*)_SM.mat'));
 tetFiles = fileNames(tetFileLog)';
 behavFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, '_BehaviorMatrix'));
-ensembleFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, '_EnsembleMatrix'));
 load(fileNames{behavFileLog});
-load(fileNames{ensembleFileLog});
+ensembleFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, '_EnsembleMatrix'));
+if sum(ensembleFileLog)==0
+    ensembleMatrix = zeros(size(behavMatrix,1),2);
+else
+    load(fileNames{ensembleFileLog});
+end
 behavMatrixTrialStruct = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, [0 0], 'PokeIn');
 
 %% Extract Raw Values & Compute RMS Power
