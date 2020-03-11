@@ -653,20 +653,20 @@ epocPow = nan(size(epocWindows,1),1);
 freqs = [150 250];
 padSize = 25;
 freqsVect = freqs(1):freqs(2);
-for e = 1:size(epocWindows,1)
-    curZagg = zAgg(epocWindows(e,1):epocWindows(e,2));
-    epocPow(e) = max(curZagg);
-    tempSpect = nan(diff(epocWindows(e,:))+(padSize*2+1),freqs(2)-freqs(1)+1,size(ripBPF,2));
-    for t = 1:size(ripBPF,2)   
-        tempSpect(:,:,t) = MorletAG(ripVolts(epocWindows(e,1)-padSize:epocWindows(e,2)+padSize,t), 1/samp, freqs(1), freqs(2))';
-    end
-    ripSpect{e} = tempSpect(padSize+1:end-padSize,:,:);
-    tempMax = mean(ripSpect{e},3);
-    [~,c] = find((tempMax./repmat(max(tempMax,[],2), [1,size(tempMax,2)]))==1);
-    ripFreq(e) = mean(freqsVect(c));
-    maxPowSpect = tempMax(curZagg==max(curZagg),:);
-    ripMaxFreq(e) = freqsVect(maxPowSpect==max(maxPowSpect));
-end
+% for e = 1:size(epocWindows,1)
+%     curZagg = zAgg(epocWindows(e,1):epocWindows(e,2));
+%     epocPow(e) = max(curZagg);
+%     tempSpect = nan(diff(epocWindows(e,:))+(padSize*2+1),freqs(2)-freqs(1)+1,size(ripBPF,2));
+%     for t = 1:size(ripBPF,2)   
+%         tempSpect(:,:,t) = MorletAG(ripVolts(epocWindows(e,1)-padSize:epocWindows(e,2)+padSize,t), 1/samp, freqs(1), freqs(2))';
+%     end
+%     ripSpect{e} = tempSpect(padSize+1:end-padSize,:,:);
+%     tempMax = mean(ripSpect{e},3);
+%     [~,c] = find((tempMax./repmat(max(tempMax,[],2), [1,size(tempMax,2)]))==1);
+%     ripFreq(e) = mean(freqsVect(c));
+%     maxPowSpect = tempMax(curZagg==max(curZagg),:);
+%     ripMaxFreq(e) = freqsVect(maxPowSpect==max(maxPowSpect));
+% end
 
 %% Organize Data Output
 rips = struct(...
