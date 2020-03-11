@@ -1,6 +1,6 @@
 %% CurateRipples
 clear all
-% close all
+close all
 global plotData
 plotData.listSel = 2;        % Used to keep track of which list is being selected from for ripple viewing
 plotData.Window = 50;
@@ -17,8 +17,8 @@ smoothWin = 21;
 %%
 rips = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg, syncThresh, syncWin, smoothWin);
 [trialRips] = ExtractTrialEventRips_SM(rips, [500 500]);
-% allTrialRips = sortrows(cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]));       % Use for ALL (pre-trial, trial and post-trial) Trial Rips 
-allTrialRips = cell2mat(trialRips.Events(:,3));                             % Use for ONLY Post-Trial Rips
+trlRipIndices = cell2mat([trialRips.Events(:,1); trialRips.Events(:,2); trialRips.Events(:,3)]);
+allTrialRips = sortrows(trlRipIndices);       % Use for ALL (pre-trial, trial and post-trial) Trial Rips 
 
 %% Toss Ripple Features into PlotData
 % Need to update the selection for TrialRips if not using only Post-Trial
@@ -29,11 +29,18 @@ plotData.SessionRips.Synchrony = rips.Ripples.Synchrony;
 plotData.SessionRips.EnsembleAct = rips.Ripples.EnsembleActivity;
 plotData.SessionRips.MaxPower = rips.Ripples.MaxPower;
 plotData.SessionRips.RipFreq = rips.Ripples.MaxPowerFrequency;
+ripsPrTrl = sum(cellfun(@(a)size(a,1), trialRips.Events));
+trlPrdID = sortrows([trlRipIndices(:,1), [ones(ripsPrTrl(1),1); ones(ripsPrTrl(2),1)*2; ones(ripsPrTrl(3),1)*3]]);
+plotData.TrialRips.TrialPeriodID = trlPrdID(:,2);
 plotData.TrialRips.Events = allTrialRips;
-plotData.TrialRips.Synchrony = cell2mat(trialRips.Synchrony(:,3));          % Use for ONLY Post-Trial Rips
-plotData.TrialRips.EnsembleAct = cell2mat(trialRips.EnsembleAct(:,3));      % Use for ONLY Post-Trial Rips
-plotData.TrialRips.MaxPower = cell2mat(trialRips.MaxPower(:,3));            % Use for ONLY Post-Trial Rips
-plotData.TrialRips.RipFreq = cell2mat(trialRips.RipFreq(:,3));              % Use for ONLY Post-Trial Rips
+trlSynch = sortrows([trlRipIndices(:,1), cell2mat([trialRips.Synchrony(:,1); trialRips.Synchrony(:,2); trialRips.Synchrony(:,3)])]);
+plotData.TrialRips.Synchrony = trlSynch(:,2);
+trlNsmbl = sortrows([trlRipIndices(:,1), cell2mat([trialRips.EnsembleAct(:,1); trialRips.EnsembleAct(:,2); trialRips.EnsembleAct(:,3)])]);
+plotData.TrialRips.EnsembleAct = trlNsmbl(:,2);
+trlPower = sortrows([trlRipIndices(:,1), cell2mat([trialRips.MaxPower(:,1); trialRips.MaxPower(:,2); trialRips.MaxPower(:,3)])]);
+plotData.TrialRips.MaxPower = trlPower(:,2);
+trlFreq = sortrows([trlRipIndices(:,1), cell2mat([trialRips.RipFreq(:,1); trialRips.RipFreq(:,2); trialRips.RipFreq(:,3)])]);
+plotData.TrialRips.RipFreq = trlFreq(:,2);
 
 %% Plot Descriptives
 PlotNearTrialRipStats(trialRips)
@@ -188,35 +195,6 @@ annotation('textbox', 'position', [0.01 0.95 0.9 0.05], 'string',...
 %% Initialize Things
 SetPlots;
 
-%% Plot Trial Periods
-% for trl = 1:size(rips.TrialInfo.TrialPokes,1)
-%     switch rips.TrialInfo.OdorVect(trl)
-%         case 1
-%             patchColor = [44/255 168/255 224/255];
-%         case 2
-%             patchColor = [154/255 133/255 122/255];
-%         case 3
-%             patchColor = [9/255 161/255 74/255];
-%         case 4 
-%             patchColor = [128/255 66/255 151/255];
-%         case 5
-%             patchColor = [241/255 103/255 36/255];
-%     end
-%     patch(rawAxes, 'XData', [rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,1)), rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,2)), rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,2)),rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,1))],...
-%         'YData', plotData.FigLims.Raw(:),...
-%         'FaceColor', patchColor, 'FaceAlpha', 0.5,...
-%         'EdgeColor', patchColor, 'EdgeAlpha', 0.5);
-%     patch(bpfAxes, 'XData', [rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,1)), rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,2)), rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,2)),rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,1))],...
-%         'YData', plotData.FigLims.BPF(:),...
-%         'FaceColor', patchColor, 'FaceAlpha', 0.5,...
-%         'EdgeColor', patchColor, 'EdgeAlpha', 0.5);
-%     patch(spkAxes, 'XData', [rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,1)), rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,2)), rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,2)),rips.TimeStamps(rips.TrialInfo.TrialPokes(trl,1))],...
-%         'YData', plotData.FigLims.Spk(:),...
-%         'FaceColor', patchColor, 'FaceAlpha', 0.5,...
-%         'EdgeColor', patchColor, 'EdgeAlpha', 0.5);    
-% end
-
-
 %% Callbacks/Functions
 function SetPlots
 global plotData
@@ -363,6 +341,8 @@ end
 % end
 curSound = audioplayer(curWave, 1000);
 playblocking(curSound);
+% Below code is an attempt to visualize what's being played... it didn't
+% work
 % curWaveTime = plotData.rawPlot(tetID).XData;
 % for t = 1:length(curWaveTime)
 %     set(plotData.audMrk, 'XData', [curWaveTime(t) curWaveTime(t)]);
@@ -464,19 +444,28 @@ end
 
 function ExportTrlRips(source, event)
 global plotData
-ripMatrix(:,1) = plotData.ripCure.UserData(:,1);
-ripMatrix(:,2) = false(size(ripMatrix,1),1);
-ripMatrixColIDs = [{'TimeBin'}, {'Trial_Ripple_Log'}];
-ripFeats = [plotData.trlRipList.UserData, plotData.TrialRips.Synchrony,...
-    plotData.TrialRips.EnsembleAct, plotData.TrialRips.MaxPower,...
-    plotData.TrialRips.RipFreq];
-ripFeatsColIDs = [{'RippleStartIndex'}, {'RippleEndIndex'},...
-    {'RippleSynchrony'}, {'RipplePercentActiveCells'}, {'RipplePower'},...
-    {'RippleFrequency'}];
-for e = 1:size(ripFeats, 1)
-    ripMatrix(ripFeats(e,1):ripFeats(e,2),2) = true;
+for t = 1:3
+    curTrialRipLog = plotData.TrialRips.TrialPeriodID==t;
+    ripMatrixColIDs = [{'TimeBin'}, {'Trial_Ripple_Log'}];
+    ripFeats = [plotData.trlRipList.UserData(curTrialRipLog,:), plotData.TrialRips.Synchrony(curTrialRipLog,:),...
+        plotData.TrialRips.EnsembleAct(curTrialRipLog,:), plotData.TrialRips.MaxPower(curTrialRipLog,:),...
+        plotData.TrialRips.RipFreq(curTrialRipLog,:)];
+    ripFeatsColIDs = [{'RippleStartIndex'}, {'RippleEndIndex'},...
+        {'RippleSynchrony'}, {'RipplePercentActiveCells'}, {'RipplePower'},...
+        {'RippleFrequency'}];
+    ripMatrix(:,1) = plotData.ripCure.UserData(:,1);
+    ripMatrix(:,2) = false(size(ripMatrix,1),1);
+    for e = 1:size(ripFeats, 1)
+        ripMatrix(ripFeats(e,1):ripFeats(e,2),2) = true;
+    end
+    if t==1
+        save('Pre-TrialRipples.mat', 'ripMatrix', 'ripMatrixColIDs', 'ripFeats', 'ripFeatsColIDs');
+    elseif t==2
+        save('In-TrialRipples.mat', 'ripMatrix', 'ripMatrixColIDs', 'ripFeats', 'ripFeatsColIDs');
+    elseif t==3
+        save('Post-TrialRipples.mat', 'ripMatrix', 'ripMatrixColIDs', 'ripFeats', 'ripFeatsColIDs');
+    end
 end
-save('TrialRipples.mat', 'ripMatrix', 'ripMatrixColIDs', 'ripFeats', 'ripFeatsColIDs');
 msgbox('Trial Ripple Indices Saved');
 end
 
@@ -505,8 +494,8 @@ function [rips] = RippleDetection_SM(envProc, powThresh, durThresh, durThreshMrg
 %#ok<*IDISVAR,*NODEF,*USENS,*NASGU,*COLND>
 %%
 if nargin == 0
-    envProc = 'RMS';            % Enable for RMS determination of envelope
-    % envProc = 'HILB';           % Enable for abs(Hilbert) determinination of envelope
+%     envProc = 'RMS';            % Enable for RMS determination of envelope
+    envProc = 'HILB';           % Enable for abs(Hilbert) determinination of envelope
     powThresh = [0 4];
     durThresh = 15;             % Duration Threshold
     durThreshMrg = 15;
@@ -569,8 +558,6 @@ end
 % Aggregate Power
 aggPower = mean(ripRMS,2);                  % Mean envelope
 zAgg = zscore(aggPower);
-% aggPower = zscore(mean(ripRMS,2));          % Z-Score Mean envelope
-% aggPower = mean(zscore(ripRMS),2);          % Mean Z-Score envelope
 
 % Threshold Based on Mean +/- STD Aggregate Power
 rmsThresh1 = (mean(aggPower) + (powThresh(1)*std(aggPower)));
@@ -653,20 +640,20 @@ epocPow = nan(size(epocWindows,1),1);
 freqs = [150 250];
 padSize = 25;
 freqsVect = freqs(1):freqs(2);
-% for e = 1:size(epocWindows,1)
-%     curZagg = zAgg(epocWindows(e,1):epocWindows(e,2));
-%     epocPow(e) = max(curZagg);
-%     tempSpect = nan(diff(epocWindows(e,:))+(padSize*2+1),freqs(2)-freqs(1)+1,size(ripBPF,2));
-%     for t = 1:size(ripBPF,2)   
-%         tempSpect(:,:,t) = MorletAG(ripVolts(epocWindows(e,1)-padSize:epocWindows(e,2)+padSize,t), 1/samp, freqs(1), freqs(2))';
-%     end
-%     ripSpect{e} = tempSpect(padSize+1:end-padSize,:,:);
-%     tempMax = mean(ripSpect{e},3);
-%     [~,c] = find((tempMax./repmat(max(tempMax,[],2), [1,size(tempMax,2)]))==1);
-%     ripFreq(e) = mean(freqsVect(c));
-%     maxPowSpect = tempMax(curZagg==max(curZagg),:);
-%     ripMaxFreq(e) = freqsVect(maxPowSpect==max(maxPowSpect));
-% end
+for e = 1:size(epocWindows,1)
+    curZagg = zAgg(epocWindows(e,1):epocWindows(e,2));
+    epocPow(e) = max(curZagg);
+    tempSpect = nan(diff(epocWindows(e,:))+(padSize*2+1),freqs(2)-freqs(1)+1,size(ripBPF,2));
+    for t = 1:size(ripBPF,2)   
+        tempSpect(:,:,t) = MorletAG(ripVolts(epocWindows(e,1)-padSize:epocWindows(e,2)+padSize,t), 1/samp, freqs(1), freqs(2))';
+    end
+    ripSpect{e} = tempSpect(padSize+1:end-padSize,:,:);
+    tempMax = mean(ripSpect{e},3);
+    [~,c] = find((tempMax./repmat(max(tempMax,[],2), [1,size(tempMax,2)]))==1);
+    ripFreq(e) = mean(freqsVect(c));
+    maxPowSpect = tempMax(curZagg==max(curZagg),:);
+    ripMaxFreq(e) = freqsVect(maxPowSpect==max(maxPowSpect));
+end
 
 %% Organize Data Output
 rips = struct(...
