@@ -3,11 +3,11 @@ clc
 clear all
 
 %% Runtime variables
-window = [-0.4 0.75];
-binSize = 20;
-dsRate = 20;
+window = [-0.2 0.2];
+binSize = 50;
+dsRate = 5;
 cLims = [0 0.005];
-withdrawTime = 1;
+withdrawTime = 1.2;
 %%
 smPath = uigetdir;
 cd(smPath);
@@ -79,14 +79,37 @@ fullyISlikely = cell2mat(fullyISlikelyCell);
 timeIndexes = repmat(trialTime,[4,1]);
 odorIndexes = cell2mat(odorCell);
 
-xTickNdxs = find(timeIndexes==0 | timeIndexes==min(trialTime(trialTime>=window(1))) | timeIndexes==min(trialTime(trialTime>=withdrawTime)));
+xTickNdxs = find(timeIndexes==trialTime(find(trialTime>max(trialTime)/2,1,'first')));
 odorDivs = find(timeIndexes==min(trialTime(trialTime>=window(1))));
 odorTargs = find(timeIndexes==min(trialTime(trialTime>=withdrawTime)));
 odorStarts = find(timeIndexes==0);
 
+noSpikeLog = sum(fullyISlikely)==0;
+spikeMatrix(:,noSpikeLog,:) = [];
+fullyISlikely(:,noSpikeLog) = [];
+
+%%
+figure; 
+imagesc(1:length(timeIndexes), 1:size(fullyISlikely,2), fullyISlikely');
+hold on;
+set(gca, 'ydir', 'normal', 'xTick', find(timeIndexes==trialTime(find(trialTime>max(trialTime)/2,1,'first'))),...
+    'xticklabel', [{'A'}, {'B'}, {'C'}, {'D'}], 'TickDir', 'out');
+for p = 1:4
+    plot([odorDivs(p) odorDivs(p)], get(gca, 'ylim'), '-w', 'linewidth', 2);
+    plot([odorTargs(p) odorTargs(p)], get(gca, 'ylim'), ':w', 'linewidth', 1.5);
+    plot([odorStarts(p) odorStarts(p)], get(gca, 'ylim'), '--w', 'linewidth', 1.5);
+end
+title('Likelihoods (PSTH)');
+
+annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
+    'linestyle', 'none', 'horizontalalignment', 'right');
+curDir = cd;
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+
 %% 
 figure
-subplot(4,5,1:3);
+spA = subplot(4,5,1:3);
 aPost = CalcStaticBayesPost(fullyISlikely, spikeMatrix(:,:,[trialPeriodTD.Odor]==1 & ~fullInSeqLog & perfLog & inSeqLog), binSize);
 imagesc(1:length(timeIndexes), trialTime, nanmean(aPost,3),cLims);
 hold on;
@@ -107,7 +130,7 @@ for t = 1:size(aDecode,1)
     aDecodePrcnts(t,4) = sum(aDecode(t,:)==4)/sum(~isnan(aDecode(t,:)));
 end
 title('Probability Density');
-subplot(4,5,4);
+curBarA = subplot(4,5,4);
 curBar = barh(trialTime,aDecodePrcnts, 1, 'stacked');
 curBar(1).FaceColor = [44/255 168/255 224/255]; curBar(1).EdgeColor = 'none';
 curBar(2).FaceColor = [154/255 133/255 122/255]; curBar(2).EdgeColor = 'none';
@@ -136,7 +159,7 @@ plot([0 0], get(gca, 'ylim'), ':k', 'linewidth', 1.5);
 title('Time Decoding');
 drawnow;
 
-subplot(4,5,6:8);
+spB = subplot(4,5,6:8);
 bPost = CalcStaticBayesPost(fullyISlikely, spikeMatrix(:,:,[trialPeriodTD.Odor]==2 & ~fullInSeqLog & perfLog & inSeqLog), binSize);
 imagesc(1:length(timeIndexes), trialTime, nanmean(bPost,3),cLims);
 hold on;
@@ -156,7 +179,7 @@ for t = 1:size(aDecode,1)
     bDecodePrcnts(t,3) = sum(bDecode(t,:)==3)/sum(~isnan(bDecode(t,:)));
     bDecodePrcnts(t,4) = sum(bDecode(t,:)==4)/sum(~isnan(bDecode(t,:)));
 end
-subplot(4,5,9);
+curBarB = subplot(4,5,9);
 curBar = barh(trialTime,bDecodePrcnts, 1, 'stacked');
 curBar(1).FaceColor = [44/255 168/255 224/255]; curBar(1).EdgeColor = 'none';
 curBar(2).FaceColor = [154/255 133/255 122/255]; curBar(2).EdgeColor = 'none';
@@ -182,7 +205,7 @@ hold on;
 plot([0 0], get(gca, 'ylim'), ':k', 'linewidth', 1.5);
 drawnow;
 
-subplot(4,5,11:13);
+spC = subplot(4,5,11:13);
 cPost = CalcStaticBayesPost(fullyISlikely, spikeMatrix(:,:,[trialPeriodTD.Odor]==3 & ~fullInSeqLog & perfLog & inSeqLog), binSize);
 imagesc(1:length(timeIndexes), trialTime, nanmean(cPost,3),cLims);
 hold on;
@@ -202,7 +225,7 @@ for t = 1:size(aDecode,1)
     cDecodePrcnts(t,3) = sum(cDecode(t,:)==3)/sum(~isnan(cDecode(t,:)));
     cDecodePrcnts(t,4) = sum(cDecode(t,:)==4)/sum(~isnan(cDecode(t,:)));
 end
-subplot(4,5,14);
+curBarC = subplot(4,5,14);
 curBar = barh(trialTime,cDecodePrcnts, 1, 'stacked');
 curBar(1).FaceColor = [44/255 168/255 224/255]; curBar(1).EdgeColor = 'none';
 curBar(2).FaceColor = [154/255 133/255 122/255]; curBar(2).EdgeColor = 'none';
@@ -228,11 +251,11 @@ hold on;
 plot([0 0], get(gca, 'ylim'), ':k', 'linewidth', 1.5);
 drawnow;
 
-subplot(4,5,16:18);
+spD = subplot(4,5,16:18);
 dPost = CalcStaticBayesPost(fullyISlikely, spikeMatrix(:,:,[trialPeriodTD.Odor]==4 & ~fullInSeqLog & perfLog & inSeqLog), binSize);
 imagesc(1:length(timeIndexes), trialTime, nanmean(dPost,3),cLims);
 hold on;
-set(gca, 'ydir', 'normal', 'xtick', xTickNdxs, 'xticklabel', repmat([window(1) 0 withdrawTime],[1,4]), 'TickDir', 'out');
+set(gca, 'ydir', 'normal', 'xtick', xTickNdxs, 'xticklabel', [{'A'}, {'B'}, {'C'}, {'D'}], 'TickDir', 'out');
 for p = 1:4
     plot([odorDivs(p) odorDivs(p)], get(gca, 'ylim'), '-w', 'linewidth', 2);
     plot([odorTargs(p) odorTargs(p)], get(gca, 'ylim'), ':w', 'linewidth', 1.5);
@@ -248,7 +271,7 @@ for t = 1:size(aDecode,1)
     dDecodePrcnts(t,3) = sum(dDecode(t,:)==3)/sum(~isnan(dDecode(t,:)));
     dDecodePrcnts(t,4) = sum(dDecode(t,:)==4)/sum(~isnan(dDecode(t,:)));
 end
-subplot(4,5,19);
+curBarD = subplot(4,5,19);
 curBar = barh(trialTime,dDecodePrcnts, 1, 'stacked');
 curBar(1).FaceColor = [44/255 168/255 224/255]; curBar(1).EdgeColor = 'none';
 curBar(2).FaceColor = [154/255 133/255 122/255]; curBar(2).EdgeColor = 'none';
@@ -276,6 +299,58 @@ drawnow;
 
 colormap jet
 
+linkaxes([curBarA, curBarB, curBarC, curBarD], 'xy');
+linkaxes([spA, spB, spC, spD], 'xy');
+linkaxes([curBarA, spA], 'y');
+axis(curBarA, 'tight');
+
+annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
+    'linestyle', 'none', 'horizontalalignment', 'right');
+curDir = cd;
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+
+aDecodeSmooth = aDecodePrcnts;
+bDecodeSmooth = bDecodePrcnts;
+cDecodeSmooth = cDecodePrcnts;
+dDecodeSmooth = dDecodePrcnts;
+for c = 1:4
+    aDecodeSmooth(:,c) = smooth(aDecodePrcnts(:,c),10);    
+    bDecodeSmooth(:,c) = smooth(bDecodePrcnts(:,c),10);  
+    cDecodeSmooth(:,c) = smooth(cDecodePrcnts(:,c),10);
+    dDecodeSmooth(:,c) = smooth(dDecodePrcnts(:,c),10);
+end
+figure;
+sp1 = subplot(4,1,1); 
+aPlots = plot(trialTime,aDecodeSmooth); 
+aPlots(1).Color = [44/255 168/255 224/255];
+aPlots(1).LineWidth = 2;
+aPlots(2).Color = [154/255 133/255 122/255];
+aPlots(3).Color = [9/255 161/255 74/255];
+aPlots(4).Color = [128/255 66/255 151/255];
+sp2 = subplot(4,1,2); 
+bPlots = plot(trialTime,bDecodeSmooth); 
+bPlots(1).Color = [44/255 168/255 224/255];
+bPlots(2).Color = [154/255 133/255 122/255];
+bPlots(2).LineWidth = 2;
+bPlots(3).Color = [9/255 161/255 74/255];
+bPlots(4).Color = [128/255 66/255 151/255];
+sp3 = subplot(4,1,3); 
+cPlots = plot(trialTime,cDecodeSmooth); 
+cPlots(1).Color = [44/255 168/255 224/255];
+cPlots(2).Color = [154/255 133/255 122/255];
+cPlots(3).Color = [9/255 161/255 74/255];
+cPlots(3).LineWidth = 2;
+cPlots(4).Color = [128/255 66/255 151/255];
+sp4 = subplot(4,1,4); 
+dPlots = plot(trialTime,dDecodeSmooth);
+dPlots(1).Color = [44/255 168/255 224/255];
+dPlots(2).Color = [154/255 133/255 122/255];
+dPlots(3).Color = [9/255 161/255 74/255];
+dPlots(4).Color = [128/255 66/255 151/255];
+dPlots(4).LineWidth = 2;
+
+linkaxes([sp1 sp2 sp3 sp4], 'xy');
 annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
     'linestyle', 'none', 'horizontalalignment', 'right');
 curDir = cd;
