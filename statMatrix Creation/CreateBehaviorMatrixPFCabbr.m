@@ -1,5 +1,16 @@
 function CreateBehaviorMatrixPFCabbr
-[plxData] = SummarizePLXevents_SD;
+[fileName, path] = uigetfile('.plx','Identify .PLX File');
+if fileName == 0
+    disp('No file selected, analysis cancelled')
+    return
+end
+plxFile = [path fileName];
+[path, fileName] = fileparts(plxFile);
+path = [path '\'];
+cd(path);
+outfile = fopen(sprintf('%s_PLXeventSummary.txt', fileName), 'a+');
+
+[plxData] = SummarizePLXevents_SD(plxFile, [], outfile);
 
 chan = 1;
 [samp, ~, tetTS, fn, ~] = plx_ad_v(plxData.Summary.PLXfile, chan);
@@ -33,21 +44,21 @@ for pos = 1:maxSeqLength
     posPresTimes = [plxData.Raw([plxData.Raw.OrdinalPosition]==pos).ItemPresentationTime];
     behVals(:,pos) = histcounts(posPresTimes, tsVect)';
     behDataHeaders{pos} = ['Position' num2str(pos)];
-%     fprintf(outfile, '     Position #%i = %i trials\n', pos, length(posPresTimes));
+    fprintf(outfile, '     Position #%i = %i trials\n', pos, length(posPresTimes));
 end
 % fprintf(outfile, 'Odor Counts\n');
 for seq = 1:seqLength
     itemPresTimes = [plxData.Raw([plxData.Raw.SequenceItem]==seq).ItemPresentationTime];
     behVals(:,seq+maxSeqLength) = histcounts(itemPresTimes, tsVect)';
     behDataHeaders{seq+maxSeqLength} = ['Odor' num2str(seq)];
-%     fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
+    fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
 end
 if isfield(plxData.Summary, 'DualListLog') && plxData.Summary.DualListLog
     for seq = 11:seqLength+10
         itemPresTimes = [plxData.Raw([plxData.Raw.SequenceItem]==seq).ItemPresentationTime];
         behVals(:,seq+seqLength+maxSeqLength-10) = histcounts(itemPresTimes, tsVect)';
         behDataHeaders{seq+seqLength+maxSeqLength-10} = ['Odor' num2str(seq)];
-%         fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
+        fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
     end
 end
 
@@ -55,7 +66,7 @@ inSeqOdorPres = [plxData.Raw([plxData.Raw.TranspositionDistance]==0).ItemPresent
 outSeqOdorPres = [plxData.Raw(~([plxData.Raw.TranspositionDistance]==0)).ItemPresentationTime];
 behVals(:,behPad+1) = histcounts(inSeqOdorPres, tsVect)' - histcounts(outSeqOdorPres,tsVect)';
 behDataHeaders{behPad+1} = 'InSeqLog';
-% fprintf(outfile, '\nCompiling InSeq trials.....\n     %i trials were InSeq (%i%%)\n', length(inSeqOdorPres), round(length(inSeqOdorPres)/length(plxData.Raw),2)*100);
+fprintf(outfile, '\nCompiling InSeq trials.....\n     %i trials were InSeq (%i%%)\n', length(inSeqOdorPres), round(length(inSeqOdorPres)/length(plxData.Raw),2)*100);
 itmPresTimes = [plxData.Raw.ItemPresentationTime];
 trialPerformance = [plxData.Raw.Performance];
 corrTrials = itmPresTimes(logical(trialPerformance));
@@ -64,7 +75,7 @@ inCorrTrials = itmPresTimes(~logical(trialPerformance));
 inCorTrlHistCounts = histcounts(inCorrTrials, tsVect)';
 behVals(:,behPad+2) = corTrlHistCounts + (inCorTrlHistCounts*-1);
 behDataHeaders{behPad+2} = 'PerformanceLog';
-% fprintf(outfile, 'Compiling Performance.....\n     %i trials were correct (%i%%)\n', sum(trialPerformance), round(mean(trialPerformance),2)*100);
+fprintf(outfile, 'Compiling Performance.....\n     %i trials were correct (%i%%)\n', sum(trialPerformance), round(mean(trialPerformance),2)*100);
 
 behVals(:,behPad+3) = histcounts([plxData.Raw.OdorTrigPokeTime], tsVect)' - histcounts([plxData.Raw.OdorPokeWithdrawTime], tsVect)';
 behDataHeaders{behPad+3} = 'PokeEvents';
@@ -138,5 +149,5 @@ behavMatrix = [tsVect(1:end-1)', behVals];
 behavMatrixColIDs = [{'TimeBin'}, behDataHeaders];
 save([plxData.Summary.PLXfile(1:end-4) '_BehaviorMatrix.mat'], 'behavMatrix', 'behavMatrixColIDs', 'plxData');
 disp('Behavior data saved.');
-% fprintf(outfile, 'Behavior Matrix saved as %s_BehaviorMatrix.mat\n', outputFileName{1});
+fprintf(outfile, 'Behavior Matrix saved as %s_BehaviorMatrix.mat\n', plxData.Summary.PLXfile(1:end-4));
 end
