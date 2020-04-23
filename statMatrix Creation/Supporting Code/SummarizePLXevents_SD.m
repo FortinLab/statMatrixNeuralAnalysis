@@ -32,7 +32,7 @@ if ~(nargin == 2)
             matFile = [path fileNames{matFileLog}];
             [~, matFileName] = fileparts(matFile);
         end
-        outfile = fopen(sprintf('%s_PLXeventSummary.txt', matFileName), 'At');
+        outfile = fopen(sprintf('%s_PLXeventSummary.txt', matFileName), 'a+');
     end
     if isempty(matFile)
         [path, fileName] = fileparts(plxFile);
@@ -53,10 +53,10 @@ if ~(nargin == 2)
         end
     end
     if isempty(outfile)
-        outfile = fopen(sprintf('%s_PLXeventSummary.txt', matFileName), 'At');
+        outfile = fopen(sprintf('%s_PLXeventSummary.txt', matFileName), 'a+');
     end
 else
-    outfile = fopen(sprintf('%s_PLXeventSummary.txt', matFileName), 'At'); %#ok<NODEF>
+    outfile = fopen(sprintf('%s_PLXeventSummary.txt', matFileName), 'a+'); %#ok<NODEF>
 end
 plxData.Summary.MATfile = matFileName;
 plxData.Summary.PLXfile = [fileName '.plx'];
@@ -424,14 +424,27 @@ nonPositionLog = (aniPosition(:,2) + aniPosition(:,3))==0;
 aniPosition(nonPositionLog,:) = [];
 
 %% Identify and correct issues caused by asynchronous starts of Plexon and Matlab
-if odorPresTime{1}(1)<pokeInitiationTimes(1) % This happens when there's a poke in the buffer prior to when Matlab starts
-    % The solution is to start on the second sequence block
-    newStartTime = sequenceBlockInitiationTimes(2);
-    taintedOdorPresLog = cellfun(@(a)a<newStartTime, odorPresTime, 'uniformoutput', 0);
-    odorPresTime = cellfun(@(a,b)a(~b), odorPresTime, taintedOdorPresLog, 'uniformoutput', 0);
-    pokeInitiationTimes(pokeInitiationTimes<newStartTime) = [];
-    sequenceBlockInitiationTimes(1) = [];
-    plxData.Summary.Errors = [plxData.Summary.Errors; {'OdorPres1 < Poke1; Removed First Block'}];
+if isempty(odorPresTime{1})
+    if odorPresTime{6}(1)<pokeInitiationTimes(1) % This happens when there's a poke in the buffer prior to when Matlab starts
+        % The solution is to start on the second sequence block
+        newStartTime = sequenceBlockInitiationTimes(2);
+        taintedOdorPresLog = cellfun(@(a)a<newStartTime, odorPresTime, 'uniformoutput', 0);
+        odorPresTime = cellfun(@(a,b)a(~b), odorPresTime, taintedOdorPresLog, 'uniformoutput', 0);
+        pokeInitiationTimes(pokeInitiationTimes<newStartTime) = [];
+        sequenceBlockInitiationTimes(1) = [];
+        plxData.Summary.Errors = [plxData.Summary.Errors; {'OdorPres1 < Poke1; Removed First Block'}];
+    end
+else
+    if odorPresTime{1}(1)<pokeInitiationTimes(1)
+        % This happens when there's a poke in the buffer prior to when Matlab starts
+        % The solution is to start on the second sequence block
+        newStartTime = sequenceBlockInitiationTimes(2);
+        taintedOdorPresLog = cellfun(@(a)a<newStartTime, odorPresTime, 'uniformoutput', 0);
+        odorPresTime = cellfun(@(a,b)a(~b), odorPresTime, taintedOdorPresLog, 'uniformoutput', 0);
+        pokeInitiationTimes(pokeInitiationTimes<newStartTime) = [];
+        sequenceBlockInitiationTimes(1) = [];
+        plxData.Summary.Errors = [plxData.Summary.Errors; {'OdorPres1 < Poke1; Removed First Block'}];
+    end
 end
     
 firstSeqBlockStart = sequenceBlockInitiationTimes(1); % FSBS
@@ -613,7 +626,7 @@ for trl = 1:size(odorPresSsn,1)
         if ~((plxSession(trl).RewardSignalTime - plxSession(trl).OdorTrigPokeTime) > plxSession(trl).TargetDuration)
             if isfield(ssnData(1).Settings, 'GracePeriodDur') && plxSession(trl).TargetDuration - plxSession(trl).PokeDuration > ssnData(trl).Settings.GracePeriodDur
                 fprintf(outfile, 'Trial #%i: Reward signal time occurred before target duration elapsed\n', trl);
-                error('Trial #%i: Reward signal time occurred before target duration elapsed', trl);
+%                 error('Trial #%i: Reward signal time occurred before target duration elapsed', trl);
             end
         end
         % Check to ensure reward was presented AFTER the reward signal
