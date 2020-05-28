@@ -1,6 +1,16 @@
 function behavMatrixTrialStruct = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, trialLims, trialStart)
 %% OrganizeTrialData_SM
 %   Organizes statMatrix data into a trial-wise organization. 
+%
+%   Inputs:
+%       - behavMatrix: Data matrix containing the behavior data from the
+%           recording session. Stored in files with "_BehaviorMatrix"
+%           suffix.
+%       - behavMatrixColIDs: String vector containing identifiers of what
+%           each column in the behavMatrix corresponds to. Also stored in
+%           the "_BehaviorMatrix" file.
+%       - trialLims: 
+%       - trialStart:
 %% Check Inputs
 % The input trialLims is designed to specify the time period around a trial
 % to extract on each trial.
