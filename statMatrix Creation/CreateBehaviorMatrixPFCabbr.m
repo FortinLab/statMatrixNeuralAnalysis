@@ -34,8 +34,8 @@ behPad = seqLength + maxSeqLength;
 if isfield(plxData.Summary, 'DualListLog') && plxData.Summary.DualListLog
     behPad = behPad + seqLength;
 end
-behVals = nan(length(tsVect)-1, behPad + 5);
-behDataHeaders = cell(1,behPad + 7);
+behVals = nan(length(tsVect)-1, behPad + 6);
+behDataHeaders = cell(1,behPad + 8);
 % Step through each sequence item/position and identify when odors were
 % presented
 % Do position first because it doesn't change with multiple lists
@@ -86,10 +86,11 @@ behDataHeaders{behPad+4} = 'FrontReward';
 behVals(:,behPad+5) = histcounts([plxData.Raw.BackRewardTime], tsVect)';
 behDataHeaders{behPad+5} = 'BackReward';
 
-if isfield(plxData.Raw, 'ErrorSignalTime')
-    behVals(:,behPad+6) = histcounts([plxData.Raw.ErrorSignalTime], tsVect)';
-    behDataHeaders{behPad+6} = 'ErrorSignal';
-end
+behVals(:,behPad+6) = histcounts([plxData.Raw.ErrorSignalTime], tsVect)';
+behDataHeaders{behPad+6} = 'ErrorSignal';
+
+behVals(:,behPad+7) = histcounts([plxData.Raw.RewardSignalTime], tsVect)';
+behDataHeaders{behPad+7} = 'RewardSignal';
 
 [numChans, chanNames] = plx_event_names(plxData.Summary.PLXfile);
 findingStrobed = 1;
@@ -127,24 +128,15 @@ while findingStrobed
                 end
             end
             aniPosHistBins = find(histcounts(aniPosition(:,1), tsVect));
-            if isfield(plxData.Raw, 'ErrorSignalTime')
-                behVals(aniPosHistBins,behPad+7) = aniX';
-                behVals(aniPosHistBins,behPad+8) = aniY';
-            else
-                behVals(aniPosHistBins,behPad+6) = aniX;
-                behVals(aniPosHistBins,behPad+7) = aniY;
-            end
+            behVals(aniPosHistBins,behPad+8) = aniX';
+            behVals(aniPosHistBins,behPad+9) = aniY';
             findingStrobed = 0;
         end
     end
 end
-if isfield(plxData.Raw, 'ErrorSignalTime')
-    behDataHeaders{behPad+7} = 'XvalRatMazePosition';
-    behDataHeaders{behPad+8} = 'YvalRatMazePosition';
-else
-    behDataHeaders{behPad+6} = 'XvalRatMazePosition';
-    behDataHeaders{behPad+7} = 'YvalRatMazePosition';
-end
+behDataHeaders{behPad+8} = 'XvalRatMazePosition';
+behDataHeaders{behPad+9} = 'YvalRatMazePosition';
+
 behavMatrix = [tsVect(1:end-1)', behVals];
 behavMatrixColIDs = [{'TimeBin'}, behDataHeaders];
 save([plxData.Summary.PLXfile(1:end-4) '_BehaviorMatrix.mat'], 'behavMatrix', 'behavMatrixColIDs', 'plxData');
