@@ -57,7 +57,7 @@ subplot(4,2,6); imagesc(poTrialTime, 1:size(poFISlikes{1},2), poFISlikes{3}', fi
 subplot(4,2,7); imagesc(piTrialTime, 1:size(piFISlikes{1},2), piFISlikes{4}', figLims); ylabel('Odor D'); hold on; line([0 0], get(gca, 'ylim'), 'color', 'w');
 subplot(4,2,8); imagesc(poTrialTime, 1:size(poFISlikes{1},2), poFISlikes{4}', figLims); hold on; line([0 0], get(gca, 'ylim'), 'color', 'w');
 
-annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
+annotation('textbox', 'position', [0 0.935 1 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms; PokeInWindow = [%ims +%ims], PokeOutWindow = [%ims +%ims]', binSize, dsRate, piWindow(1)*1000,piWindow(2)*1000,poWindow(1)*1000, poWindow(2)*1000)],...
     'linestyle', 'none', 'horizontalalignment', 'right');
 curDir = cd;
 annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
@@ -92,11 +92,6 @@ subplot(6,4,1:16);
 % imagesc(nanmedian(issPosts,3), [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
 imagesc(nanmean(issPosts,3), [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
 set(gca, 'xtick', [], 'ytick', []);
-annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
-    'linestyle', 'none', 'horizontalalignment', 'right');
-curDir = cd;
-annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
-    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
 line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)], get(gca, 'ylim'), 'linestyle', '-', 'color', 'white', 'linewidth', 2);   
 line([size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 line([size(poSpkMtx,1)/2+size(piSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
@@ -179,15 +174,99 @@ line([size(poSpkMtx,1)/2+size(piSpkMtx,1)*4+size(poSpkMtx,1)*3 size(poSpkMtx,1)/
 set(gca, 'xtick', []);
 ylabel(gca,'Lag (s)');
 
+annotation('textbox', 'position', [0 0.935 1 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms; PokeInWindow = [%ims +%ims], PokeOutWindow = [%ims +%ims]', binSize, dsRate, piWindow(1)*1000,piWindow(2)*1000,poWindow(1)*1000, poWindow(2)*1000)],...
+    'linestyle', 'none', 'horizontalalignment', 'right');
+curDir = cd;
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+
 %% Investigate decoding more.... possibly do rank order quantification for each index... tabulate at each index which odor is 1st, 2nd, 3rd, 4th
 % Possibly the indexing will demonstrate a lag effect, i.e. 1st = current odor, 2nd = next odor.
 % Alternatively, examine decoding of peaks?
 % Alternatively (and I like this one the most), calculate total posterior for different odors, i.e. calculate sum or average posterior value for each odor at each index
 
 %% Step through and decode each OutSeq Trial
-outSeqTrials = find(trialInfo(:,6));
+outSeqTrials = find(trialInfo(:,6)~=0 & trialInfo(:,5)==1 & trialInfo(:,3)<=4 & trialInfo(:,4)<=4);
 
+osPosts = nan(size(piSpkMtx,1)+size(poSpkMtx,1),(size(piSpkMtx,1)+size(poSpkMtx,1))*2,length(outSeqTrials));
+for osT = 1:length(outSeqTrials)
+    tempObsv = [piSpkMtx(:,:,outSeqTrials(osT)); poSpkMtx(:,:,outSeqTrials(osT))];
+    osPos = trialInfo(outSeqTrials(osT),3);
+    osOdr = trialInfo(outSeqTrials(osT),4);
+    
+    tempPosLikes = [mean(piSpkMtx(:,:,tempISSs(osPos,:)),3); mean(poSpkMtx(:,:,tempISSs(osPos,:)),3)];
+    tempOdrLikes = [mean(piSpkMtx(:,:,tempISSs(osOdr,:)),3); mean(poSpkMtx(:,:,tempISSs(osOdr,:)),3)];
+    tempLikes = [tempPosLikes; tempOdrLikes];
+    
+    osPosts(:,:,osT) = CalcStaticBayesPost(tempLikes, tempObsv, binSize);
+end
+odorLog = [ones(1,size(piSpkMtx,1)+size(poSpkMtx,1))*1,...
+    ones(1,size(piSpkMtx,1)+size(poSpkMtx,1))*2];
+timeLog = [piTrialTime', poTrialTime'+1+dsRate/1000,...
+    piTrialTime', poTrialTime'+1+dsRate/1000];
 
+figure;
+subplot(6,4,1:16)
+% imagesc(nanmedian(osPosts,3), [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
+imagesc(nanmean(osPosts,3)', [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
+xlabel('Observed');
+ylabel('Decodeded');
+set(gca,...
+    'xtick', [size(piSpkMtx,1)/2, size(poSpkMtx,1)/2+size(piSpkMtx,1)], 'xticklabel', [{'PokeIn'}, {'PokeOut'}],...
+    'ytick', [size(piSpkMtx,1)/2 size(piSpkMtx,1) size(piSpkMtx,1)+size(poSpkMtx,1)/2 size(piSpkMtx,1)/2+size(piSpkMtx,1)+size(poSpkMtx,1) size(piSpkMtx,1)*2+size(poSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1)],...
+    'yticklabel', [{'PokeIn'}, {'\bf\fontsize{14}Position'}, {'PokeOut'}, {'PokeIn'}, {'\bf\fontsize{14}Odor'}, {'PokeOut'}]);
+line(get(gca, 'xlim'), [size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)], 'linestyle', '-', 'color', 'white', 'linewidth', 2); 
+line([size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
+line([size(poSpkMtx,1)/2+size(piSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
+
+line(get(gca, 'xlim'), [size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
+line(get(gca, 'xlim'), [size(poSpkMtx,1)/2+size(piSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
+line(get(gca, 'xlim'), [size(piSpkMtx,1)/2+size(piSpkMtx,1)*2 size(piSpkMtx,1)/2+size(piSpkMtx,1)*2], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
+line(get(gca, 'xlim'), [size(piSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1) size(piSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1)], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
+
+% Odor Decoding
+decodeOdor = DecodeBayesPost(osPosts, odorLog);
+posDecode = mean(decodeOdor==1,2);
+odrDecode = mean(decodeOdor==2,2);
+subplot(6,4,17:20)
+plot(1:size(decodeOdor,1), posDecode-odrDecode, 'color', 'k', 'linewidth', 1);
+axis tight
+set(gca, 'ylim', [-1 1], 'xtick', [size(piSpkMtx,1)/2, size(poSpkMtx,1)/2+size(piSpkMtx,1)], 'xticklabel', [{'PokeIn'}, {'PokeOut'}]);
+ylabel([{'Decoded Difference'};{'(Pos-Odor)'}]);
+line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linestyle', '--');
+line([size(piSpkMtx,1) size(piSpkMtx,1)], get(gca, 'ylim'), 'linestyle', '-', 'color', 'k', 'linewidth', 2);
+line([size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], get(gca, 'ylim'), 'linestyle', ':', 'color', 'k', 'linewidth', 2);
+line([size(poSpkMtx,1)/2+size(piSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)], get(gca, 'ylim'), 'linestyle', ':', 'color', 'k', 'linewidth', 2);
+
+% Temporal Decoding
+decodeTime = DecodeBayesPost(osPosts, timeLog);
+decodeLag = nan(size(decodeTime));
+for c = 1:size(decodeTime,2)
+    decodeLag(:,c) = decodeTime(:,c)-[piTrialTime', poTrialTime'+1+dsRate/1000]';
+end
+lagMean = nanmean(decodeLag,2);
+lagVar = nanstd(decodeLag,1,2);
+subplot(6,4,21:24)
+plot(lagMean, '-k', 'linewidth', 1);
+patch('YData', [lagMean+lagVar; flipud(lagMean-lagVar)],...
+    'XData', [1:length(lagMean), length(lagMean):-1:1], 'FaceColor', 'k', 'FaceAlpha', .3, 'edgecolor', 'none');
+axis tight
+set(gca, 'xtick', [size(piSpkMtx,1)/2, size(poSpkMtx,1)/2+size(piSpkMtx,1)], 'xticklabel', [{'PokeIn'}, {'PokeOut'}]);
+line(get(gca, 'xlim'), [0 0], 'color', 'k', 'linestyle', '--');
+line([size(piSpkMtx,1) size(piSpkMtx,1)], get(gca, 'ylim'), 'linestyle', '-', 'color', 'k', 'linewidth', 2);
+line([size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], get(gca, 'ylim'), 'linestyle', ':', 'color', 'k', 'linewidth', 2);
+line([size(poSpkMtx,1)/2+size(piSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)], get(gca, 'ylim'), 'linestyle', ':', 'color', 'k', 'linewidth', 2);
+
+annotation('textbox', 'position', [0 0.935 1 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms; PokeInWindow = [%ims +%ims], PokeOutWindow = [%ims +%ims]', binSize, dsRate, piWindow(1)*1000,piWindow(2)*1000,poWindow(1)*1000, poWindow(2)*1000)],...
+    'linestyle', 'none', 'horizontalalignment', 'right');
+curDir = cd;
+annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
+    'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
+
+%% Trial After OutSeq
+% For TAO, use FIS as likelihoods and TAO as observations
+% How to compare TAO with FIS decoding... Compare both posteriors as well
+% as the likelihood of decoding the correct odor.
 %%
 %%*******************************************************%%
 %%********************** Functions **********************%%
