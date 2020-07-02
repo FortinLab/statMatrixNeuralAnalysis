@@ -89,39 +89,39 @@ timeLog = [piTrialTime', poTrialTime'+1+dsRate/1000,...
     
 figure; 
 subplot(6,4,1:16);
-imagesc(nanmedian(issPosts,3), [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
-% imagesc(nanmean(issPosts,3), [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
+% imagesc(nanmedian(issPosts,3), [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
+imagesc(nanmean(issPosts,3), [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
 set(gca, 'xtick', [], 'ytick', []);
 annotation('textbox', 'position', [0.5 0.935 0.5 0.05], 'String', ['\bf\fontsize{10}' sprintf('Bin = %i ms; Step = %i ms', binSize, dsRate)],...
     'linestyle', 'none', 'horizontalalignment', 'right');
 curDir = cd;
 annotation('textbox', 'position', [0.025 0.025 0.7 0.05], 'String', curDir,...
     'linestyle', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
-line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)], get(gca, 'ylim'), 'linestyle', '-', 'color', 'white');   
-line([size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 2);
+line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)], get(gca, 'ylim'), 'linestyle', '-', 'color', 'white', 'linewidth', 2);   
+line([size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 line([size(poSpkMtx,1)/2+size(piSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
-line(get(gca, 'xlim'), [size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)], 'linestyle', '-', 'color', 'white'); 
-line(get(gca, 'xlim'), [size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], 'linestyle', ':', 'color', 'white', 'linewidth', 2);
+line(get(gca, 'xlim'), [size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)], 'linestyle', '-', 'color', 'white', 'linewidth', 2); 
+line(get(gca, 'xlim'), [size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 line(get(gca, 'xlim'), [size(poSpkMtx,1)/2+size(piSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 
-line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*2, get(gca, 'ylim'), 'linestyle', '-', 'color', 'white');    
+line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*2, get(gca, 'ylim'), 'linestyle', '-', 'color', 'white', 'linewidth', 2);    
 line([size(piSpkMtx,1)/2+size(piSpkMtx,1)+size(poSpkMtx,1) size(piSpkMtx,1)/2+size(piSpkMtx,1)+size(poSpkMtx,1)], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 line([size(poSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1)], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);     
-line(get(gca, 'xlim'), [size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*2, 'linestyle', '-', 'color', 'white');  
+line(get(gca, 'xlim'), [size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*2, 'linestyle', '-', 'color', 'white', 'linewidth', 2);  
 line(get(gca, 'xlim'), [size(piSpkMtx,1)/2+size(piSpkMtx,1)+size(poSpkMtx,1) size(piSpkMtx,1)/2+size(piSpkMtx,1)+size(poSpkMtx,1)], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 line(get(gca, 'xlim'), [size(poSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1) size(poSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1)], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 
-line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*3, get(gca, 'ylim'), 'linestyle', '-', 'color', 'white'); 
+line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*3, get(gca, 'ylim'), 'linestyle', '-', 'color', 'white', 'linewidth', 2); 
 line([size(piSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1)*2 size(piSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1)*2], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 line([size(poSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*2 size(poSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*2], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);           
-line(get(gca, 'xlim'), [size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*3, 'linestyle', '-', 'color', 'white');  
+line(get(gca, 'xlim'), [size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*3, 'linestyle', '-', 'color', 'white', 'linewidth', 2);  
 line(get(gca, 'xlim'), [size(piSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1)*2 size(piSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1)*2], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 line(get(gca, 'xlim'), [size(poSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*2 size(poSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*2], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 
-line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*4, get(gca, 'ylim'), 'linestyle', '-', 'color', 'white');   
+line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*4, get(gca, 'ylim'), 'linestyle', '-', 'color', 'white', 'linewidth', 2);   
 line([size(piSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*3 size(piSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*3], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 line([size(poSpkMtx,1)/2+size(piSpkMtx,1)*4+size(poSpkMtx,1)*3 size(poSpkMtx,1)/2+size(piSpkMtx,1)*4+size(poSpkMtx,1)*3], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);     
-line(get(gca, 'xlim'), [size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*4, 'linestyle', '-', 'color', 'white');        
+line(get(gca, 'xlim'), [size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)]*4, 'linestyle', '-', 'color', 'white', 'linewidth', 2);        
 line(get(gca, 'xlim'), [size(piSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*3 size(piSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*3], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 line(get(gca, 'xlim'), [size(poSpkMtx,1)/2+size(piSpkMtx,1)*4+size(poSpkMtx,1)*3 size(poSpkMtx,1)/2+size(piSpkMtx,1)*4+size(poSpkMtx,1)*3], 'linestyle', ':', 'color', 'white', 'linewidth', 1);
 
@@ -177,7 +177,12 @@ line([size(poSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*2 size(poSpkMtx,1)/
 line([size(piSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*3 size(piSpkMtx,1)/2+size(piSpkMtx,1)*3+size(poSpkMtx,1)*3], get(gca, 'ylim'), 'linestyle', ':', 'color', 'k', 'linewidth', 2);
 line([size(poSpkMtx,1)/2+size(piSpkMtx,1)*4+size(poSpkMtx,1)*3 size(poSpkMtx,1)/2+size(piSpkMtx,1)*4+size(poSpkMtx,1)*3], get(gca, 'ylim'), 'linestyle', ':', 'color', 'k', 'linewidth', 2);     
 set(gca, 'xtick', []);
-ylabel Lag (s)
+ylabel(gca,'Lag (s)');
+
+%% Investigate decoding more.... possibly do rank order quantification for each index... tabulate at each index which odor is 1st, 2nd, 3rd, 4th
+% Possibly the indexing will demonstrate a lag effect, i.e. 1st = current odor, 2nd = next odor.
+% Alternatively, examine decoding of peaks?
+% Alternatively (and I like this one the most), calculate total posterior for different odors, i.e. calculate sum or average posterior value for each odor at each index
 
 %% Step through and decode each OutSeq Trial
 outSeqTrials = find(trialInfo(:,6));
