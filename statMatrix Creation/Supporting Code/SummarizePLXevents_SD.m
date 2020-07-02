@@ -22,7 +22,7 @@ if ~(nargin == 2)
         fileNames = {flContents.name};
         matFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, [fileName '_([0-9]*)-([A-Z | a-z]*)-([0-9]*).mat']));
         if sum(matFileLog)==0
-            [matFileName, matFilePath] = uigetfile('.mat', 'No .MAT file found in the folder with the .PLX file, select the ssnData file');
+            [matFileName, matFilePath] = uigetfile('.mat', 'No matching .MAT file found in the folder with the .PLX file, select the ssnData file');
             if matFileName == 0
                 disp('No .MAT file selected, analysis cancelled')
                 return
