@@ -7,7 +7,7 @@ piWindow = [-0.5 0.5];
 poWindow = [-0.5 0.5];
 binSize = 200;
 dsRate = 5;
-cLims = [0 0.005];
+cLim = [0 0.01];
 
 %%
 smPath = uigetdir;
@@ -26,6 +26,9 @@ smFileList = fileNames(cellfun(@(a)~isempty(a), regexp(fileNames, '_SM\>')))';
 % trialInfo = [Trial#, Sequence#, Position, Odor, Performance, tDist, PokeDur, WithdrawLat]
 [piSpkMtx, piTrialTime, trialInfo] = OrganizeAndBinSpikes(ensembleMatrix, behavMatrix, behavMatrixColIDs, 'PokeIn', piWindow, binSize, dsRate);
 [poSpkMtx, poTrialTime, ~] = OrganizeAndBinSpikes(ensembleMatrix, behavMatrix, behavMatrixColIDs, 'PokeOut', poWindow, binSize, dsRate);
+
+decodings.PItime = piTrialTime;
+decodings.POtime = poTrialTime;
 
 clear ensembleMatrix ensembleMatrixColIDs behavMatrix behavMatrixColIDs
 %% Identify Fully InSeq Trials & Calculate FIS Liklihoods (PSTH)
@@ -89,8 +92,8 @@ timeLog = [piTrialTime', poTrialTime'+1+dsRate/1000,...
     
 figure; 
 subplot(6,4,1:16);
-% imagesc(nanmedian(issPosts,3)', [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
-imagesc(nanmean(issPosts,3)', [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
+% imagesc(nanmedian(issPosts,3)', cLim); set(gca, 'ydir', 'normal'); colormap jet
+imagesc(nanmean(issPosts,3)', cLim); set(gca, 'ydir', 'normal'); colormap jet
 set(gca, 'xtick', [], 'ytick', []);
 line([size(piSpkMtx,1) + size(poSpkMtx,1), size(piSpkMtx,1) + size(poSpkMtx,1)], get(gca, 'ylim'), 'linestyle', '-', 'color', 'white', 'linewidth', 2);   
 line([size(piSpkMtx,1)/2 size(piSpkMtx,1)/2], get(gca, 'ylim'), 'linestyle', ':', 'color', 'white', 'linewidth', 1);
@@ -149,12 +152,13 @@ line(get(gca, 'xlim'), [size(poSpkMtx,1)/2+size(piSpkMtx,1)*4+size(poSpkMtx,1)*3
 
 % Odor Decoding (true decoding)
 decodeOdor = DecodeBayesPost(issPosts, odorLog);
+decodings.Odor = [mean(decodeOdor==1,2), mean(decodeOdor==2,2), mean(decodeOdor==3,2), mean(decodeOdor==4,2)];
 subplot(6,4,17:20)
-plot(1:size(decodeOdor,1), mean(decodeOdor==1,2), 'color', [44/255 168/255 224/255], 'linewidth', 1);
+plot(1:size(decodeOdor,1), decodings.Odor(:,1), 'color', [44/255 168/255 224/255], 'linewidth', 1);
 hold on;
-plot(1:size(decodeOdor,1), mean(decodeOdor==2,2), 'color', [154/255 133/255 122/255], 'linewidth', 1);
-plot(1:size(decodeOdor,1), mean(decodeOdor==3,2), 'color', [9/255 161/255 74/255], 'linewidth', 1);
-plot(1:size(decodeOdor,1), mean(decodeOdor==4,2), 'color', [128/255 66/255 151/255], 'linewidth', 1);
+plot(1:size(decodeOdor,1), decodings.Odor(:,2), 'color', [154/255 133/255 122/255], 'linewidth', 1);
+plot(1:size(decodeOdor,1), decodings.Odor(:,3), 'color', [9/255 161/255 74/255], 'linewidth', 1);
+plot(1:size(decodeOdor,1), decodings.Odor(:,4), 'color', [128/255 66/255 151/255], 'linewidth', 1);
 legend('A', 'B', 'C','D', 'location', 'southoutside', 'orientation', 'horizontal');
 ylabel([{'Decoding'};{'(% Trials)'}]);
 
@@ -181,6 +185,7 @@ for c = 1:size(decodeTime,2)
 end
 lagMean = nanmean(decodeLag,2);
 lagVar = nanstd(decodeLag,1,2);
+decodings.Time = lagMean;
 subplot(6,4,21:24)
 plot(lagMean, '-k', 'linewidth', 1);
 patch('YData', [lagMean+lagVar; flipud(lagMean-lagVar)],...
@@ -235,8 +240,8 @@ timeLog = [piTrialTime', poTrialTime'+1+dsRate/1000,...
 
 figure;
 subplot(6,4,1:16)
-% imagesc(nanmedian(osPosts,3), [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
-imagesc(nanmean(osPosts,3)', [0 0.01]); set(gca, 'ydir', 'normal'); colormap jet
+% imagesc(nanmedian(osPosts,3), cLim); set(gca, 'ydir', 'normal'); colormap jet
+imagesc(nanmean(osPosts,3)', cLim); set(gca, 'ydir', 'normal'); colormap jet
 xlabel('Observed');
 ylabel('Decodeded');
 set(gca,...
@@ -256,6 +261,7 @@ line(get(gca, 'xlim'), [size(piSpkMtx,1)/2+size(piSpkMtx,1)*2+size(poSpkMtx,1) s
 decodeOdor = DecodeBayesPost(osPosts, odorLog);
 posDecode = mean(decodeOdor==1,2);
 odrDecode = mean(decodeOdor==2,2);
+decodings.OSdiff = posDecode-odrDecode;
 subplot(6,4,17:20)
 plot(1:size(decodeOdor,1), posDecode-odrDecode, 'color', 'k', 'linewidth', 1);
 axis tight
