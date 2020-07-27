@@ -479,7 +479,7 @@ plxSession = struct('OrdinalPosition', {ssnData.TrialPosition},...
     'AniReturnToOrigin', repmat({nan}, [1,length(ssnData)]),...
     'FrontRewardTime', repmat({nan}, [1,length(ssnData)]),...
     'BackRewardTime', repmat({nan}, [1,length(ssnData)]),...
-    'MultiOdorPokeLog', repmat({nan}, [1,length(ssnData)]));
+    'MultiPokeCounts', repmat({nan}, [1,length(ssnData)]));
 
 %% Extract Session Timestamps
 
@@ -532,8 +532,9 @@ for trl = 1:size(odorPresSsn,1)
 %                         msgbox(sprintf('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
 %                         error('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct', trl);
 %                         fprintf(outfile, 'Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct\n', trl);
-%                         tempPokeNum = tempPokeNum+1;
-%                         tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                        tempPokeNum = tempPokeNum+1;
+                        tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                        fprintf(outfile, 'Trial #%i: InSeq trial where buffer was triggered and buffer duration elapsed but it was counted as correct\n',  trl);
                         plxData.Summary.Errors = [plxData.Summary.Errors; 
                             {['Trial #' num2str(trl) ': InSeq trial where buffer was triggered and buffer duration elapsed but it was counted as correct']}];   
                         break
@@ -550,8 +551,9 @@ for trl = 1:size(odorPresSsn,1)
 %                         msgbox(sprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
 %                         error('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect', trl);
 %                         fprintf('Trial #%i: OutSeq trial where buffer was triggered and duration elapsed but it was counted as incorrect\n', trl);
-%                         tempPokeNum = tempPokeNum+1;
-%                         tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                        tempPokeNum = tempPokeNum+1;
+                        tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
+                        fprintf(outfile, 'Trial #%i: OutSeq trial where buffer was triggered and buffer duration elapsed but it was counted as incorrect\n',  trl);
                         plxData.Summary.Errors = [plxData.Summary.Errors; 
                             {['Trial #' num2str(trl) ': OutSeq trial where buffer was triggered and buffer duration elapsed but it was counted as incorrect']}];   
                         break                    
@@ -589,7 +591,7 @@ for trl = 1:size(odorPresSsn,1)
         fprintf(outfile, 'Trial #%i: Abberant performance value\n', trl);
         error('Trial #%i: Abberant performance value', trl);
     end
-    
+    plxSession(trl).MultiPokeCounts = tempPokeNum;
     %% ******Logical Checks******
     % If these trigger they indicate a need for debugging. Either
     % there's an issue with the assumptions of this code,
@@ -602,10 +604,10 @@ for trl = 1:size(odorPresSsn,1)
     % Check to ensure poke durations match well between the .PLX ans .MAT
     % files. The only differences should be floating point, hence the
     % threshold of 0.00001
-    if plxSession(trl).PokeDuration - ssnData(trl).PokeDuration > 0.00001
+    if abs(plxSession(trl).PokeDuration - ssnData(trl).PokeDuration) > 0.00001
 %         error('Trial #%i: Trial poke durations for .PLX and .MAT don''t match', trl);
         fprintf(outfile, 'Trial #%i: Poke Duration discrepancy of %i\n', trl, plxSession(trl).PokeDuration - ssnData(trl).PokeDuration);
-        plxData.Summary.Errors = [plxData.Summary.Errors; ['Trial #' num2str(trl) ': Poke Duration discrepancy of ' num2str(plxSession(trl).PokeDuration - ssnData(trl).PokeDuration)]];
+        plxData.Summary.Errors = [plxData.Summary.Errors; {['Trial #' num2str(trl) ': Poke Duration discrepancy of ' num2str(plxSession(trl).PokeDuration - ssnData(trl).PokeDuration)]}];
     end
     
     % Check to ensure trial start came before trial end
