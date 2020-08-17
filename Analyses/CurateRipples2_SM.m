@@ -397,6 +397,7 @@ plotData.SessionRips.RipFreq(ssnListNdx,:) = [];
 trlList = plotData.trlRipList.UserData;
 trlListNdx = trlList(:,1)==curNdx(1);
 trlList(trlListNdx,:) = [];
+plotData.TrialRips.TrialPeriodID(trlListNdx,:) = [];
 plotData.TrialRips.Events(trlListNdx,:) = [];
 plotData.TrialRips.Synchrony(trlListNdx,:) = [];
 plotData.TrialRips.EnsembleAct(trlListNdx,:) = [];
