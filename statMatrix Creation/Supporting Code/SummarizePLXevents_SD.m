@@ -518,6 +518,7 @@ for trl = 1:size(odorPresSsn,1)
     
     if sum(trialPokesLog) == 1 % i.e. if there is only one poke that occurred during the trial period
         plxSession(trl).PokeDuration = trialPokeDurations;
+        tempPokeNum = nan;
     elseif sum(trialPokesLog) > 1
         tempPokeDur = trialPokeDurations(1);
         tempPokeNum = 1;

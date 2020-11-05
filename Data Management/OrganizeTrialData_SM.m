@@ -60,6 +60,23 @@ trialPerfVect = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColID
 % Identify InSeq logical
 inSeqLog = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'InSeqLog')));
 
+
+% COMMENT IN IF RUNNING BOSTON-CA1 DATA; OUT IF RUNNING PFC
+% if isempty(rewardSigNdxs)
+%     odorNdxs = find(sum(odorTrlMtx,2));
+%     for t = 1:length(odorNdxs)
+%         if t~=length(odorNdxs)
+%             if sum(frontRwrdNdxs>odorNdxs(t) & frontRwrdNdxs<odorNdxs(t+1))>=1
+%                 rewardSigNdxs = [rewardSigNdxs; odorNdxs(t)+1200]; %#ok<AGROW>
+%             end
+%         elseif t==length(odorNdxs)
+%             if sum(frontRwrdNdxs>odorNdxs(t))>=1
+%                 rewardSigNdxs = [rewardSigNdxs; odorNdxs(t)+1200]; %#ok<AGROW>
+%             end
+%         end
+%     end
+% end
+        
 %% Create Data input structures
 seqNum = cell(1,numTrials);
 trialOdor = cell(1,numTrials);
@@ -115,7 +132,7 @@ for trl = 1:numTrials
     
     % Create trial logical vector
     tempLogVect = false(size(behavMatrix,1),1);
-    curPokeIn = pokeInNdxs(find(pokeInNdxs<trialIndices(trl)==1,1, 'last'));
+    curPokeIn = pokeInNdxs(find(pokeInNdxs<=trialIndices(trl)==1,1, 'last'));
     curPokeOut = pokeOutNdxs(find(pokeOutNdxs>trialIndices(trl)==1,1, 'first'));
         
     trialPokeInNdx{trl} = curPokeIn;
