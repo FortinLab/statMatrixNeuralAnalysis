@@ -219,11 +219,13 @@ end
 
 function SaveFile(source,event)
 global statMatrix smFile badIndxs
-
-statMatrix_edited = statMatrix;
-statMatrix_edited(badIndxs,:) = nan;
-outputfilename = strcat('Edited_',smFile);
-uisave('statMatrix_edited',outputfilename);
+badIndexLog = [statMatrix(:,1), false(size(statMatrix,1),1)];
+badIndexLog(badIndxs,2) = true;
+uisave('badIndexLog',sprintf('%s_BadIndices.mat', smFile(1:end-4)));
+% statMatrix_edited = statMatrix;
+% statMatrix_edited(badIndxs,:) = nan;
+% outputfilename = strcat('Edited_',smFile);
+% uisave('statMatrix_edited',outputfilename);
 
 
 end
@@ -253,10 +255,10 @@ else
 end
 load(smFile,'statMatrix')
 
-goodDataTrace = statMatrix(:,10);
+goodDataTrace = statMatrix(:,2);
 % Enable the following to filter the data
-[b1, a1] = butter(2, [59/500 61/500], 'stop');                      %% Remove 60hz Harmonic (noise)
-goodDataTrace = filtfilt(b1, a1, goodDataTrace);                    %% Apply Filter
+% [b1, a1] = butter(2, [59/500 61/500], 'stop');                      %% Remove 60hz Harmonic (noise)
+% goodDataTrace = filtfilt(b1, a1, goodDataTrace);                    %% Apply Filter
 assignin('base', 'goodDataTrace', goodDataTrace);
 badDataTrace = nan(size(goodDataTrace));
 assignin('base', 'badDataTrace', badDataTrace);
