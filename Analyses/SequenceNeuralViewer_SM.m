@@ -119,10 +119,10 @@ figure;
 load(smFile)
 lfpColIDs = find(cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, '_LFP_[(A-Z)|(a-z)]*\>')));
 lfpBands = cellfun(@(a,b)a(b:end), statMatrixColIDs(lfpColIDs), regexp(statMatrixColIDs(lfpColIDs), '[(A-Z)|(a-z)]*\>'), 'uniformoutput', 0);
-lfpVals = statMatrix(:,lfpColIDs(strcmp(lfpBands, band2plot)));
+lfpVals = statMatrix(:,lfpColIDs(strcmp(lfpBands, band2plot))); %#ok<*USENS>
 lfpVals = lfpVals/(max(abs(lfpVals)));
 
-plot(statMatrix(:,1), lfpVals-1, 'color', [0.4 0.4 0.4]);
+plot(statMatrix(:,1), (lfpVals+2)*-1, 'color', [0.4 0.4 0.4]);
 
 % Plot Spikes
 hold on;
