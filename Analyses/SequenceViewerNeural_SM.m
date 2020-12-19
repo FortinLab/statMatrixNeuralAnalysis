@@ -238,7 +238,7 @@ end
 trialHist = mean(plotData.TrialEnsembleBinned(:,:,trialLog),3)';
 normHist = trialHist./max(trialHist,[],2);
 silentCellLog = sum(isnan(normHist),2)==size(normHist,2);
-lowFRlog = sum(trialHist<=1,2)==size(trialHist,2); silentCellLog = silentCellLog | lowFRlog;
+% lowFRlog = sum(trialHist<=1,2)==size(trialHist,2); silentCellLog = silentCellLog | lowFRlog;
 spikeTimes(silentCellLog) = [];
 unitIDs(silentCellLog) = [];
 normHist(silentCellLog,:) = [];
@@ -323,7 +323,8 @@ lfpData = get(lfpBand2Plot, 'userData');
 band2Plot = get(lfpBand2Plot, 'value');
 lfpData2Plot = lfpData(:,band2Plot);
 lfpData2Plot = (lfpData2Plot/(max(abs(lfpData2Plot))))*2;
-set(lfpPlotHandle, 'Ydata', lfpData2Plot*-1);
+% set(lfpPlotHandle, 'Ydata', lfpData2Plot*-1);
+set(lfpPlotHandle, 'Ydata', lfpData2Plot);
 end
 
 %%
