@@ -227,7 +227,7 @@ for a = 1:length(aniInfo)
     annotation(gcf,'textbox', [0 0.95 1 0.05],'String', sprintf('%s Trial SWRs', aniInfo(a).ID),...
         'FontWeight', 'Bold', 'FontSize',10, 'edgecolor', 'none', 'horizontalalignment', 'left', 'interpreter', 'none');
     
-    %% Evaluate behavioral relations of SWR events
+    %% Calculate Trial Templates to evaluate behavioral relations of SWR events
     perfLog = sessionMatrix(:,3)==1;
     isLog = sessionMatrix(:,4)==sessionMatrix(:,5);
     
@@ -249,35 +249,39 @@ for a = 1:length(aniInfo)
     timeNdx = downsample(repmat(1:1200, [1,5]), 5);
     odrNdx = downsample([ones(1,1200), ones(1,1200)+1, ones(1,1200)+2, ones(1,1200)+3, ones(1,1200)+4], 5);
     
-    ripDecodeODR = cell(size(aniInfo(a).SWRepocs,1),1);
-    ripDecodeTIME = cell(size(aniInfo(a).SWRepocs,1),1);
-    for rip = 1:size(aniInfo(a).SWRepocs,1)
-        tempEnsemble = ensemble.ensembleMatrix(aniInfo(a).SWRepocs(rip,1):aniInfo(a).SWRepocs(rip,2),2:end);
+    %% All SWRs
+    trlRelRips = swrWindows;
+    ripDecodeODR = cell(size(trlRelRips,1),1);
+    ripDecodeTIME = cell(size(trlRelRips,1),1);
+    for rip = 1:size(trlRelRips,1)
+        tempEnsemble = ensemble.ensembleMatrix(trlRelRips(rip,1):trlRelRips(rip,2),2:end);
         tempEnsConv = nan(size(tempEnsemble));
         for uni = 1:size(tempEnsemble,2)
             tempEnsConv(:,uni) = conv(tempEnsemble(:,uni), ones(1,10)./(10/1000), 'same');
         end
-        post = CalcStaticBayesPost(catTemplate, downsample(tempEnsConv,10), 10);
+        post = CalcStaticBayesPost(catTemplate, downsample(tempEnsConv,10), 10);                 % <---------------- SWR Observation Rate
         ripDecodeTIME{rip} = DecodeBayesPost(post, timeNdx);
         ripDecodeODR{rip} = DecodeBayesPost(post, odrNdx);
     end
     
     lagBins = 0:1:100;
-    odrLag = zeros(max(sessionMatrix(:,4)), length(lagBins)-1, max(sessionMatrix(:,4)));
+    odrLagDecodeMtx = repmat({zeros(max(sessionMatrix(:,4)), length(lagBins)-1)}, [1, max(sessionMatrix(:,4))]);
+    odrLagRips = cell(length(ripDecodeODR), max(sessionMatrix(:,4)));
     tempHistBins = -1200:100:1200;
     timeLag = zeros(1,length(tempHistBins)-1);
     odrLagTrans = zeros(max(sessionMatrix(:,4)));
-    for rip = 1:size(ripDecodeODR)
+    for rip = 1:length(ripDecodeODR)
         tempRipODR = ripDecodeODR{rip};
         tempRipTIME = ripDecodeTIME{rip};
         tempRipNdx = 1:length(tempRipODR);
+        tempODRlagDecodeMtx = odrLagDecodeMtx;
         for t = 1:length(tempRipODR)
             curOdr = tempRipODR(t);
             if ~isnan(curOdr)
                 for o = 1:max(sessionMatrix(:,4))
                     odrTargLog = tempRipODR==o;
                     odrTargLag = tempRipNdx(odrTargLog) - t;
-                    odrLag(o,:,curOdr) = odrLag(o,:,curOdr) + histcounts(odrTargLag, lagBins);
+                    tempODRlagDecodeMtx{curOdr}(o,:) = tempODRlagDecodeMtx{curOdr}(o,:) + histcounts(odrTargLag, lagBins);
                 end
             end
             if t<length(tempRipODR) && ~isnan(curOdr) && ~isnan(tempRipODR(t+1))
@@ -285,14 +289,11 @@ for a = 1:length(aniInfo)
                 timeLag = timeLag + histcounts(tempRipTIME(t+1)-tempRipTIME(t), tempHistBins);
             end
         end
+        odrLagRips(rip,:) = tempODRlagDecodeMtx;
     end
-    odrLagNorm = nan(size(odrLag));
+    odrLagNorm = nan(max(sessionMatrix(:,4)), length(lagBins)-1, max(sessionMatrix(:,4)));
     for o = 1:max(sessionMatrix(:,4))
-        tempMtx = odrLag(:,:,o);
-        for o2 = 1:size(tempMtx,1)
-            tempMtx(o2,:) = tempMtx(o2,:)./max(tempMtx(o2,:));
-        end
-        odrLagNorm(:,:,o) = tempMtx;
+        odrLagNorm(:,:,o) = mean(cell2mat(reshape(odrLagRips(:,o), [1,1,size(odrLagRips,1)])),3);
     end
     
     figure;
@@ -301,7 +302,7 @@ for a = 1:length(aniInfo)
     for o = 1:5
         aPlot(o).Color = odorColors(o,:);
     end
-    title(aniInfo(a).ID);
+    title([aniInfo(a).ID ' All SWRs']);
     subplot(5,1,2);
     bPlot = plot(odrLagNorm(:,:,2)');
     for o = 1:5
@@ -329,9 +330,232 @@ for a = 1:length(aniInfo)
     subplot(2,2,2)
     bar(tempHistBins(1:end-1)+0.25,timeLag)
     set(gca, 'yscale', 'log')
+    %% Pre Trial SWRs
+    trlRelRips = swrWindows(trialRIPlogPRE,:);
+%     trlRelRips = swrWindows;
+    ripDecodeODR = cell(size(trlRelRips,1),1);
+    ripDecodeTIME = cell(size(trlRelRips,1),1);
+    for rip = 1:size(trlRelRips,1)
+        tempEnsemble = ensemble.ensembleMatrix(trlRelRips(rip,1):trlRelRips(rip,2),2:end);
+        tempEnsConv = nan(size(tempEnsemble));
+        for uni = 1:size(tempEnsemble,2)
+            tempEnsConv(:,uni) = conv(tempEnsemble(:,uni), ones(1,10)./(10/1000), 'same');
+        end
+        post = CalcStaticBayesPost(catTemplate, downsample(tempEnsConv,10), 10);                 % <---------------- SWR Observation Rate
+        ripDecodeTIME{rip} = DecodeBayesPost(post, timeNdx);
+        ripDecodeODR{rip} = DecodeBayesPost(post, odrNdx);
+    end
     
-        
-        
+    lagBins = 0:1:100;
+    odrLagDecodeMtx = repmat({zeros(max(sessionMatrix(:,4)), length(lagBins)-1)}, [1, max(sessionMatrix(:,4))]);
+    odrLagRips = cell(length(ripDecodeODR), max(sessionMatrix(:,4)));
+    tempHistBins = -1200:100:1200;
+    timeLag = zeros(1,length(tempHistBins)-1);
+    odrLagTrans = zeros(max(sessionMatrix(:,4)));
+    for rip = 1:length(ripDecodeODR)
+        tempRipODR = ripDecodeODR{rip};
+        tempRipTIME = ripDecodeTIME{rip};
+        tempRipNdx = 1:length(tempRipODR);
+        tempODRlagDecodeMtx = odrLagDecodeMtx;
+        for t = 1:length(tempRipODR)
+            curOdr = tempRipODR(t);
+            if ~isnan(curOdr)
+                for o = 1:max(sessionMatrix(:,4))
+                    odrTargLog = tempRipODR==o;
+                    odrTargLag = tempRipNdx(odrTargLog) - t;
+                    tempODRlagDecodeMtx{curOdr}(o,:) = tempODRlagDecodeMtx{curOdr}(o,:) + histcounts(odrTargLag, lagBins);
+                end
+            end
+            if t<length(tempRipODR) && ~isnan(curOdr) && ~isnan(tempRipODR(t+1))
+                odrLagTrans(curOdr,tempRipODR(t+1)) = odrLagTrans(curOdr,tempRipODR(t+1)) + 1;
+                timeLag = timeLag + histcounts(tempRipTIME(t+1)-tempRipTIME(t), tempHistBins);
+            end
+        end
+        odrLagRips(rip,:) = tempODRlagDecodeMtx;
+    end
+    odrLagNorm = nan(max(sessionMatrix(:,4)), length(lagBins)-1, max(sessionMatrix(:,4)));
+    for o = 1:max(sessionMatrix(:,4))
+        odrLagNorm(:,:,o) = mean(cell2mat(reshape(odrLagRips(:,o), [1,1,size(odrLagRips,1)])),3);
+    end
+    
+    figure;
+    subplot(5,1,1);
+    aPlot = plot(odrLagNorm(:,:,1)');
+    for o = 1:5
+        aPlot(o).Color = odorColors(o,:);
+    end
+    title([aniInfo(a).ID, ' Pre-Trial SWRs']);
+    subplot(5,1,2);
+    bPlot = plot(odrLagNorm(:,:,2)');
+    for o = 1:5
+        bPlot(o).Color = odorColors(o,:);
+    end
+    subplot(5,1,3);
+    cPlot = plot(odrLagNorm(:,:,3)');
+    for o = 1:5
+        cPlot(o).Color = odorColors(o,:);
+    end
+    subplot(5,1,4);
+    dPlot = plot(odrLagNorm(:,:,4)');
+    for o = 1:5
+        dPlot(o).Color = odorColors(o,:);
+    end
+    subplot(5,1,5);
+    ePlot = plot(odrLagNorm(:,:,5)');
+    for o = 1:5
+        ePlot(o).Color = odorColors(o,:);
+    end
+    
+    %% Post Trial SWRs
+    trlRelRips = swrWindows(trialRIPlogPOST,:);
+%     trlRelRips = swrWindows;
+    ripDecodeODR = cell(size(trlRelRips,1),1);
+    ripDecodeTIME = cell(size(trlRelRips,1),1);
+    for rip = 1:size(trlRelRips,1)
+        tempEnsemble = ensemble.ensembleMatrix(trlRelRips(rip,1):trlRelRips(rip,2),2:end);
+        tempEnsConv = nan(size(tempEnsemble));
+        for uni = 1:size(tempEnsemble,2)
+            tempEnsConv(:,uni) = conv(tempEnsemble(:,uni), ones(1,10)./(10/1000), 'same');
+        end
+        post = CalcStaticBayesPost(catTemplate, downsample(tempEnsConv,10), 10);                 % <---------------- SWR Observation Rate
+        ripDecodeTIME{rip} = DecodeBayesPost(post, timeNdx);
+        ripDecodeODR{rip} = DecodeBayesPost(post, odrNdx);
+    end
+    
+    lagBins = 0:1:100;
+    odrLagDecodeMtx = repmat({zeros(max(sessionMatrix(:,4)), length(lagBins)-1)}, [1, max(sessionMatrix(:,4))]);
+    odrLagRips = cell(length(ripDecodeODR), max(sessionMatrix(:,4)));
+    tempHistBins = -1200:100:1200;
+    timeLag = zeros(1,length(tempHistBins)-1);
+    odrLagTrans = zeros(max(sessionMatrix(:,4)));
+    for rip = 1:length(ripDecodeODR)
+        tempRipODR = ripDecodeODR{rip};
+        tempRipTIME = ripDecodeTIME{rip};
+        tempRipNdx = 1:length(tempRipODR);
+        tempODRlagDecodeMtx = odrLagDecodeMtx;
+        for t = 1:length(tempRipODR)
+            curOdr = tempRipODR(t);
+            if ~isnan(curOdr)
+                for o = 1:max(sessionMatrix(:,4))
+                    odrTargLog = tempRipODR==o;
+                    odrTargLag = tempRipNdx(odrTargLog) - t;
+                    tempODRlagDecodeMtx{curOdr}(o,:) = tempODRlagDecodeMtx{curOdr}(o,:) + histcounts(odrTargLag, lagBins);
+                end
+            end
+            if t<length(tempRipODR) && ~isnan(curOdr) && ~isnan(tempRipODR(t+1))
+                odrLagTrans(curOdr,tempRipODR(t+1)) = odrLagTrans(curOdr,tempRipODR(t+1)) + 1;
+                timeLag = timeLag + histcounts(tempRipTIME(t+1)-tempRipTIME(t), tempHistBins);
+            end
+        end
+        odrLagRips(rip,:) = tempODRlagDecodeMtx;
+    end
+    odrLagNorm = nan(max(sessionMatrix(:,4)), length(lagBins)-1, max(sessionMatrix(:,4)));
+    for o = 1:max(sessionMatrix(:,4))
+        odrLagNorm(:,:,o) = mean(cell2mat(reshape(odrLagRips(:,o), [1,1,size(odrLagRips,1)])),3);
+    end
+    
+    figure;
+    subplot(5,1,1);
+    aPlot = plot(odrLagNorm(:,:,1)');
+    for o = 1:5
+        aPlot(o).Color = odorColors(o,:);
+    end
+    title([aniInfo(a).ID ' Post-Trial SWRs']);
+    subplot(5,1,2);
+    bPlot = plot(odrLagNorm(:,:,2)');
+    for o = 1:5
+        bPlot(o).Color = odorColors(o,:);
+    end
+    subplot(5,1,3);
+    cPlot = plot(odrLagNorm(:,:,3)');
+    for o = 1:5
+        cPlot(o).Color = odorColors(o,:);
+    end
+    subplot(5,1,4);
+    dPlot = plot(odrLagNorm(:,:,4)');
+    for o = 1:5
+        dPlot(o).Color = odorColors(o,:);
+    end
+    subplot(5,1,5);
+    ePlot = plot(odrLagNorm(:,:,5)');
+    for o = 1:5
+        ePlot(o).Color = odorColors(o,:);
+    end
+    %% Non Trial SWRs
+    trlRelRips = swrWindows(~trialRIPlog,:);
+%     trlRelRips = swrWindows;
+    ripDecodeODR = cell(size(trlRelRips,1),1);
+    ripDecodeTIME = cell(size(trlRelRips,1),1);
+    for rip = 1:size(trlRelRips,1)
+        tempEnsemble = ensemble.ensembleMatrix(trlRelRips(rip,1):trlRelRips(rip,2),2:end);
+        tempEnsConv = nan(size(tempEnsemble));
+        for uni = 1:size(tempEnsemble,2)
+            tempEnsConv(:,uni) = conv(tempEnsemble(:,uni), ones(1,10)./(10/1000), 'same');
+        end
+        post = CalcStaticBayesPost(catTemplate, downsample(tempEnsConv,10), 10);                 % <---------------- SWR Observation Rate
+        ripDecodeTIME{rip} = DecodeBayesPost(post, timeNdx);
+        ripDecodeODR{rip} = DecodeBayesPost(post, odrNdx);
+    end
+    
+    lagBins = 0:1:100;
+    odrLagDecodeMtx = repmat({zeros(max(sessionMatrix(:,4)), length(lagBins)-1)}, [1, max(sessionMatrix(:,4))]);
+    odrLagRips = cell(length(ripDecodeODR), max(sessionMatrix(:,4)));
+    tempHistBins = -1200:100:1200;
+    timeLag = zeros(1,length(tempHistBins)-1);
+    odrLagTrans = zeros(max(sessionMatrix(:,4)));
+    for rip = 1:length(ripDecodeODR)
+        tempRipODR = ripDecodeODR{rip};
+        tempRipTIME = ripDecodeTIME{rip};
+        tempRipNdx = 1:length(tempRipODR);
+        tempODRlagDecodeMtx = odrLagDecodeMtx;
+        for t = 1:length(tempRipODR)
+            curOdr = tempRipODR(t);
+            if ~isnan(curOdr)
+                for o = 1:max(sessionMatrix(:,4))
+                    odrTargLog = tempRipODR==o;
+                    odrTargLag = tempRipNdx(odrTargLog) - t;
+                    tempODRlagDecodeMtx{curOdr}(o,:) = tempODRlagDecodeMtx{curOdr}(o,:) + histcounts(odrTargLag, lagBins);
+                end
+            end
+            if t<length(tempRipODR) && ~isnan(curOdr) && ~isnan(tempRipODR(t+1))
+                odrLagTrans(curOdr,tempRipODR(t+1)) = odrLagTrans(curOdr,tempRipODR(t+1)) + 1;
+                timeLag = timeLag + histcounts(tempRipTIME(t+1)-tempRipTIME(t), tempHistBins);
+            end
+        end
+        odrLagRips(rip,:) = tempODRlagDecodeMtx;
+    end
+    odrLagNorm = nan(max(sessionMatrix(:,4)), length(lagBins)-1, max(sessionMatrix(:,4)));
+    for o = 1:max(sessionMatrix(:,4))
+        odrLagNorm(:,:,o) = mean(cell2mat(reshape(odrLagRips(:,o), [1,1,size(odrLagRips,1)])),3);
+    end
+    
+    figure;
+    subplot(5,1,1);
+    aPlot = plot(odrLagNorm(:,:,1)');
+    for o = 1:5
+        aPlot(o).Color = odorColors(o,:);
+    end
+    title([aniInfo(a).ID ' Non-Trial SWRs']);
+    subplot(5,1,2);
+    bPlot = plot(odrLagNorm(:,:,2)');
+    for o = 1:5
+        bPlot(o).Color = odorColors(o,:);
+    end
+    subplot(5,1,3);
+    cPlot = plot(odrLagNorm(:,:,3)');
+    for o = 1:5
+        cPlot(o).Color = odorColors(o,:);
+    end
+    subplot(5,1,4);
+    dPlot = plot(odrLagNorm(:,:,4)');
+    for o = 1:5
+        dPlot(o).Color = odorColors(o,:);
+    end
+    subplot(5,1,5);
+    ePlot = plot(odrLagNorm(:,:,5)');
+    for o = 1:5
+        ePlot(o).Color = odorColors(o,:);
+    end
     
     %% Plot the session SWR traces
     figure; 
