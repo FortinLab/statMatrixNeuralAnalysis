@@ -38,6 +38,15 @@ for a = 1:length(aniInfo)
     behav = load([aniInfo(a).Directory behMatFile]);
     behavMat = OrganizeTrialData_SM(behav.behavMatrix, behav.behavMatrixColIDs, [0 0], 'PokeIn');
     sessionMatrix = [[behavMat.PokeInIndex]', [behavMat.PokeOutIndex]', [behavMat.Performance]', [behavMat.Position]', [behavMat.Odor]'];
+    % Extract position and derive velocity 
+    locNdxs = find(sum(posVals~=0,2)>=1);
+    locVals = behav.behavMatrix(locNdxs,end-1:end)*1.5/100;
+    timeVals = behav.behavMatrix(locNdxs,1);
+    instV = nan(size(locVals,1),1);
+    for v = 2:size(locVals,1)
+        instV(v) = sqrt((locVals(v,1)-locVals(v-1,1))^2 - (locVals(v,2)-locVals(v,2))^2)/diff(timeVals(v-1:v));
+    end
+    smoothInstV = conv(instV, ones(1,20)/20, 'same');
     clear behav behavMat
     nsmblMatFile = aniFiles(cellfun(@(a)~isempty(a), strfind({aniFiles.name}, 'EnsembleMatrix'))).name;
     ensemble = load([aniInfo(a).Directory nsmblMatFile]);
@@ -235,19 +244,19 @@ for a = 1:length(aniInfo)
     for o = 1:max(sessionMatrix(:,5))
         trlLog = sessionMatrix(:,5) == o & perfLog & isLog;
         tempSsnMtx = sessionMatrix(trlLog,:);
-        tempTemplate = nan(240,size(ensemble.ensembleMatrix,2)-1, size(tempSsnMtx,1));
+        tempTemplate = nan(120,size(ensemble.ensembleMatrix,2)-1, size(tempSsnMtx,1));
         for trl = 1:size(tempSsnMtx,1)
             tempTrial = ensemble.ensembleMatrix(tempSsnMtx(trl,1):tempSsnMtx(trl,1)+1199,2:end);
             for uni = 1:size(tempTrial,2)
                 tempConv = conv(tempTrial(:,uni), ones(1,10)./(10/1000),'same');
-                tempTemplate(:,uni,trl) = downsample(tempConv,5);
+                tempTemplate(:,uni,trl) = downsample(tempConv,10);
             end            
         end
         templates{o} = mean(tempTemplate,3);
     end
     catTemplate = cell2mat(templates');
-    timeNdx = downsample(repmat(1:1200, [1,5]), 5);
-    odrNdx = downsample([ones(1,1200), ones(1,1200)+1, ones(1,1200)+2, ones(1,1200)+3, ones(1,1200)+4], 5);
+    timeNdx = downsample(repmat(1:1200, [1,5]), 10);
+    odrNdx = downsample([ones(1,1200), ones(1,1200)+1, ones(1,1200)+2, ones(1,1200)+3, ones(1,1200)+4], 10);
     
     %% All SWRs
     trlRelRips = swrWindows;
