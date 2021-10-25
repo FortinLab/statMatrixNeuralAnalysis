@@ -1,16 +1,18 @@
+
 %% PFC_MLB
 clc
 clear all
 
 %% Runtime variables
-piWindow = [-0.5 0.5];
-poWindow = [-0.5 0.5];
-binSize = 200;
-dsRate = 5;
-cLim = [0 0.01];
-
+% if nargin==0
+    piWindow = [-0.5 0.5];
+    poWindow = [-0.5 0.5];
+    binSize = 200;
+    dsRate = 5;
+    cLim = [0 0.01];
+    smPath = uigetdir;
+% end
 %%
-smPath = uigetdir;
 cd(smPath);
 files = dir(smPath);
 fileNames = {files.name};

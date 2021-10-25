@@ -39,7 +39,7 @@ if ~(nargin == 2)
         path = [path '\'];
         flContents = dir(path);
         fileNames = {flContents.name};
-        matFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, [fileName '_([0-9]*)-([A-Z | a-z]*)-([0-9]*).mat']));
+        matFileLog = cellfun(@(a)~isempty(a), regexp(fileNames, [fileName '_([0-9]*)-([A-Z | a-z]*)-([0-9]*).mat$']));
         if sum(matFileLog)==0
             [matFileName, matFilePath] = uigetfile('.mat', 'No .MAT file found in the folder with the .PLX file, select the ssnData file');
             if matFileName == 0
@@ -479,7 +479,8 @@ plxSession = struct('OrdinalPosition', {ssnData.TrialPosition},...
     'AniReturnToOrigin', repmat({nan}, [1,length(ssnData)]),...
     'FrontRewardTime', repmat({nan}, [1,length(ssnData)]),...
     'BackRewardTime', repmat({nan}, [1,length(ssnData)]),...
-    'MultiPokeCounts', repmat({nan}, [1,length(ssnData)]));
+    'MultiPokeCounts', repmat({nan}, [1,length(ssnData)]),...
+    'QuestionableTrialLog', repmat({false}, [1,length(ssnData)]));
 
 %% Extract Session Timestamps
 
@@ -527,7 +528,8 @@ for trl = 1:size(odorPresSsn,1)
                 if plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 0
                     break
                 elseif plxSession(trl).TranspositionDistance == 0 && plxSession(trl).Performance == 1
-                    if plxSession(trl).TargetDuration - tempPokeDur <= graceDur(trl)
+%                     if plxSession(trl).TargetDuration - tempPokeDur <= graceDur(trl)
+                    if floor((plxSession(trl).TargetDuration - tempPokeDur)*100)/100 <= graceDur(trl) % Potential fix... may cause problems though so keep an eye on this.
                         break
                     else
 %                         msgbox(sprintf('Trial #%i: InSeq trial where buffer was triggered and duration elapsed but it was counted as correct\n\n Re-run the analysis with the error line commented in place of this line', trl), 'Poke Buffer Warning', 'warn');
@@ -538,6 +540,7 @@ for trl = 1:size(odorPresSsn,1)
                         fprintf(outfile, 'Trial #%i: InSeq trial where buffer was triggered and buffer duration elapsed but it was counted as correct\n',  trl);
                         plxData.Summary.Errors = [plxData.Summary.Errors; 
                             {['Trial #' num2str(trl) ': InSeq trial where buffer was triggered and buffer duration elapsed but it was counted as correct']}];   
+                        plxSession(trl).QuestionableTrialLog = true;
                         break
                     end
                 elseif ~(plxSession(trl).TranspositionDistance == 0) && plxSession(trl).Performance == 1
@@ -556,7 +559,8 @@ for trl = 1:size(odorPresSsn,1)
                         tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
                         fprintf(outfile, 'Trial #%i: OutSeq trial where buffer was triggered and buffer duration elapsed but it was counted as incorrect\n',  trl);
                         plxData.Summary.Errors = [plxData.Summary.Errors; 
-                            {['Trial #' num2str(trl) ': OutSeq trial where buffer was triggered and buffer duration elapsed but it was counted as incorrect']}];   
+                            {['Trial #' num2str(trl) ': OutSeq trial where buffer was triggered and buffer duration elapsed but it was counted as incorrect']}];     
+                        plxSession(trl).QuestionableTrialLog = true;
                         break                    
                     end
                 end
