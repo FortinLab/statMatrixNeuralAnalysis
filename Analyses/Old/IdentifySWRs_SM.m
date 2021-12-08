@@ -59,7 +59,7 @@ epocDur = diff(epocWindows,1,2);
 interEpocInterval = epocWindows(2:end,1) - epocWindows(1:end-1,2);
 % 
 % Merge Ripples that Occur within 15ms of eachother
-shortLatRipls = find(interEpocInterval<10);
+shortLatRipls = find(interEpocInterval<15);
 for slr = 1:length(shortLatRipls)
     epocWindows(shortLatRipls(slr),2) = epocWindows(shortLatRipls(slr)+1,2);
 end
@@ -93,7 +93,7 @@ title('Inter-Ripple-Interval');
 subplot(2,2,[2 4]);
 corrScatPlot(epocDur(1:end-1), interEpocInterval, 'Duration', 'Latency',[]);
 
-26.7%% Format Output
+%% Format Output
 tsVect = statMatrix(:,1);
 swrIndices = tsVect(epocWindows);
 swrVectLog = false(size(tsVect));
@@ -129,41 +129,41 @@ plot(ripVolts{chan});
 b = gca;
 linkaxes([a b], 'x')
 
-%%
-peakLoc = nan(size(epocWindows,1),1);
-peakPwr = nan(size(epocWindows,1),1);
-phaseMtx = cell(size(epocWindows,1),1);
-phaseCorr = nan(size(epocWindows,1),1);
-parfor epoc = 1:size(epocWindows,1)
-    curEpocWindow = epocWindows(epoc,1):epocWindows(epoc,2);
-    [tmpPks, tmpLocs] = findpeaks(aggPower(curEpocWindow), 'MinPeakHeight', rmsThresh, 'MinPeakProminence', rmsThresh);
-    if isempty(tmpPks)
-        [tmpPks, tmpLocs] = findpeaks(aggPower(curEpocWindow));
-        %             if isempty(tmpPks)
-        %                 disp('EMPTY PEAKS')
-        %                 continue
-        % %                 tmpPks = aggPower(curEpocWindow);
-        % %                 tmpLocs = 1:length(tmpPks);
-        %             end
-    end
-    if ~isempty(tmpPks)
-        curEpocPhaseMtx = nan(size(bandPhase,2));
-        for tetA = 1:size(bandPhase,2)
-            for tetB = 1:size(bandPhase,2)
-                curEpocPhaseMtx(tetA,tetB) = circ_corrcc(bandPhase(curEpocWindow,tetA), bandPhase(curEpocWindow,tetB));
-            end
-        end
-        phaseMtx{epoc} = curEpocPhaseMtx;
-        phaseCorr(epoc) = mean(curEpocPhaseMtx(triu(true(size(curEpocPhaseMtx)),1)));
-        peakPwr(epoc) = (max(tmpPks)-mean(aggPower))/std(aggPower); % z-norm peak power;
-        tmpEpocPkLoc = tmpLocs(tmpPks==max(tmpPks));
-        if size(tmpEpocPkLoc)>1
-            tmpEpocPkLoc = tmpEpocPkLoc(1);
-        end
-        tempEpocPkLoc =  epocWindows(epoc,1)+tmpEpocPkLoc;
-        peakLoc(epoc) = tempEpocPkLoc;
-    end
-end
+%% SOMETHING'S BROKE HERE
+% peakLoc = nan(size(epocWindows,1),1);
+% peakPwr = nan(size(epocWindows,1),1);
+% phaseMtx = cell(size(epocWindows,1),1);
+% phaseCorr = nan(size(epocWindows,1),1);
+% parfor epoc = 1:size(epocWindows,1)
+%     curEpocWindow = epocWindows(epoc,1):epocWindows(epoc,2);
+%     [tmpPks, tmpLocs] = findpeaks(aggPower(curEpocWindow), 'MinPeakHeight', rmsThresh, 'MinPeakProminence', rmsThresh);
+%     if isempty(tmpPks)
+%         [tmpPks, tmpLocs] = findpeaks(aggPower(curEpocWindow));
+%         %             if isempty(tmpPks)
+%         %                 disp('EMPTY PEAKS')
+%         %                 continue
+%         % %                 tmpPks = aggPower(curEpocWindow);
+%         % %                 tmpLocs = 1:length(tmpPks);
+%         %             end
+%     end
+%     if ~isempty(tmpPks)
+%         curEpocPhaseMtx = nan(size(bandPhase,2));
+%         for tetA = 1:size(bandPhase,2)
+%             for tetB = 1:size(bandPhase,2)
+%                 curEpocPhaseMtx(tetA,tetB) = circ_corrcc(bandPhase(curEpocWindow,tetA), bandPhase(curEpocWindow,tetB));
+%             end
+%         end
+%         phaseMtx{epoc} = curEpocPhaseMtx;
+%         phaseCorr(epoc) = mean(curEpocPhaseMtx(triu(true(size(curEpocPhaseMtx)),1)));
+%         peakPwr(epoc) = (max(tmpPks)-mean(aggPower))/std(aggPower); % z-norm peak power;
+%         tmpEpocPkLoc = tmpLocs(tmpPks==max(tmpPks));
+%         if size(tmpEpocPkLoc)>1
+%             tmpEpocPkLoc = tmpEpocPkLoc(1);
+%         end
+%         tempEpocPkLoc =  epocWindows(epoc,1)+tmpEpocPkLoc;
+%         peakLoc(epoc) = tempEpocPkLoc;
+%     end
+% end
 
 % %% Edit the SWRs
 % % Combine short SWRs

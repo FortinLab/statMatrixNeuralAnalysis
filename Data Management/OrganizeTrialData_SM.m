@@ -31,6 +31,7 @@ trlWindow = [round(trialLims(1)*sampleRate) round(trialLims(2)*sampleRate)];
 %% Extract Trial Indexes & Poke Events
 % separate out odor and position columns 
 odorTrlMtx = behavMatrix(:,cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'Odor')));
+odorVals = cell2mat(cellfun(@(b)str2double(b(5:end)), behavMatrixColIDs(cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'Odor'))), 'uniformoutput', 0));
 positionTrlMtx = behavMatrix(:,cellfun(@(a)~isempty(a), regexp(behavMatrixColIDs, 'Position[1-9]$')));
 % Sum them on 2d to extract trial indices
 trialVect = sum(odorTrlMtx,2);
@@ -49,6 +50,9 @@ rearRwrdNdxs = find(rearRwrdVect);
 % Pull out Error Indices
 errorSigVect = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'ErrorSignal')));
 errorSigNdxs = find(errorSigVect);
+% Pull out Reward Signal Indices
+rwdSigVect = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'RewardSignal')));
+rewardSigNdxs = find(rwdSigVect);
 % Pull out Sequence Length
 seqLength = size(positionTrlMtx,2);
 % Identify trial performance 
@@ -56,6 +60,23 @@ trialPerfVect = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColID
 % Identify InSeq logical
 inSeqLog = behavMatrix(:, cellfun(@(a)~isempty(a), strfind(behavMatrixColIDs, 'InSeqLog')));
 
+
+% COMMENT IN IF RUNNING BOSTON-CA1 DATA; OUT IF RUNNING PFC
+% if isempty(rewardSigNdxs)
+%     odorNdxs = find(sum(odorTrlMtx,2));
+%     for t = 1:length(odorNdxs)
+%         if t~=length(odorNdxs)
+%             if sum(frontRwrdNdxs>odorNdxs(t) & frontRwrdNdxs<odorNdxs(t+1))>=1
+%                 rewardSigNdxs = [rewardSigNdxs; odorNdxs(t)+1200]; %#ok<AGROW>
+%             end
+%         elseif t==length(odorNdxs)
+%             if sum(frontRwrdNdxs>odorNdxs(t))>=1
+%                 rewardSigNdxs = [rewardSigNdxs; odorNdxs(t)+1200]; %#ok<AGROW>
+%             end
+%         end
+%     end
+% end
+        
 %% Create Data input structures
 seqNum = cell(1,numTrials);
 trialOdor = cell(1,numTrials);
@@ -68,15 +89,17 @@ trialOdorNdx = repmat({nan}, [1, numTrials]);
 trialPokeOutNdx = repmat({nan}, [1, numTrials]);
 trialRewardNdx = repmat({nan}, [1, numTrials]);
 trialErrorNdx = repmat({nan}, [1, numTrials]);
+trialRwdSigNdx = repmat({nan}, [1, numTrials]);
 trialLogVect = cell(1,numTrials);
 trialNum = cell(1,numTrials);
 pokeDuration = cell(1,numTrials);
+withdrawLat = cell(1,numTrials);
 seq = 0;
 %% Go through each trial and pull out trial information and create a logical vector for that trial's time periods specified by the input trialLims
 for trl = 1:numTrials
     trialNum{trl} = trl;
     % Identify Trial/Position/Descriptors
-    curTrlOdor = find(odorTrlMtx(trialIndices(trl),:)==1);
+    curTrlOdor = odorVals(odorTrlMtx(trialIndices(trl),:)==1);
     curTrlPos = find(positionTrlMtx(trialIndices(trl),:)==1);
     curTrlPerf = trialPerfVect(trialIndices(trl))==1;
     curTrlInSeqLog = inSeqLog(trialIndices(trl))==1;
@@ -97,32 +120,53 @@ for trl = 1:numTrials
         trialItmItmDist{trl} = 1;
         trialTransDist{trl} = 0;
     else
-        trialTransDist{trl} = curTrlPos - curTrlOdor;
-        trialItmItmDist{trl} = curTrlOdor - curTrlPos + 1;
+        if curTrlOdor < 10
+            trialTransDist{trl} = curTrlPos - curTrlOdor;
+            trialItmItmDist{trl} = curTrlOdor - curTrlPos + 1;
+        else
+            trialTransDist{trl} = curTrlPos+10 - curTrlOdor;
+            trialItmItmDist{trl} = curTrlOdor - (curTrlPos+10) + 1;
+        end
     end
     seqNum{trl} = seq;
     
     % Create trial logical vector
     tempLogVect = false(size(behavMatrix,1),1);
-    curPokeIn = pokeInNdxs(find(pokeInNdxs<trialIndices(trl)==1,1, 'last'));
+    curPokeIn = pokeInNdxs(find(pokeInNdxs<=trialIndices(trl)==1,1, 'last'));
     curPokeOut = pokeOutNdxs(find(pokeOutNdxs>trialIndices(trl)==1,1, 'first'));
-    pokeDuration{trl} = (curPokeOut-curPokeIn)/sampleRate;
-    
+        
     trialPokeInNdx{trl} = curPokeIn;
     trialOdorNdx{trl} = trialIndices(trl);
     trialPokeOutNdx{trl} = curPokeOut;
     curFrontRwrdNdx = frontRwrdNdxs(find(frontRwrdNdxs>trialIndices(trl)==1,1, 'first'));
     if  isempty(curFrontRwrdNdx) || trl==numTrials || curFrontRwrdNdx<trialIndices(trl+1)
         trialRewardNdx{trl} = curFrontRwrdNdx;
+        if isempty(curFrontRwrdNdx)
+            trialRewardNdx{trl} = nan;
+        end
     else
         trialRewardNdx{trl} = nan;
     end
     curErrSigNdx = errorSigNdxs(find(errorSigNdxs>trialIndices(trl)==1,1,'first'));
     if isempty(curErrSigNdx) || trl==numTrials || curErrSigNdx<trialIndices(trl+1)
         trialErrorNdx{trl} = curErrSigNdx;
+        if isempty(curErrSigNdx)
+            trialErrorNdx{trl} = nan;
+        end
     else
         trialErrorNdx{trl} = nan;
     end
+    curRwdSigNdx = rewardSigNdxs(find(rewardSigNdxs>trialIndices(trl)==1,1,'first'));
+    if isempty(curRwdSigNdx) || trl==numTrials || curRwdSigNdx<trialIndices(trl+1)
+        trialRwdSigNdx{trl} = curRwdSigNdx;
+        if isempty(curRwdSigNdx)
+            trialRwdSigNdx{trl} = nan;
+        end
+    else
+        trialRwdSigNdx{trl} = nan;
+    end
+    pokeDuration{trl} = (curPokeOut-curPokeIn)/sampleRate;
+    withdrawLat{trl} = (curPokeOut-trialRwdSigNdx{trl})/sampleRate;
     switch trialStart
         case 'Odor'
             curIndex = trialIndices(trl);
@@ -140,6 +184,8 @@ for trl = 1:numTrials
             end
         case 'ErrorSignal'
             curIndex = trialErrorNdx{trl};
+        case 'RewardSignal'
+            curIndex = trialRwdSigNdx{trl};
     end
     if ~isnan(curIndex)
         curWindow = curIndex + trlWindow;
@@ -150,9 +196,10 @@ end
 
 %% Create behavMatrixTrialStruct
 behavMatrixTrialStruct = struct( 'TrialNum', trialNum, 'SequenceNum', seqNum,...
-    'Odor', trialOdor, 'Position', trialPosition, 'PokeDuration', pokeDuration, 'Performance', trialPerf,...
+    'Odor', trialOdor, 'Position', trialPosition, 'Performance', trialPerf,...
+    'PokeDuration', pokeDuration, 'WithdrawLatency', withdrawLat,...
     'PokeInIndex', trialPokeInNdx, 'OdorIndex', trialOdorNdx, 'PokeOutIndex', trialPokeOutNdx,...
-    'RewardIndex', trialRewardNdx, 'ErrorIndex', trialErrorNdx,...
+    'RewardIndex', trialRewardNdx, 'RewardSignalIndex', trialRwdSigNdx, 'ErrorIndex', trialErrorNdx,...
     'TranspositionDistance', trialTransDist, 'ItemItemDistance', trialItmItmDist,...
     'TrialLogVect', trialLogVect);
 behavMatrixTrialStruct(1).SeqLength = seqLength;

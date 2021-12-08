@@ -274,9 +274,9 @@ for u = 1:length(uniSumFiles)
     if uniSum.TrialEpochStats.Error.Odor(2)<newCritF
         text(err,1, uniSum.TrialEpochStats.Error.Odor(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
-    if uniSum.TrialEpochStats.Error.OdorSANSA(2)<newCritF
-        text(err,2, uniSum.TrialEpochStats.Error.OdorSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
-    end
+%     if uniSum.TrialEpochStats.Error.OdorSANSA(2)<newCritF
+%         text(err,2, uniSum.TrialEpochStats.Error.OdorSANSA(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
+%     end
     if uniSum.TrialEpochStats.Error.Position(2)<newCritF
         text(err,3, uniSum.TrialEpochStats.Error.Position(1)+1, '\fontsize{15}\bf*', 'horizontalalignment', 'center');
     end
@@ -508,7 +508,7 @@ for u = 1:length(uniSumFiles)
     set(pokeOutFZplot, 'xlim', [-0.5 max(pokeOutTrialTimeBins)], 'color', 'none');
 %         pokeOutFZplot.XAxis.Color = 'none';
     box off
-    leg = legend([posPlot, odrPlot, posSANSAplot, odrSANSAplot, prevOdrSANSAplot], 'Position', 'Odor', 'Pos(sansA)', 'Odor(sansA)', 'PrevOdor');
+    leg = legend([posPlot, odrPlot, posSANSAplot, odrSANSAplot, prevOdrSANSAplot], {'Position', 'Odor', 'Pos(sansA)', 'Odor(sansA)', 'PrevOdor'});
 %     leg = legend([posSANSAplot, odrSANSAplot, prevOdrSANSAplot], 'Pos(sansA)', 'Odor(sansA)', 'PrevOdor');
     leg.Orientation = 'horizontal';
     legendPos = leg.Position;

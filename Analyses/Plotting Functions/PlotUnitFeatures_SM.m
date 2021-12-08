@@ -110,7 +110,7 @@ text(5,3, ['\fontsize{8}' sprintf('%.02g (%.02g)', curUnitSummary.Spike_Phase_Re
 text(5,2, ['\fontsize{8}' sprintf('%.02g', curUnitSummary.Spike_Phase_Relations.Theta.R_Length)], 'horizontalalignment', 'center');
 text(5,1.2, ['\fontsize{8}' sprintf('r=%.02f', curUnitSummary.Spike_Phase_Relations.Theta.R_Test(2))], 'horizontalalignment', 'center');
 text(5,0.8, ['\fontsize{8}' sprintf('(p=%.02f)', curUnitSummary.Spike_Phase_Relations.Theta.R_Test(1))], 'horizontalalignment', 'center');
-
+% 
 text(7,6, '\bf \fontsize{9} \alpha', 'horizontalalignment', 'center');
 text(7,5, ['\fontsize{8}' sprintf('%.02g', curUnitSummary.Spike_Phase_Relations.Alpha.Mean)], 'horizontalalignment', 'center');
 text(7,4, ['\fontsize{8}' sprintf('%.02g', curUnitSummary.Spike_Phase_Relations.Alpha.Median)], 'horizontalalignment', 'center');
