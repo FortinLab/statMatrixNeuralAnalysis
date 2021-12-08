@@ -485,6 +485,7 @@ plxSession = struct('OrdinalPosition', {ssnData.TrialPosition},...
 %% Extract Session Timestamps
 
 for trl = 1:size(odorPresSsn,1)
+    trl
     % Fill in timestamp for when the sequence started
     plxSession(trl).SessionBlockStartTime = sequenceBlockInitiationTimes(plxSession(trl).SessionBlockNumber);
     
@@ -563,6 +564,8 @@ for trl = 1:size(odorPresSsn,1)
                         plxSession(trl).QuestionableTrialLog = true;
                         break                    
                     end
+                elseif abs(plxSession(trl).TranspositionDistance) == 10
+                    break
                 end
             elseif tempPokeNum > sum(trialPokesLog) || plxSession(trl).TargetDuration - tempPokeDur < graceDur(trl) || isnan(trialInterPokeIntervals(tempPokeNum))
                 break
