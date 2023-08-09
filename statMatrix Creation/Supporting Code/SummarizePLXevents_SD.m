@@ -571,6 +571,9 @@ for trl = 1:size(odorPresSsn,1)
                 break
             else
                 tempPokeNum = tempPokeNum+1;
+                if tempPokeNum > length(trialInterPokeIntervals)
+                    break
+                end                    
                 tempPokeDur = tempPokeDur + trialInterPokeIntervals(tempPokeNum-1)+trialPokeDurations(tempPokeNum);
             end
         end
