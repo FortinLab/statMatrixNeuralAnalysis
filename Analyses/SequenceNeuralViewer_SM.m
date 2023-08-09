@@ -2,7 +2,7 @@ function SequenceNeuralViewer_SM
 %% Declare Runtime Variables
 
 % Histogram bins for peak FR latency decision
-histBins = 0:0.1:1.2;
+histBins = -1.2:0.1:1.2;
 % FR threshold for trial period firing for inclusion in plot
 trialFRthresh = 0.1;
 % Spike width threshold for PC determination

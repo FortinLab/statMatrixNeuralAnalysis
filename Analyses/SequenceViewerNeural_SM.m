@@ -53,13 +53,13 @@ numSeqs = length(unique([trlStruct.SequenceNum]));
 seqWindows = nan(numSeqs,2);
 for seq = 1:numSeqs
     curSeq = trlStruct([trlStruct.SequenceNum]==seq);
-    seqWindows(seq,1) = behavMatrix(curSeq(1).PokeInIndex-5000,1);
-    seqWindows(seq,2) = behavMatrix(curSeq(end).PokeOutIndex+5000,1);
+    seqWindows(seq,1) = behavMatrix(curSeq(1).PokeInIndex-1500,1);
+    seqWindows(seq,2) = behavMatrix(curSeq(end).PokeOutIndex+1500,1);
 end
 % Now determine the mean poke duration
 pokeDur = [trlStruct.PokeOutIndex] - [trlStruct.PokeInIndex];
 meanPokeDurISC = mean(pokeDur(seqLog & perfLog))/1000;
-trialWindows = [0 ceil(meanPokeDurISC*10)/10];
+trialWindows = [-1.2 ceil(meanPokeDurISC*10)/10];
 % Use the Organize/Extract functions to pull out and organize the trial data 
 behavMatrixTrialStruct = OrganizeTrialData_SM(behavMatrix, behavMatrixColIDs, trialWindows, 'PokeIn');
 ensembleTrialData = ExtractTrialData_SM(behavMatrixTrialStruct, ensembleMatrix(:,2:end)); %#ok<*NODEF>
@@ -119,7 +119,7 @@ for trl = 1:length(behavMatrixTrialStruct)
             patchColor = 'k';
     end
     patch(gca, 'XData', [behavMatrix(behavMatrixTrialStruct(trl).PokeInIndex,1), behavMatrix(behavMatrixTrialStruct(trl).PokeOutIndex,1), behavMatrix(behavMatrixTrialStruct(trl).PokeOutIndex,1),behavMatrix(behavMatrixTrialStruct(trl).PokeInIndex,1)],...
-        'YData', [ones(1,2), repmat(intData{end,1}+1,[1,2])*-1],...
+        'YData', [ones(1,2), repmat(length(plotData.UnitIDs)+1,[1,2])*-1],...
         'FaceColor', patchColor, 'FaceAlpha', 0.15,...
         'EdgeColor', patchColor);
 end
@@ -147,7 +147,7 @@ tempOrgMethod = uibuttongroup(svnFig, 'Units', 'Normalized', 'Position', [0.05, 
     'Title', 'Organization Method', 'TitlePosition', 'centertop', 'Tag', 'orgMthd_BtnGrp',...
     'SelectionChangedFcn', @ChangeTempOrgMethod);
 % Temp Org by Mean A
-meanAorg = uicontrol(tempOrgMethod, 'Units', 'Normalized', 'Style', 'radiobutton', 'String', 'Mean Odor A',...
+meanAorg = uicontrol(tempOrgMethod, 'Units', 'Normalized', 'Style', 'radiobutton', 'String', 'Peak Seq FR (reset with new seq)',...
     'Position', [0.05, 0.7, 0.9, 0.2], 'Tag', 'orgMeanA_PB');
 % Temp Org by Mean InSeq
 meanISorg = uicontrol(tempOrgMethod, 'Units', 'Normalized', 'Style', 'radiobutton', 'String', 'Mean InSeq',...
@@ -219,7 +219,8 @@ axis(totalSeqNumAxs, 'off');
 
 %%
 function [spikeData] = DetermineEnsembleOrganization(orgType)
-global svnFig
+global svnFig figAxes
+seqWin = round(get(figAxes, 'xlim'));
 plotData = get(svnFig, 'userData');
 spikeTimes = plotData.UnitSpikeTimes;
 unitIDs = plotData.UnitIDs;
@@ -235,8 +236,16 @@ switch orgType
     case 3
         trialLog = plotData.InSeqLog==1 & plotData.Performance==1 & plotData.TrialOdor~=1;
 end
-trialHist = mean(plotData.TrialEnsembleBinned(:,:,trialLog),3)';
-normHist = trialHist./max(trialHist,[],2);
+if orgType == 2 || orgType == 3
+    trialHist = mean(plotData.TrialEnsembleBinned(:,:,trialLog),3)';
+    normHist = trialHist./max(trialHist,[],2);
+else
+    instFRgauss = (gausswin(200))/0.2;
+    normHist = cell2mat(cellfun(@(a){conv(histcounts(a(a>min(seqWin) & a<max(seqWin)), plotData.SessionTime(plotData.SessionTime>min(seqWin) & plotData.SessionTime<max(seqWin))), instFRgauss, 'same')},spikeTimes));
+    for u = 1:size(normHist,1)
+        normHist(u,:) = normHist(u,:)./max(normHist(u,:));
+    end
+end
 silentCellLog = sum(isnan(normHist),2)==size(normHist,2);
 % lowFRlog = sum(trialHist<=1,2)==size(trialHist,2); silentCellLog = silentCellLog | lowFRlog;
 spikeTimes(silentCellLog) = [];
@@ -477,12 +486,13 @@ cell2MoveStr = iStr(curInt);
 
 % Modify Lists
 pData = [pData;iData(curInt,:)];
+ndxStart = pData{1,1};
 iData(curInt,:) = [];
 
 % Reorganize PCs
 pcSortMtx = sortrows([cell2mat(pData(:,2)), [1:size(pData,1)]']); %#ok<NBRAK>
 pData = pData(pcSortMtx(:,2),:);
-pData(:,1) = num2cell(pData{1,1}:size(pData,1)+1);
+pData(:,1) = num2cell(ndxStart:size(pData,1)+1);
 for p = 1:size(pData,1)
     set(rasterHandles(pData{p,1}), 'Xdata', pData{p,4}, 'Ydata', ones(1,length(pData{p,4})).*(pData{p,1}*-1));
 end
@@ -625,4 +635,5 @@ set(gca, 'xlim', seqWindows(str2double(get(curSeqNumInput, 'String')),:), 'ylim'
 title(sprintf('%s; Sequence %s', smFile, get(curSeqNumInput, 'String')), 'interpreter', 'none');
 orient(gcf, 'tall');
 orient(gcf, 'landscape');
+set(gcf, 'Renderer', 'Painters');
 end

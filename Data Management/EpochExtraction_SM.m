@@ -178,7 +178,7 @@ if org == 1
         lfpCol = cellfun(@(a)~isempty(a), regexp(statMatrixColIDs, lfpColRegXprsnString));
         lfpIDs = [lfpIDs, statMatrixColIDs(lfpCol)]; %#ok<AGROW>
         
-        lfpEventData = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); %#ok<NODEF>
+        lfpEventData = ExtractTrialData_SM(eventAlignedMatrix, statMatrix(:,lfpCol)); 
         mptLogLFP = cellfun(@(a)isempty(a), lfpEventData);
         lfpEventData(mptLogLFP) = {nan(size(eventTimeBins))};
         lfpEventData = cellfun(@(a)reshape(a, [1, size(a,1), size(a,2)]), lfpEventData, 'uniformoutput',0);
