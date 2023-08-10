@@ -192,6 +192,13 @@ if ~(length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnDa
     fprintf(outfile, 'Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy\n PLX Count = %i\n MAT Count = %i\n', length(nonDoubleBuzzBuzzer)+length(sequenceBlockInitiationTimes)-sum([ssnData.Performance]==0), length(ssnData));
     warning('Number of Buzzer activations don''t match the number of trials, check files and code for source of discrepancy');
 end
+%% Identify Port Light times
+portLightChan = strcmp(channels, 'Port Light A (front)');
+lightOnTimes = plxStruct(portLightChan).ts;
+
+if term 
+    lightOnTimes(lightOnTimes>terminateTime) = [];
+end
 %% Identify Beep (Reward Signal) Times
 beepChanNum = strcmp(channels, 'Tone');
 beepTimes = plxStruct(beepChanNum).ts;
@@ -472,6 +479,7 @@ plxSession = struct('OrdinalPosition', {ssnData.TrialPosition},...
     'OdorPokeWithdrawTime', repmat({nan}, [1,length(ssnData)]),...
     'OdorPokesDurations', repmat({nan}, [1,length(ssnData)]),...
     'RewardSignalTime', repmat({nan}, [1,length(ssnData)]),...
+    'TrialLightTime', repmat({nan}, [1,length(ssnData)]),...
     'TrialAvailTime', repmat({nan}, [1,length(ssnData)]),...
     'TrialEndTime', repmat({nan}, [1,length(ssnData)]),...
     'ErrorSignalTime', repmat({nan}, [1,length(ssnData)]),...
@@ -485,12 +493,15 @@ plxSession = struct('OrdinalPosition', {ssnData.TrialPosition},...
 %% Extract Session Timestamps
 
 for trl = 1:size(odorPresSsn,1)
-    trl
+%     trl
     % Fill in timestamp for when the sequence started
     plxSession(trl).SessionBlockStartTime = sequenceBlockInitiationTimes(plxSession(trl).SessionBlockNumber);
     
     % Fill in timestamp for when the trial was available to start
     plxSession(trl).TrialAvailTime = trialEndTimes(find(trialEndTimes<plxSession(trl).ItemPresentationTime,1,'last'));
+
+    % Fill in timestamp for when the trial light turned on
+    plxSession(trl).TrialLightTime = lightOnTimes(find(lightOnTimes<plxSession(trl).ItemPresentationTime,1,'last'));
     
     % Fill in timestamp for when the trial ended
     plxSession(trl).TrialEndTime = trialEndTimes(find(trialEndTimes>plxSession(trl).ItemPresentationTime,1,'first'));
