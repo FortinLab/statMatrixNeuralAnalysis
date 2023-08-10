@@ -57,8 +57,8 @@ if isfield(plxData.Summary, 'DualListLog') && plxData.Summary.DualListLog
     dlSeqHeaders = cell(1,seqLength);
     for seq = 11:seqLength+10
         itemPresTimes = [plxData.Raw([plxData.Raw.SequenceItem]==seq).ItemPresentationTime];
-        dlSeqVals(:,seq) = histcounts(itemPresTimes, tsVect)';
-        dlSeqHeaders{seq} = ['Odor' num2str(seq)];
+        dlSeqVals(:,seq-10) = histcounts(itemPresTimes, tsVect)';
+        dlSeqHeaders{seq-10} = ['Odor' num2str(seq)];
         fprintf(outfile, '     Odor #%i = %i trials\n', seq, length(itemPresTimes));
     end
     seqVals = [seqVals, dlSeqVals];
